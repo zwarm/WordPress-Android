@@ -5,6 +5,8 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.text.Html;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,7 +17,6 @@ import android.support.design.widget.Snackbar;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.wordpress.android.WordPress;
 import org.wordpress.android.datasets.MenuLocationTable;
@@ -28,6 +29,7 @@ import org.wordpress.android.ui.menus.views.MenuAddEditRemoveView;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.CollectionUtils;
 import org.wordpress.android.util.NetworkUtils;
+import org.wordpress.android.util.ToastUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,7 +80,7 @@ public class MenusFragment extends Fragment {
                         };
                     }.execute();
 
-                    Toast.makeText(getActivity(), getString(R.string.menus_menu_created), Toast.LENGTH_SHORT).show();
+                    ToastUtils.showToast(getActivity(), getString(R.string.menus_menu_created), ToastUtils.Duration.SHORT);
                     // add this newly created menu to the spinner
                     addMenuToCurrentList(menu);
                     // enable the action UI elements
@@ -162,7 +164,7 @@ public class MenusFragment extends Fragment {
 
 
                 if (deleted) {
-                    Toast.makeText(getActivity(), getString(R.string.menus_menu_deleted), Toast.LENGTH_SHORT).show();
+                    ToastUtils.showToast(getActivity(), getString(R.string.menus_menu_deleted), ToastUtils.Duration.SHORT);
                     //delete menu from Spinner here
                     if (mMenusSpinner.getItems() != null) {
                         if (mMenusSpinner.getItems().remove(menu)) {
@@ -171,7 +173,7 @@ public class MenusFragment extends Fragment {
                     }
                 }
                 else {
-                    Toast.makeText(getActivity(), getString(R.string.could_not_delete_menu), Toast.LENGTH_SHORT).show();
+                    ToastUtils.showToast(getActivity(), getString(R.string.could_not_delete_menu), ToastUtils.Duration.SHORT);
                 }
 
             }
@@ -195,7 +197,7 @@ public class MenusFragment extends Fragment {
                     return;
                 }
 
-                Toast.makeText(getActivity(), getString(R.string.menus_menu_updated), Toast.LENGTH_SHORT).show();
+                ToastUtils.showToast(getActivity(), getString(R.string.menus_menu_updated), ToastUtils.Duration.SHORT);
 
                 //update menu in Spinner here
                 if (mMenusSpinner.getItems() != null) {
@@ -232,28 +234,36 @@ public class MenusFragment extends Fragment {
             }
 
             @Override
-            public void onErrorResponse(int requestId, MenusRestWPCom.REST_ERROR error) {
+            public void onErrorResponse(int requestId, MenusRestWPCom.REST_ERROR error, String errorMessage) {
                 // load menus
                 if (error == MenusRestWPCom.REST_ERROR.FETCH_ERROR) {
                     if (mMenuLocationsSpinner.getCount() == 0 || mMenusSpinner.getCount() == 0) {
-                        Toast.makeText(getActivity(), getString(R.string.could_not_load_menus), Toast.LENGTH_SHORT).show();
+                        ToastUtils.showToast(getActivity(), getString(R.string.could_not_load_menus), ToastUtils.Duration.SHORT);
                         updateEmptyView(EmptyViewMessageType.NO_CONTENT);
                     } else {
-                        Toast.makeText(getActivity(), getString(R.string.could_not_refresh_menus), Toast.LENGTH_SHORT).show();
+                        ToastUtils.showToast(getActivity(), getString(R.string.could_not_refresh_menus), ToastUtils.Duration.SHORT);
                     }
                     mIsUpdatingMenus = false;
                 }
                 else
                 if (error == MenusRestWPCom.REST_ERROR.CREATE_ERROR) {
-                    Toast.makeText(getActivity(), getString(R.string.could_not_create_menu), Toast.LENGTH_SHORT).show();
+                    if (!TextUtils.isEmpty(errorMessage)) {
+                        ToastUtils.showToast(getActivity(), Html.fromHtml(errorMessage), ToastUtils.Duration.LONG);
+                    } else {
+                        ToastUtils.showToast(getActivity(), getString(R.string.could_not_create_menu), ToastUtils.Duration.SHORT);
+                    }
                 }
                 else
                 if (error == MenusRestWPCom.REST_ERROR.UPDATE_ERROR) {
-                    Toast.makeText(getActivity(), getString(R.string.could_not_update_menu), Toast.LENGTH_SHORT).show();
+                    if (!TextUtils.isEmpty(errorMessage)) {
+                        ToastUtils.showToast(getActivity(), Html.fromHtml(errorMessage), ToastUtils.Duration.LONG);
+                    } else {
+                        ToastUtils.showToast(getActivity(), getString(R.string.could_not_update_menu), ToastUtils.Duration.SHORT);
+                    }
                 }
                 else
                 if (error == MenusRestWPCom.REST_ERROR.DELETE_ERROR) {
-                    Toast.makeText(getActivity(), getString(R.string.could_not_delete_menu), Toast.LENGTH_SHORT).show();
+                    ToastUtils.showToast(getActivity(), getString(R.string.could_not_delete_menu), ToastUtils.Duration.SHORT);
                     if (requestId == mCurrentDeleteRequestId && mMenuDeletedHolder != null) {
                         //restore the menu item in the spinner list
                         addMenuToCurrentList(mMenuDeletedHolder);
