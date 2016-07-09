@@ -1,10 +1,17 @@
 package org.wordpress.android.ui.menus;
 
+import android.app.Activity;
 import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -17,27 +24,35 @@ import android.support.design.widget.Snackbar;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.wordpress.android.WordPress;
 import org.wordpress.android.datasets.MenuLocationTable;
 import org.wordpress.android.datasets.MenuTable;
+import org.wordpress.android.models.MenuItemModel;
 import org.wordpress.android.models.MenuLocationModel;
 import org.wordpress.android.models.MenuModel;
+import org.wordpress.android.networking.menus.MenusDataModeler;
 import org.wordpress.android.networking.menus.MenusRestWPCom;
 import org.wordpress.android.ui.EmptyViewMessageType;
+import org.wordpress.android.ui.menus.items.MenuItemEditorFactory;
 import org.wordpress.android.ui.menus.views.MenuAddEditRemoveView;
+import org.wordpress.android.ui.menus.views.MenuItemAdapter;
+import org.wordpress.android.ui.menus.views.MenuItemsView;
+import org.wordpress.android.ui.prefs.SiteSettingsInterface;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.CollectionUtils;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.ToastUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-public class MenusFragment extends Fragment {
-
+public class MenusFragment extends Fragment implements MenuItemAdapter.MenuItemInteractions, SiteSettingsInterface.SiteSettingsListener {
     private static final int BASE_DISPLAY_COUNT_MENUS = -2;
 
+    private SiteSettingsInterface mSiteSettings;
     private boolean mUndoPressed = false;
     private MenusRestWPCom mRestWPCom;
     private MenuAddEditRemoveView mAddEditRemoveControl;
@@ -52,88 +67,94 @@ public class MenusFragment extends Fragment {
     private MenusSpinner mMenuLocationsSpinner;
     private MenusSpinner mMenusSpinner;
     private MenuModel mCurrentMenuForLocation;
+    private MenuItemsView mItemsView;
+    private int mCurrentMenuItemBeingEdited = -1;
+    private boolean mIsNewItem = false;
+    private EditMenuItemDialog mDialog;
+    private Toolbar mToolbar;
+    private List<MenuItemModel> mOriginalFlattenedMenuItems;
+    private int mOriginalMenuSelectionIdx;
+
 
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
 
+        mSiteSettings = SiteSettingsInterface.getInterface(getActivity(), WordPress.getCurrentBlog(), this);
+        mSiteSettings.init(true);
+
         mRestWPCom = new MenusRestWPCom(new MenusRestWPCom.MenusListener() {
+            @Override public Context getContext() {
+                return getActivity();
+            }
+
             @Override public long getSiteId() {
                 return Long.valueOf(WordPress.getCurrentRemoteBlogId());
             }
-            @Override public void onMenuCreated(int requestId, final MenuModel menu) {
-                if (!isAdded()) {
-                    return;
-                }
 
-                if (menu != null) {
-                    //save new menu to local DB here
-                    new AsyncTask<Void, Void, Boolean>() {
-                        @Override
-                        protected Boolean doInBackground(Void... params) {
-                            MenuTable.saveMenu(menu);
-                            return null;
-                        }
+            @Override public void onMenuCreated(int requestId, @NonNull final MenuModel menu) {
+                // make sure we don't intercept another create request
+                if (requestId != mCurrentCreateRequestId) return;
 
-                        @Override
-                        protected void onPostExecute(Boolean result) {
-                        };
-                    }.execute();
+                //reset original flattened menu items
+                mOriginalFlattenedMenuItems = copyFlattenedMenuItemList(mItemsView.getCurrentMenuItems());
+                mOriginalMenuSelectionIdx = mMenusSpinner.getSelectedItemPosition();
 
-                    ToastUtils.showToast(getActivity(), getString(R.string.menus_menu_created), ToastUtils.Duration.SHORT);
-                    // add this newly created menu to the spinner
-                    addMenuToCurrentList(menu);
-                    // enable the action UI elements
-                    mAddEditRemoveControl.setActive(true);
+                //save new menu to local DB here
+                saveMenuBackground(menu);
 
-                    //now update the menu so the menu location will be saved server-side
-                    mCurrentUpdateRequestId = mRestWPCom.updateMenu(menu);
-                }
+                if (!isAdded()) return;
+
+                // notify user that menu was created successfully
+                ToastUtils.showToast(getActivity(), getString(R.string.menus_menu_created));
+                // add this newly created menu to the spinner
+                addMenuToCurrentList(menu);
+                // enable the action UI elements
+                mAddEditRemoveControl.setActive(true);
+
+                //now update the menu so the menu location will be saved server-side
+                mCurrentUpdateRequestId = mRestWPCom.updateMenu(menu);
             }
-            @Override public Context getContext() { return getActivity(); }
+
             @Override public void onMenusReceived(int requestId, final List<MenuModel> menus, final List<MenuLocationModel> locations) {
+
+                // make sure we don't intercept another load request
+                if (requestId != mCurrentLoadRequestId) return;
+
+                //save menus to local DB here
+                new AsyncTask<Void, Void, Boolean>() {
+                    @Override protected Boolean doInBackground(Void... params) {
+                        //make a copy of the menu array and strip off the default and add menu "menus"
+                        List<MenuModel> userMenusOnly = getUserMenusOnly(menus);
+                        MenuTable.saveMenus(userMenusOnly);
+                        MenuLocationTable.saveMenuLocations(locations);
+                        return null;
+                    }
+
+                    @Override protected void onPostExecute(Boolean result) { }
+                }.execute();
+
+                if (!isAdded()) return;
+
                 boolean bSpinnersUpdated = false;
                 if (locations != null) {
-                    if (CollectionUtils.areListsEqual(locations, mMenuLocationsSpinner.getItems())) {
-                        // no op
-                    } else {
+                    if (!CollectionUtils.areListsEqual(locations, mMenuLocationsSpinner.getItems())) {
                         // update Menu Locations spinner
-                        mMenuLocationsSpinner.setItems((List)locations, 0);
+                        mMenuLocationsSpinner.setItems(locations, 0);
                         bSpinnersUpdated = true;
                     }
                 }
 
                 if (menus != null) {
-                    if (CollectionUtils.areListsEqual(menus, mMenusSpinner.getItems())) {
-                        // no op
-                    } else {
-                        //make a copy of the menu array and strip off the default and add menu "menus"
-                        final List<MenuModel> userMenusOnly = getUserMenusOnly(menus);
+                    if (!CollectionUtils.areListsEqual(menus, mMenusSpinner.getItems())) {
 
-                        //save menus to local DB here
-                        new AsyncTask<Void, Void, Boolean>() {
-                            @Override
-                            protected Boolean doInBackground(Void... params) {
-                                MenuTable.saveMenus(userMenusOnly);
-                                MenuLocationTable.saveMenuLocations(locations);
-                                return null;
-                            }
-
-                            @Override
-                            protected void onPostExecute(Boolean result) {
-                            };
-
-                        }.execute();
-
-                        addSpecialMenus(locations.get(0), menus);
+                        if (locations != null) {
+                            addSpecialMenus(locations.get(0), menus);
+                        }
                         // update Menus spinner
-                        mMenusSpinner.setItems((List)menus, BASE_DISPLAY_COUNT_MENUS);
+                        mMenusSpinner.setItems(menus, BASE_DISPLAY_COUNT_MENUS);
                         bSpinnersUpdated = true;
                     }
-                }
-
-                if (!isAdded()) {
-                    return;
                 }
 
                 if (bSpinnersUpdated) {
@@ -143,28 +164,23 @@ public class MenusFragment extends Fragment {
             }
 
             @Override public void onMenuDeleted(int requestId, MenuModel menu, boolean deleted) {
+                // make sure we don't intercept another delete request
+                if (requestId != mCurrentDeleteRequestId) return;
                 //delete menu from local DB here
                 final long menuId = menu.menuId;
                 new AsyncTask<Void, Void, Boolean>() {
-                    @Override
-                    protected Boolean doInBackground(Void... params) {
+                    @Override protected Boolean doInBackground(Void... params) {
                         MenuTable.deleteMenu(menuId);
                         return null;
                     }
 
-                    @Override
-                    protected void onPostExecute(Boolean result) {
-                    };
-
+                    @Override protected void onPostExecute(Boolean result) { }
                 }.execute();
 
-                if (!isAdded()) {
-                    return;
-                }
-
+                if (!isAdded()) return;
 
                 if (deleted) {
-                    ToastUtils.showToast(getActivity(), getString(R.string.menus_menu_deleted), ToastUtils.Duration.SHORT);
+                    Toast.makeText(getActivity(), getString(R.string.menus_menu_deleted), Toast.LENGTH_SHORT).show();
                     //delete menu from Spinner here
                     if (mMenusSpinner.getItems() != null) {
                         if (mMenusSpinner.getItems().remove(menu)) {
@@ -173,31 +189,23 @@ public class MenusFragment extends Fragment {
                     }
                 }
                 else {
-                    ToastUtils.showToast(getActivity(), getString(R.string.could_not_delete_menu), ToastUtils.Duration.SHORT);
+                    Toast.makeText(getActivity(), getString(R.string.could_not_delete_menu), Toast.LENGTH_SHORT).show();
                 }
 
             }
-            @Override public void onMenuUpdated(int requestId, final MenuModel menu) {
-
+            @Override public void onMenuUpdated(int requestId, @NonNull final MenuModel menu) {
+                // make sure we don't intercept another update request
+                if (requestId != mCurrentUpdateRequestId) return;
                 //update menu in local DB here
-                new AsyncTask<Void, Void, Boolean>() {
-                    @Override
-                    protected Boolean doInBackground(Void... params) {
-                        MenuTable.saveMenu(menu);
-                        return null;
-                    }
+                saveMenuBackground(menu);
 
-                    @Override
-                    protected void onPostExecute(Boolean result) {
-                    };
+                //reset original flattened menu items
+                mOriginalFlattenedMenuItems = copyFlattenedMenuItemList(mItemsView.getCurrentMenuItems());
+                mOriginalMenuSelectionIdx = mMenusSpinner.getSelectedItemPosition();
 
-                }.execute();
+                if (!isAdded()) return;
 
-                if (!isAdded()) {
-                    return;
-                }
-
-                ToastUtils.showToast(getActivity(), getString(R.string.menus_menu_updated), ToastUtils.Duration.SHORT);
+                ToastUtils.showToast(getActivity(), getString(R.string.menus_menu_updated));
 
                 //update menu in Spinner here
                 if (mMenusSpinner.getItems() != null) {
@@ -214,7 +222,6 @@ public class MenusFragment extends Fragment {
                         }
                     }
 
-
                     //only re-set the spinner if it's not a special menu that we have just updated.
                     //otherwise, we would be changing the actual selection (i.e. user selected No Menu, we updated the
                     //last rememebred real menu which is returned in this callback, and we'd be setting
@@ -229,19 +236,23 @@ public class MenusFragment extends Fragment {
                         }
                     }
 
-                }
+                    mAddEditRemoveControl.onSaveCompleted(true);
 
+                }
             }
 
             @Override
             public void onErrorResponse(int requestId, MenusRestWPCom.REST_ERROR error, String errorMessage) {
-                // load menus
+                if (!isAdded()) return;
+
+                mAddEditRemoveControl.onSaveCompleted(false);
+
                 if (error == MenusRestWPCom.REST_ERROR.FETCH_ERROR) {
                     if (mMenuLocationsSpinner.getCount() == 0 || mMenusSpinner.getCount() == 0) {
-                        ToastUtils.showToast(getActivity(), getString(R.string.could_not_load_menus), ToastUtils.Duration.SHORT);
+                        Toast.makeText(getActivity(), getString(R.string.could_not_load_menus), Toast.LENGTH_SHORT).show();
                         updateEmptyView(EmptyViewMessageType.NO_CONTENT);
                     } else {
-                        ToastUtils.showToast(getActivity(), getString(R.string.could_not_refresh_menus), ToastUtils.Duration.SHORT);
+                        Toast.makeText(getActivity(), getString(R.string.could_not_refresh_menus), Toast.LENGTH_SHORT).show();
                     }
                     mIsUpdatingMenus = false;
                 }
@@ -261,9 +272,8 @@ public class MenusFragment extends Fragment {
                         ToastUtils.showToast(getActivity(), getString(R.string.could_not_update_menu), ToastUtils.Duration.SHORT);
                     }
                 }
-                else
-                if (error == MenusRestWPCom.REST_ERROR.DELETE_ERROR) {
-                    ToastUtils.showToast(getActivity(), getString(R.string.could_not_delete_menu), ToastUtils.Duration.SHORT);
+                else                if (error == MenusRestWPCom.REST_ERROR.DELETE_ERROR) {
+                    Toast.makeText(getActivity(), getString(R.string.could_not_delete_menu), Toast.LENGTH_SHORT).show();
                     if (requestId == mCurrentDeleteRequestId && mMenuDeletedHolder != null) {
                         //restore the menu item in the spinner list
                         addMenuToCurrentList(mMenuDeletedHolder);
@@ -278,23 +288,27 @@ public class MenusFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.menus_fragment, container, false);
+
         mAddEditRemoveControl = (MenuAddEditRemoveView) view.findViewById(R.id.menu_add_edit_remove_view);
         mAddEditRemoveControl.setMenuActionListener(new MenuAddEditRemoveView.MenuAddEditRemoveActionListener() {
 
             @Override
             public void onMenuCreate(MenuModel menu) {
-                if (!isAdded() || !NetworkUtils.checkConnection(getActivity()) ) {
-                    return;
-                }
+                if (!isAdded() || !NetworkUtils.checkConnection(getActivity()) ) return;
+
+                mAddEditRemoveControl.onSaveStarted(menu);
+
                 //set the menu's current configuration now
                 MenuModel menuToUpdate = setMenuLocation(menu);
+
+                //add the menu items
+                menuToUpdate.menuItems = MenusDataModeler.inflateMenuItemModelList(mItemsView.getCurrentMenuItems());
 
                 mCurrentCreateRequestId = mRestWPCom.createMenu(menuToUpdate);
             }
 
             @Override
             public boolean onMenuDelete(final MenuModel menu) {
-
                 if (!isAdded() || !NetworkUtils.checkConnection(getActivity()) ) {
                     //restore the Add/Edit/Remove control
                     mAddEditRemoveControl.setMenu(menu);
@@ -320,7 +334,10 @@ public class MenusFragment extends Fragment {
                     }
                 };
 
-                Snackbar snackbar = Snackbar.make(getView(), getString(R.string.menus_menu_deleted), Snackbar.LENGTH_LONG)
+                View snackbarView = getView();
+                if (snackbarView == null) return true;
+
+                Snackbar snackbar = Snackbar.make(snackbarView, getString(R.string.menus_menu_deleted), Snackbar.LENGTH_LONG)
                         .setAction(R.string.undo, undoListener);
 
                 // wait for the undo snackbar to disappear before actually deleting the menu
@@ -345,12 +362,15 @@ public class MenusFragment extends Fragment {
 
             @Override
             public void onMenuUpdate(MenuModel menu) {
-                if (!isAdded() || !NetworkUtils.checkConnection(getActivity()) ) {
-                    return;
-                }
+                if (!isAdded() || !NetworkUtils.checkConnection(getActivity())) return;
+
+                mAddEditRemoveControl.onSaveStarted(menu);
 
                 //set the menu's current configuration now
                 MenuModel menuToUpdate = setMenuLocation(menu);
+
+                //add the menu items
+                menuToUpdate.menuItems = MenusDataModeler.inflateMenuItemModelList(mItemsView.getCurrentMenuItems());
 
                 mCurrentUpdateRequestId = mRestWPCom.updateMenu(menuToUpdate);
             }
@@ -363,23 +383,27 @@ public class MenusFragment extends Fragment {
 
         mMenusSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (mMenusSpinner.getItems().size() == (position + 1)) {
-                    //clicked on "add new menu"
+            public void onItemSelected(AdapterView<?> parent, View view, final int position, long id) {
 
-                    //for new menus, given we might be off line, it' best to not try creating a default menu right away
-                    // (as opposed to how the calypso web does this)
-                    //but wait for the user to enter a name for the menu and click SAVE on the AddRemoveEdit view control
-                    //that's why we set the menu within the control to null
-                    mAddEditRemoveControl.setMenu(null);
-                } else {
-                    MenuModel model = (MenuModel) mMenusSpinner.getItems().get(position);
-                    mAddEditRemoveControl.setMenu(model);
+                if (mOriginalMenuSelectionIdx == position) return;
 
-                    if (!model.isSpecialMenu()) {
-                        mCurrentMenuForLocation = model;
+                if (mOriginalFlattenedMenuItems != null) {
+                    if (!mOriginalFlattenedMenuItems.equals(mItemsView.getAdapter().getCurrentMenuItems())) {
+                        //the collections are different
+                        mMenusSpinner.setSelection(mOriginalMenuSelectionIdx);
+                        showAlertDialog(
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int whichButton) {
+                                        mMenusSpinner.setSelection(position);
+                                        changeMenuSpinnerSelection(position);
+                                    }
+                                });
+                        return;
                     }
                 }
+
+                changeMenuSpinnerSelection(position);
+
             }
 
             @Override
@@ -402,7 +426,7 @@ public class MenusFragment extends Fragment {
                     addSpecialMenus(menuLocationSelected, menus);
                     //we need to re-set (re-create) the spinner adapter in order to make the selection be re-drawn
                     //otherwise if items have changed but the selection remains the same, changes don' get rendered
-                    mMenusSpinner.setItems((List) menus, BASE_DISPLAY_COUNT_MENUS);
+                    mMenusSpinner.setItems(menus, BASE_DISPLAY_COUNT_MENUS);
 
                     for (int i = 0; i < menus.size() && !bFound; i++) {
                         MenuModel menu = menus.get(i);
@@ -421,25 +445,239 @@ public class MenusFragment extends Fragment {
 
                     if (!bFound) {
                         // select the Default Menu
-                        mMenusSpinner.setSelection(0);
                         mCurrentMenuForLocation = (MenuModel) mMenusSpinner.getItems().get(0);
+                        mMenusSpinner.setSelection(0);
                     }
                 }
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
-
             }
         });
 
+        mItemsView = (MenuItemsView) view.findViewById(R.id.menu_items_recyclerview);
+        mItemsView.setListener(this);
+
         return view;
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mToolbar = (Toolbar) activity.findViewById(R.id.toolbar);
+        setupToolbar();
+    }
+
+
+    private void changeMenuSpinnerSelection(int position) {
+        if (mMenusSpinner.getItems().size() == (position + 1)) {
+            //clicked on "add new menu"
+
+            //for new menus, given we might be off line, it' best to not try creating a default menu right away
+            // (as opposed to how the calypso web does this)
+            //but wait for the user to enter a name for the menu and click SAVE on the AddRemoveEdit view control
+            //that's why we set the menu within the control to null
+            mAddEditRemoveControl.setMenu(null);
+            mItemsView.updateEmptyView(EmptyViewMessageType.NO_CONTENT);
+
+        } else {
+            MenuModel model = (MenuModel) mMenusSpinner.getItems().get(position);
+            mAddEditRemoveControl.setMenu(model);
+
+            if (!model.isSpecialMenu()) {
+                mCurrentMenuForLocation = model;
+            }
+
+            //show items
+            mItemsView.hideEmptyView();
+            mItemsView.setMenu(model);
+            mOriginalFlattenedMenuItems = copyFlattenedMenuItemList(mItemsView.getCurrentMenuItems());
+            mOriginalMenuSelectionIdx = position;
+        }
+    }
+
+    private List<MenuItemModel> copyFlattenedMenuItemList(List<MenuItemModel> origList) {
+        ArrayList<MenuItemModel> copyList = new ArrayList<>();
+        copyList.addAll(origList);
+        return copyList;
+    }
+
+    private void setupToolbar() {
+        if (mToolbar == null) return;
+
+        // add back arrow listener
+        mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dismissFragment();
+            }
+        });
+    }
+
+    public void dismissFragment(){
+        if (mOriginalFlattenedMenuItems != null) {
+            if (!mOriginalFlattenedMenuItems.equals(mItemsView.getAdapter().getCurrentMenuItems())) {
+                showAlertDialog(
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                forceBackPressed();
+                            }
+                        });
+                return;
+            }
+        }
+        forceBackPressed();
+    }
+
+    public void forceBackPressed(){
+        if (getFragmentManager().getBackStackEntryCount() > 0) {
+            getFragmentManager().popBackStack();
+        } else {
+            if (getActivity() instanceof MenusActivity) {
+                ((MenusActivity)getActivity()).forceBackPressed();
+            } else {
+                getActivity().onBackPressed();
+            }
+        }
+    }
+
+    @Override
+    public void onItemClick(MenuItemModel item, int position) {
+        if (item != null) {
+            showEditorDialog(item);
+            mIsNewItem = false;
+            mCurrentMenuItemBeingEdited = position;
+        }
+    }
+
+    @Override
+    public void onCancelClick() {
+        // no op
+    }
+
+    @Override
+    public void onAddClick(int position, MenuItemAdapter.ItemAddPosition where) {
+        //the user wants to add a new item <where: above/below/tochildren> relative to <position>
+
+        List<MenuItemModel> items = mItemsView.getCurrentMenuItems();
+        int originalItemFlattenedLevel = 0;
+        boolean emptyList = true;
+        if (items.size() > 0) {
+            MenuItemModel originalItem = items.get(position);
+            originalItemFlattenedLevel = originalItem.flattenedLevel;
+            emptyList = false;
+        }
+        final MenuItemModel newItem = new MenuItemModel();
+        newItem.name = getString(R.string.menus_item_new_item);
+        newItem.flattenedLevel = originalItemFlattenedLevel;
+        newItem.type = MenuItemEditorFactory.ITEM_TYPE.POST.name().toLowerCase(); //default type: POST
+        newItem.calculateCustomType();
+        newItem.typeFamily = MenuItemModel.POST_TYPE_NAME;
+        newItem.typeLabel = MenuItemEditorFactory.ITEM_TYPE.POST.name();
+        switch (where) {
+            case ZERO:
+                // keep add item in list in case user cancels, if they save it is overwritten
+                break;
+            case TO_CHILDREN:
+                newItem.flattenedLevel++;
+            case BELOW :
+                if (position == items.size() - 1) {
+                    items.add(newItem);
+                    position++;
+                    mItemsView.getAdapter().notifyItemInserted(items.size() - 1);
+                } else {
+                    position++;
+                    items.add(position, newItem);
+                    mItemsView.getAdapter().notifyItemInserted(position);
+                }
+                break;
+            case ABOVE:
+            default:
+                items.add(position, newItem);
+                mItemsView.getAdapter().notifyItemInserted(position);
+                break;
+        }
+
+        mCurrentMenuItemBeingEdited = position;
+        mIsNewItem = true;
+
+        if (!emptyList) {
+            //enclosed Dialog show in a delayed handler to allow animations to be appreciated
+            Handler hdlr = new Handler();
+            hdlr.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    showEditorDialog(newItem);
+                }
+            }, 350);
+        } else {
+            showEditorDialog(newItem);
+        }
+    }
+
+    private ArrayList<MenuItemEditorFactory.ITEM_TYPE> getItemTypes() {
+        ArrayList<MenuItemEditorFactory.ITEM_TYPE> typeList = new ArrayList<>();
+
+        //add basic values first - all blogs have these
+        typeList.add(MenuItemEditorFactory.ITEM_TYPE.POST);
+        typeList.add(MenuItemEditorFactory.ITEM_TYPE.PAGE);
+        typeList.add(MenuItemEditorFactory.ITEM_TYPE.CATEGORY);
+        typeList.add(MenuItemEditorFactory.ITEM_TYPE.TAG);
+        typeList.add(MenuItemEditorFactory.ITEM_TYPE.LINK);
+
+        //now add optionally enabled values
+        if (mSiteSettings.getTestimonialsEnabled()) {
+            typeList.add(MenuItemEditorFactory.ITEM_TYPE.JETPACK_TESTIMONIAL);
+        }
+        if (mSiteSettings.getPortfolioEnabled()) {
+            typeList.add(MenuItemEditorFactory.ITEM_TYPE.JETPACK_PORTFOLIO);
+        }
+        return typeList;
+    }
+
+    private void showEditorDialog(MenuItemModel item) {
+        FragmentManager fm = getFragmentManager();
+        mDialog = EditMenuItemDialog.newInstance(item, getItemTypes());
+        mDialog.setTargetFragment(this, EditMenuItemDialog.EDIT_REQUEST_CODE);
+        mDialog.show(fm, EditMenuItemDialog.class.getSimpleName());
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         updateMenus();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == EditMenuItemDialog.EDIT_REQUEST_CODE) {
+            if (resultCode == EditMenuItemDialog.NOT_SAVED_CODE) {
+                // here delete the row if this was a new item
+                if (mIsNewItem) {
+                    mIsNewItem = false;
+                    if (mCurrentMenuItemBeingEdited > -1 && !mItemsView.getAdapter().isEmptyList()) {
+                        List<MenuItemModel> flattenedList = mItemsView.getAdapter().getCurrentMenuItems();
+                        flattenedList.remove(mCurrentMenuItemBeingEdited);
+                        mItemsView.getAdapter().notifyItemRemoved(mCurrentMenuItemBeingEdited);
+                    }
+                }
+            } else {
+                //here get the modified item from the Intent parcelable and refresh the menu item list
+                //re-draw menu items
+                if (mCurrentMenuItemBeingEdited > -1) {
+                    MenuItemModel modifiedItem = (MenuItemModel) data.getSerializableExtra(EditMenuItemDialog.EDITED_ITEM_KEY);
+                    if (modifiedItem != null) {
+                        List<MenuItemModel> flattenedList = mItemsView.getAdapter().getCurrentMenuItems();
+                        flattenedList.set(mCurrentMenuItemBeingEdited, modifiedItem);
+                        mItemsView.getAdapter().notifyItemChanged(mCurrentMenuItemBeingEdited);
+                    }
+                }
+            }
+        }
+
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void updateMenus() {
@@ -462,7 +700,6 @@ public class MenusFragment extends Fragment {
         mIsUpdatingMenus = true;
         mCurrentLoadRequestId = mRestWPCom.fetchAllMenus();
     }
-
 
     private void updateEmptyView(EmptyViewMessageType emptyViewMessageType) {
         if (mEmptyView != null) {
@@ -500,7 +737,7 @@ public class MenusFragment extends Fragment {
     }
 
     private List<MenuModel> getUserMenusOnly(List<MenuModel> menus){
-        ArrayList<MenuModel> tmpMenus = new ArrayList();
+        ArrayList<MenuModel> tmpMenus = new ArrayList<>();
         if (menus != null) {
             for (MenuModel menu : menus) {
                 if (menu.siteId > 0) {
@@ -523,7 +760,7 @@ public class MenusFragment extends Fragment {
             // add the special menus back
             addSpecialMenus((MenuLocationModel) mMenuLocationsSpinner.getSelectedItem(), menuItems);
             // update the spinner items
-            mMenusSpinner.setItems((List)menuItems, BASE_DISPLAY_COUNT_MENUS);
+            mMenusSpinner.setItems(menuItems, BASE_DISPLAY_COUNT_MENUS);
             //set this newly created menu
             mMenusSpinner.setSelection(mMenusSpinner.getItems().size() - 2);
         }
@@ -544,6 +781,7 @@ public class MenusFragment extends Fragment {
      * AsyncTask to load menus from SQLite
      */
     private boolean mIsLoadTaskRunning = false;
+
     private class LoadMenusTask extends AsyncTask<Void, Void, Boolean> {
         List<MenuModel> tmpMenus;
         List<MenuLocationModel> tmpMenuLocations;
@@ -552,24 +790,27 @@ public class MenusFragment extends Fragment {
         protected void onPreExecute() {
             mIsLoadTaskRunning = true;
         }
+
         @Override
         protected void onCancelled() {
             mIsLoadTaskRunning = false;
         }
+
         @Override
         protected Boolean doInBackground(Void... params) {
             tmpMenus = MenuTable.getAllMenusForCurrentSite();
             tmpMenuLocations = MenuLocationTable.getAllMenuLocationsForCurrentSite();
             return true;
         }
+
         @Override
         protected void onPostExecute(Boolean result) {
             if (result) {
-                mMenuLocationsSpinner.setItems((List)tmpMenuLocations, 0);
+                mMenuLocationsSpinner.setItems(tmpMenuLocations, 0);
                 if (tmpMenuLocations != null && tmpMenuLocations.size() > 0) {
                     addSpecialMenus(tmpMenuLocations.get(0), tmpMenus);
                 }
-                mMenusSpinner.setItems((List)tmpMenus, BASE_DISPLAY_COUNT_MENUS);
+                mMenusSpinner.setItems(tmpMenus, BASE_DISPLAY_COUNT_MENUS);
             }
 
             if ( (!result || tmpMenuLocations == null || tmpMenuLocations.size() == 0)
@@ -640,7 +881,7 @@ public class MenusFragment extends Fragment {
                 MenuLocationModel location = (MenuLocationModel) mMenuLocationsSpinner.getSelectedItem();
                 if (location != null) {
                     if (menu.locations == null) {
-                        menu.locations = new ArrayList<MenuLocationModel>();
+                        menu.locations = new ArrayList<>();
                     }
 
                     if (menu.locations.size() > 0) {
@@ -670,4 +911,42 @@ public class MenusFragment extends Fragment {
         return menu;
     }
 
+    private void saveMenuBackground(@NonNull final MenuModel menu) {
+        new AsyncTask<Void, Void, Boolean>() {
+            @Override protected Boolean doInBackground(Void... params) {
+                MenuTable.saveMenu(menu);
+                return null;
+            }
+
+            @Override protected void onPostExecute(Boolean result) { }
+        }.execute();
+    }
+
+    @Override public void onSettingsUpdated(Exception error) {
+        if (mDialog != null) {
+            mDialog.setTypes(getItemTypes());
+        }
+    }
+
+    @Override public void onSettingsSaved(Exception error) {
+        // no-op
+    }
+
+    @Override public void onCredentialsValidated(Exception error) {
+        // no-op
+    }
+
+    private void showAlertDialog(DialogInterface.OnClickListener clickListener) {
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(
+                getActivity());
+        dialogBuilder.setTitle(getResources().getText(R.string.menu_item_changes_not_saved_title));
+        dialogBuilder.setMessage(getResources().getText(R.string.menu_item_changes_not_saved));
+        dialogBuilder.setPositiveButton(getResources().getText(R.string.yes),
+                clickListener);
+        dialogBuilder.setNegativeButton(
+                getResources().getText(R.string.no),
+                null);
+        dialogBuilder.setCancelable(true);
+        dialogBuilder.create().show();
+    }
 }
