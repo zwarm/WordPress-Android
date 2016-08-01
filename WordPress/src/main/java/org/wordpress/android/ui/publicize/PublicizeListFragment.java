@@ -98,13 +98,13 @@ public class PublicizeListFragment extends PublicizeBaseFragment {
     }
 
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
 
-        if (context instanceof PublicizeManageConnectionsListener) {
-            mListener = (PublicizeManageConnectionsListener) context;
+        if (activity instanceof PublicizeManageConnectionsListener) {
+            mListener = (PublicizeManageConnectionsListener) activity;
         } else {
-            throw new RuntimeException(context.toString() + " must implement PublicizeManageConnectionsListener");
+            throw new RuntimeException(activity.toString() + " must implement PublicizeManageConnectionsListener");
         }
     }
 
