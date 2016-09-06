@@ -29,6 +29,7 @@ import org.wordpress.android.models.ReaderTag;
 import org.wordpress.android.models.ReaderTagType;
 import org.wordpress.android.ui.main.WPMainActivity;
 import org.wordpress.android.ui.reader.ReaderActivityLauncher.OpenUrlType;
+import org.wordpress.android.ui.reader.ReaderActivityLauncher.PhotoViewerOption;
 import org.wordpress.android.ui.reader.ReaderInterfaces.AutoHideToolbarListener;
 import org.wordpress.android.ui.reader.ReaderTypes.ReaderPostListType;
 import org.wordpress.android.ui.reader.actions.ReaderActions;
@@ -63,6 +64,8 @@ import org.wordpress.android.widgets.WPNetworkImageView;
 import org.wordpress.android.widgets.WPScrollView;
 import org.wordpress.android.widgets.WPScrollView.ScrollDirectionListener;
 
+import java.util.EnumSet;
+
 import de.greenrobot.event.EventBus;
 
 public class ReaderPostDetailFragment extends Fragment
@@ -86,6 +89,7 @@ public class ReaderPostDetailFragment extends Fragment
     private ReaderWebView mReaderWebView;
     private ReaderLikingUsersView mLikingUsersView;
     private View mLikingUsersDivider;
+    private View mLikingUsersLabel;
 
     private boolean mHasAlreadyUpdatedPost;
     private boolean mHasAlreadyRequestedPost;
@@ -186,6 +190,7 @@ public class ReaderPostDetailFragment extends Fragment
         mLayoutFooter = (ViewGroup) view.findViewById(R.id.layout_post_detail_footer);
         mLikingUsersView = (ReaderLikingUsersView) view.findViewById(R.id.layout_liking_users_view);
         mLikingUsersDivider = view.findViewById(R.id.layout_liking_users_divider);
+        mLikingUsersLabel = view.findViewById(R.id.text_liking_users_label);
 
         // setup the ReaderWebView
         mReaderWebView = (ReaderWebView) view.findViewById(R.id.reader_webview);
@@ -438,8 +443,10 @@ public class ReaderPostDetailFragment extends Fragment
         // with the correct info once the new post loads
         getView().findViewById(R.id.container_related_posts).setVisibility(View.GONE);
         getView().findViewById(R.id.text_related_posts_label).setVisibility(View.GONE);
+
         mLikingUsersView.setVisibility(View.GONE);
         mLikingUsersDivider.setVisibility(View.GONE);
+        mLikingUsersLabel.setVisibility(View.GONE);
 
         // clear the webView - otherwise it will remain scrolled to where the user scrolled to
         mReaderWebView.clearContent();
@@ -482,19 +489,21 @@ public class ReaderPostDetailFragment extends Fragment
         // add a separate view for each related post
         LayoutInflater inflater = LayoutInflater.from(getActivity());
         int imageSize = DisplayUtils.dpToPx(getActivity(), getResources().getDimensionPixelSize(R.dimen.reader_related_post_image_size));
-        for (final ReaderRelatedPost relatedPost : relatedPosts) {
+        for (int index = 0; index < relatedPosts.size(); index++) {
+            final ReaderRelatedPost relatedPost = relatedPosts.get(index);
+
             View postView = inflater.inflate(R.layout.reader_related_post, container, false);
             TextView txtTitle = (TextView) postView.findViewById(R.id.text_related_post_title);
-            TextView txtSubtitle = (TextView) postView.findViewById(R.id.text_related_post_subtitle);
+            TextView txtByline = (TextView) postView.findViewById(R.id.text_related_post_byline);
             WPNetworkImageView imgFeatured = (WPNetworkImageView) postView.findViewById(R.id.image_related_post);
 
             txtTitle.setText(relatedPost.getTitle());
-            txtSubtitle.setText(relatedPost.getSubtitle());
+            txtByline.setText(relatedPost.getByline());
 
             imgFeatured.setVisibility(relatedPost.hasFeaturedImage() ? View.VISIBLE : View.GONE);
             if (relatedPost.hasFeaturedImage()) {
                 String imageUrl = PhotonUtils.getPhotonImageUrl(relatedPost.getFeaturedImage(), imageSize, imageSize);
-                imgFeatured.setImageUrl(imageUrl, WPNetworkImageView.ImageType.PHOTO);
+                imgFeatured.setImageUrl(imageUrl, WPNetworkImageView.ImageType.PHOTO_ROUNDED);
                 imgFeatured.setVisibility(View.VISIBLE);
             }
 
@@ -515,6 +524,12 @@ public class ReaderPostDetailFragment extends Fragment
             });
 
             container.addView(postView);
+
+            // add a divider below all but the last related post
+            if (index < relatedPosts.size() - 1) {
+                View dividerView = inflater.inflate(R.layout.reader_related_post_divider, container, false);
+                container.addView(dividerView);
+            }
         }
 
         View label = getView().findViewById(R.id.text_related_posts_label);
@@ -615,6 +630,7 @@ public class ReaderPostDetailFragment extends Fragment
             if (mPost.numLikes > 0 && mLikingUsersView.getVisibility() == View.GONE) {
                 mLikingUsersView.setVisibility(View.INVISIBLE);
                 mLikingUsersDivider.setVisibility(View.INVISIBLE);
+                mLikingUsersLabel.setVisibility(View.INVISIBLE);
             }
         } else {
             countLikes.setVisibility(View.INVISIBLE);
@@ -634,6 +650,7 @@ public class ReaderPostDetailFragment extends Fragment
         if (mPost.numLikes == 0) {
             mLikingUsersView.setVisibility(View.GONE);
             mLikingUsersDivider.setVisibility(View.GONE);
+            mLikingUsersLabel.setVisibility(View.GONE);
             return;
         }
 
@@ -646,6 +663,7 @@ public class ReaderPostDetailFragment extends Fragment
         });
 
         mLikingUsersDivider.setVisibility(View.VISIBLE);
+        mLikingUsersLabel.setVisibility(View.VISIBLE);
         mLikingUsersView.setVisibility(View.VISIBLE);
         mLikingUsersView.showLikingUsers(mPost);
     }
@@ -662,13 +680,17 @@ public class ReaderPostDetailFragment extends Fragment
 
         String postContent = (mRenderer != null ? mRenderer.getRenderedHtml() : null);
         boolean isPrivatePost = (mPost != null && mPost.isPrivate);
+        EnumSet<PhotoViewerOption> options = EnumSet.noneOf(PhotoViewerOption.class);
+        if (isPrivatePost) {
+            options.add(ReaderActivityLauncher.PhotoViewerOption.IS_PRIVATE_IMAGE);
+        }
 
         ReaderActivityLauncher.showReaderPhotoViewer(
                 getActivity(),
                 imageUrl,
                 postContent,
                 sourceView,
-                isPrivatePost,
+                options,
                 startX,
                 startY);
 
@@ -813,13 +835,15 @@ public class ReaderPostDetailFragment extends Fragment
 
             TextView txtTitle = (TextView) getView().findViewById(R.id.text_title);
             TextView txtBlogName = (TextView) getView().findViewById(R.id.text_blog_name);
-            TextView txtAuthor = (TextView) getView().findViewById(R.id.text_author);
-            TextView txtDateLine = (TextView) getView().findViewById(R.id.text_dateline);
+            TextView txtDomain = (TextView) getView().findViewById(R.id.text_domain);
+            TextView txtDateline = (TextView) getView().findViewById(R.id.text_dateline);
             TextView txtTag = (TextView) getView().findViewById(R.id.text_tag);
+
+            WPNetworkImageView imgBlavatar = (WPNetworkImageView) getView().findViewById(R.id.image_blavatar);
+            WPNetworkImageView imgAvatar = (WPNetworkImageView) getView().findViewById(R.id.image_avatar);
 
             ViewGroup layoutHeader = (ViewGroup) getView().findViewById(R.id.layout_post_detail_header);
             ReaderFollowButton followButton = (ReaderFollowButton) layoutHeader.findViewById(R.id.follow_button);
-            WPNetworkImageView imgAvatar = (WPNetworkImageView) getView().findViewById(R.id.image_avatar);
 
             if (!canShowFooter()) {
                 mLayoutFooter.setVisibility(View.GONE);
@@ -863,36 +887,37 @@ public class ReaderPostDetailFragment extends Fragment
 
             if (mPost.hasBlogName()) {
                 txtBlogName.setText(mPost.getBlogName());
-                txtBlogName.setVisibility(View.VISIBLE);
-            } else if (mPost.hasBlogUrl()) {
-                txtBlogName.setText(UrlUtils.getHost(mPost.getBlogUrl()));
-                txtBlogName.setVisibility(View.VISIBLE);
+            } else if (mPost.hasAuthorName()) {
+                txtBlogName.setText(mPost.getAuthorName());
             } else {
-                txtBlogName.setVisibility(View.GONE);
+                txtBlogName.setText(null);
             }
 
-            int avatarSz = getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
             if (mPost.hasBlogUrl()) {
-                String imageUrl = GravatarUtils.blavatarFromUrl(mPost.getBlogUrl(), avatarSz);
-                imgAvatar.setImageUrl(imageUrl, WPNetworkImageView.ImageType.BLAVATAR);
+                int blavatarSz = getResources().getDimensionPixelSize(R.dimen.avatar_sz_medium);
+                String imageUrl = GravatarUtils.blavatarFromUrl(mPost.getBlogUrl(), blavatarSz);
+                imgBlavatar.setImageUrl(imageUrl, WPNetworkImageView.ImageType.BLAVATAR);
+                txtDomain.setText(UrlUtils.getHost(mPost.getBlogUrl()));
             } else {
+                imgBlavatar.showDefaultBlavatarImage();
+                txtDomain.setText(null);
+            }
+
+            if (mPost.hasPostAvatar()) {
+                int avatarSz = getResources().getDimensionPixelSize(R.dimen.avatar_sz_tiny);
                 imgAvatar.setImageUrl(mPost.getPostAvatarForDisplay(avatarSz), WPNetworkImageView.ImageType.AVATAR);
+            } else {
+                imgAvatar.showDefaultGravatarImage();
             }
 
+            String timestamp = DateTimeUtils.javaDateToTimeSpan(mPost.getDisplayDate());
             if (mPost.hasAuthorName()) {
-                txtAuthor.setText(mPost.getAuthorName());
-                txtAuthor.setVisibility(View.VISIBLE);
+                txtDateline.setText(mPost.getAuthorName() + ReaderConstants.UNICODE_BULLET_WITH_SPACE + timestamp);
+            } else if (mPost.hasBlogName()) {
+                txtDateline.setText(mPost.getBlogName() + ReaderConstants.UNICODE_BULLET_WITH_SPACE + timestamp);
             } else {
-                txtAuthor.setVisibility(View.GONE);
+                txtDateline.setText(timestamp);
             }
-
-            String dateLine;
-            if (mPost.hasBlogUrl()) {
-                dateLine = UrlUtils.getHost(mPost.getBlogUrl()) + " \u2022 " + DateTimeUtils.javaDateToTimeSpan(mPost.getDatePublished());
-            } else {
-                dateLine = DateTimeUtils.javaDateToTimeSpan(mPost.getDatePublished());
-            }
-            txtDateLine.setText(dateLine);
 
             final String tagToDisplay = mPost.getTagForDisplay(null);
             if (!TextUtils.isEmpty(tagToDisplay)) {
@@ -936,8 +961,8 @@ public class ReaderPostDetailFragment extends Fragment
                     if (!mHasAlreadyUpdatedPost) {
                         mHasAlreadyUpdatedPost = true;
                         updatePost();
-                        requestRelatedPosts();
                     }
+                    requestRelatedPosts();
                 }
             }, 300);
         } else {
