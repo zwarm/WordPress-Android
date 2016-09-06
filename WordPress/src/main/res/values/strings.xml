@@ -1520,7 +1520,7 @@
     <!--               -->
     <!-- Calypso menus -->
     <!--               -->
-    <string name="uses">uses</string>
+    <string name="uses">Uses</string>
     <string name="location_menu_spinner_title">%d menu areas in this theme</string>
     <string name="menus_spinner_title">%d menus available</string>
     <string name="menus_spinner_empty">No menus loaded for this site</string>
