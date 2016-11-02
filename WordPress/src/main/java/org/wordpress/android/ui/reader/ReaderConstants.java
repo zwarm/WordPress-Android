@@ -11,6 +11,8 @@ public class ReaderConstants {
 
     public static final int MIN_FEATURED_IMAGE_WIDTH = 640;                 // min width for an image to be suitable featured image
 
+    public static final long DISCOVER_SITE_ID = 53424024;                    // site id for discover.wordpress.com
+
     // min size for images in post content to be shown in a gallery (thumbnail strip) - matches
     // the Calypso web reader
     public static int MIN_GALLERY_IMAGE_WIDTH  = 144;
@@ -21,6 +23,7 @@ public class ReaderConstants {
 
     // intent arguments / keys
     static final String ARG_TAG               = "tag";
+    static final String ARG_IS_FEED           = "is_feed";
     static final String ARG_BLOG_ID           = "blog_id";
     static final String ARG_FEED_ID           = "feed_id";
     static final String ARG_POST_ID           = "post_id";
