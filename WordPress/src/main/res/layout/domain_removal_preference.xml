@@ -7,7 +7,10 @@
 
     <TextView
         android:id="@+id/domain"
+        android:paddingStart="@dimen/start_over_preference_margin_small"
         android:paddingLeft="@dimen/start_over_preference_margin_small"
+        android:paddingEnd="0dp"
+        android:paddingRight="0dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/primary_domain" />

@@ -29,8 +29,8 @@
         <org.wordpress.android.widgets.WPTextView
             android:id="@+id/text_title"
             style="@style/ReaderTextView.Post.Title"
-            android:layout_marginLeft="@dimen/margin_extra_large"
-            android:layout_marginRight="@dimen/margin_extra_large"
+            android:layout_marginStart="@dimen/margin_extra_large"
+            android:layout_marginEnd="@dimen/margin_extra_large"
             android:layout_marginTop="@dimen/margin_extra_large"
             tools:text="text_title" />
 
@@ -38,8 +38,8 @@
             android:id="@+id/text_excerpt"
             style="@style/ReaderTextView.Post.Excerpt"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/margin_extra_large"
-            android:layout_marginRight="@dimen/margin_extra_large"
+            android:layout_marginStart="@dimen/margin_extra_large"
+            android:layout_marginEnd="@dimen/margin_extra_large"
             android:layout_marginTop="@dimen/margin_medium"
             android:maxLines="4"
             tools:text="text_excerpt" />
@@ -49,8 +49,8 @@
             style="@style/ReaderTextView.Date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/margin_extra_large"
-            android:layout_marginRight="@dimen/margin_extra_large"
+            android:layout_marginStart="@dimen/margin_extra_large"
+            android:layout_marginEnd="@dimen/margin_extra_large"
             android:layout_marginTop="@dimen/margin_medium"
             tools:text="text_date" />
 
@@ -58,13 +58,14 @@
             android:id="@+id/text_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/margin_extra_large"
-            android:layout_marginRight="@dimen/margin_extra_large"
+            android:layout_marginStart="@dimen/margin_extra_large"
+            android:layout_marginEnd="@dimen/margin_extra_large"
             android:layout_marginTop="@dimen/margin_medium"
             android:gravity="center_vertical"
             android:textColor="@color/grey_darken_10"
             android:textSize="@dimen/text_sz_small"
             android:visibility="gone"
+            tools:drawableStart="@drawable/noticon_scheduled"
             tools:drawableLeft="@drawable/noticon_scheduled"
             tools:text="text_status"
             tools:visibility="visible" />

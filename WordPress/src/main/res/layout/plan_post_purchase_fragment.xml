@@ -5,8 +5,8 @@
     android:id="@+id/percent_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingLeft="@dimen/content_margin"
-    android:paddingRight="@dimen/content_margin"
+    android:paddingStart="@dimen/content_margin"
+    android:paddingEnd="@dimen/content_margin"
     tools:background="@color/blue_wordpress">
 
     <ImageView

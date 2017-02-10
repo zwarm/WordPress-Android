@@ -16,7 +16,9 @@
             android:layout_height="wrap_content"
             android:background="@color/grey_lighten_30"
             android:clickable="true"
+            android:paddingStart="8dp"
             android:paddingLeft="8dp"
+            android:paddingEnd="16dp"
             android:paddingRight="16dp">
 
             <org.wordpress.android.ui.CustomSpinner
@@ -24,8 +26,7 @@
                 style="@style/DropDownNav.WordPress"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:clickable="false"
-                android:paddingLeft="0dp"/>
+                android:clickable="false" />
         </FrameLayout>
 
         <org.wordpress.android.widgets.WPTextView
@@ -47,7 +48,9 @@
                 android:gravity="center"
                 android:horizontalSpacing="@dimen/margin_small"
                 android:numColumns="@integer/media_grid_num_columns"
+                android:paddingStart="@dimen/margin_small"
                 android:paddingLeft="@dimen/margin_small"
+                android:paddingEnd="@dimen/margin_small"
                 android:paddingRight="@dimen/margin_small"
                 android:scrollbarStyle="outsideOverlay"
                 android:stretchMode="columnWidth"
@@ -72,7 +75,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/empty_list_title_bottom_margin"
+            android:layout_marginStart="@dimen/empty_list_title_side_margin"
             android:layout_marginLeft="@dimen/empty_list_title_side_margin"
+            android:layout_marginEnd="@dimen/empty_list_title_side_margin"
             android:layout_marginRight="@dimen/empty_list_title_side_margin"
             android:text="@string/media_empty_list_custom_date"
             app:fixWidowWords="true"/>

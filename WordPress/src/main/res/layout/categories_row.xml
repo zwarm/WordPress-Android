@@ -18,8 +18,8 @@
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:gravity="center_vertical"
             android:textColor="#464646"
-            android:paddingLeft="6dip"
-            android:paddingRight="6dip"
+            android:paddingStart="6dip"
+            android:paddingEnd="6dip"
             android:checkMark="?android:attr/listChoiceIndicatorMultiple"
             android:id="@+id/categoryRowText"/>
 </org.wordpress.android.widgets.CheckedLinearLayout>

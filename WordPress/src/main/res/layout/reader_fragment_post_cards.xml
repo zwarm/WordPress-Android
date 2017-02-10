@@ -25,8 +25,8 @@
         android:gravity="center_horizontal"
         android:orientation="vertical"
         android:paddingBottom="@dimen/margin_large"
-        android:paddingLeft="24dp"
-        android:paddingRight="24dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
         android:paddingTop="@dimen/margin_large"
         android:visibility="gone"
         tools:targetApi="LOLLIPOP"
@@ -53,6 +53,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:layout_marginStart="@dimen/margin_large"
         android:layout_marginLeft="@dimen/margin_large"
         android:visibility="gone"
         tools:visibility="visible" />

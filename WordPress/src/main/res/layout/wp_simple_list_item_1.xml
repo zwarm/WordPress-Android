@@ -16,7 +16,9 @@
         android:layout_width="match_parent"
         android:minHeight="?android:attr/listPreferredItemHeightSmall"
         android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+        android:paddingRight="?android:attr/listPreferredItemPaddingRight"
         android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+        android:paddingLeft="?android:attr/listPreferredItemPaddingLeft"
         android:textAppearance="?android:attr/textAppearanceListItemSmall" >
     </org.wordpress.android.widgets.WPTextView>
 

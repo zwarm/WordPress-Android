@@ -23,7 +23,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal|bottom"
             android:baselineAligned="true"
-            android:gravity="right"
+            android:gravity="end"
             android:orientation="horizontal">
 
             <ImageView
@@ -98,9 +98,11 @@
                     style="@style/WordPress.NUXFlatButtonNoBg"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
                     android:layout_alignParentRight="true"
                     android:layout_alignParentTop="false"
                     android:layout_alignTop="@+id/icon_switcher"
+                    android:layout_marginEnd="16dp"
                     android:layout_marginRight="16dp"
                     android:contentDescription="@string/help"
                     app:srcCompat="@drawable/dashicon_info"
@@ -112,8 +114,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="@color/white"
-                android:paddingLeft="@dimen/margin_extra_large"
-                android:paddingRight="@dimen/margin_extra_large"
+                android:paddingStart="@dimen/margin_extra_large"
+                android:paddingEnd="@dimen/margin_extra_large"
                 android:paddingBottom="@dimen/margin_extra_large"
                 android:gravity="center_horizontal"
                 android:text="@string/sign_in_jetpack"
@@ -142,9 +144,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="false"
+                    android:layout_alignParentRight="false"
                     android:layout_alignParentStart="false"
+                    android:layout_alignParentLeft="false"
                     android:layout_centerVertical="true"
                     android:layout_gravity="center_horizontal"
+                    android:layout_marginStart="10dp"
                     android:layout_marginLeft="10dp"
                     app:srcCompat="@drawable/gridicons_user"
                     android:tint="@color/grey_darken_10" />
@@ -162,6 +167,7 @@
                     style="@style/WordPress.NUXEditText"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="38dp"
                     android:layout_marginRight="38dp"
                     android:hint="@string/password"
                     android:maxLength="@integer/max_length_password"
@@ -172,9 +178,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="false"
+                    android:layout_alignParentRight="false"
                     android:layout_alignParentStart="false"
+                    android:layout_alignParentLeft="false"
                     android:layout_centerVertical="true"
                     android:layout_gravity="center_horizontal"
+                    android:layout_marginStart="10dp"
                     android:layout_marginLeft="10dp"
                     app:srcCompat="@drawable/gridicons_lock"
                     android:tint="@color/grey_darken_10" />
@@ -186,8 +195,10 @@
                     android:layout_alignParentEnd="false"
                     android:layout_alignParentRight="true"
                     android:layout_alignParentStart="false"
+                    android:layout_alignParentLeft="false"
                     android:layout_centerVertical="true"
                     android:layout_gravity="center_horizontal"
+                    android:layout_marginEnd="16dp"
                     android:layout_marginRight="16dp"
                     app:srcCompat="@drawable/dashicon_eye_closed"
                     android:tint="@color/nux_eye_icon_color_closed" />
@@ -235,9 +246,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="false"
+                    android:layout_alignParentRight="false"
                     android:layout_alignParentStart="false"
+                    android:layout_alignParentLeft="false"
                     android:layout_centerVertical="true"
                     android:layout_gravity="center_horizontal"
+                    android:layout_marginStart="10dp"
                     android:layout_marginLeft="10dp"
                     app:srcCompat="@drawable/gridicons_globe"
                     android:tint="@color/grey_darken_10" />
@@ -245,8 +259,8 @@
             <RelativeLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="16dp"
-                android:layout_marginRight="16dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
                 android:layout_marginTop="16dp">
 
                 <org.wordpress.android.widgets.WPTextView
@@ -301,8 +315,8 @@
                     android:id="@+id/two_step_footer_label"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/margin_extra_large"
-                    android:layout_marginRight="@dimen/margin_extra_large"
+                    android:layout_marginStart="@dimen/margin_extra_large"
+                    android:layout_marginEnd="@dimen/margin_extra_large"
                     android:gravity="center_horizontal"
                     android:text="@string/two_step_footer_label"
                     android:textColor="@color/white"
@@ -312,8 +326,8 @@
                     android:id="@+id/two_step_footer_button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/margin_extra_large"
-                    android:layout_marginRight="@dimen/margin_extra_large"
+                    android:layout_marginStart="@dimen/margin_extra_large"
+                    android:layout_marginEnd="@dimen/margin_extra_large"
                     android:background="@drawable/selectable_background_wordpress"
                     android:text="@string/two_step_footer_button"
                     android:textColor="@color/white" />
@@ -325,8 +339,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginRight="16dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
                 android:text="@string/forgot_password" />
 
         </org.wordpress.android.widgets.WPLinearLayoutSizeBound>
@@ -346,8 +360,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="@dimen/nux_main_button_height"
                 android:layout_gravity="center"
-                android:layout_marginLeft="16dp"
-                android:layout_marginRight="16dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
                 android:gravity="center"
                 android:text="@string/nux_add_selfhosted_blog" />
 
@@ -362,8 +376,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="@dimen/nux_main_button_height"
                 android:layout_gravity="center"
-                android:layout_marginLeft="16dp"
-                android:layout_marginRight="16dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
                 android:gravity="center"
                 android:text="@string/nux_welcome_create_account" />
         </org.wordpress.android.widgets.WPLinearLayoutSizeBound>

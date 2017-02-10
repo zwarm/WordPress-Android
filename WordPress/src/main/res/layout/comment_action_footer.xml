@@ -11,14 +11,15 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:baselineAligned="false">
 
         <!-- like and moderate buttons don't use a compound drawable so the icon can be animated when tapped -->
         <LinearLayout
             android:id="@+id/btn_like"
             android:background="@drawable/moderate_button_selector"
-            android:paddingRight="@dimen/margin_small"
-            android:paddingLeft="@dimen/margin_small"
+            android:paddingEnd="@dimen/margin_small"
+            android:paddingStart="@dimen/margin_small"
             android:paddingBottom="@dimen/margin_medium"
             android:gravity="center"
             android:clickable="true"
@@ -47,8 +48,8 @@
         <LinearLayout
             android:id="@+id/btn_moderate"
             android:background="@drawable/moderate_button_selector"
-            android:paddingRight="@dimen/margin_small"
-            android:paddingLeft="@dimen/margin_small"
+            android:paddingEnd="@dimen/margin_small"
+            android:paddingStart="@dimen/margin_small"
             android:paddingBottom="@dimen/margin_medium"
             android:gravity="center"
             android:clickable="true"
@@ -77,8 +78,8 @@
         <LinearLayout
             android:id="@+id/btn_edit"
             android:visibility="gone"
-            android:paddingRight="@dimen/margin_small"
-            android:paddingLeft="@dimen/margin_small"
+            android:paddingEnd="@dimen/margin_small"
+            android:paddingStart="@dimen/margin_small"
             android:paddingBottom="@dimen/margin_medium"
             android:gravity="center"
             android:clickable="true"
@@ -91,8 +92,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingTop="@dimen/margin_medium"
-                android:paddingLeft="@dimen/margin_medium"
-                android:paddingRight="@dimen/margin_medium"
+                android:paddingStart="@dimen/margin_medium"
+                android:paddingEnd="@dimen/margin_medium"
                 android:paddingBottom="0dp"
                 app:srcCompat="@drawable/gridicons_pencil"
                 android:contentDescription="@string/edit_comment" />
@@ -109,8 +110,8 @@
         <LinearLayout
             android:id="@+id/btn_trash"
             android:visibility="gone"
-            android:paddingRight="@dimen/margin_small"
-            android:paddingLeft="@dimen/margin_small"
+            android:paddingEnd="@dimen/margin_small"
+            android:paddingStart="@dimen/margin_small"
             android:paddingBottom="@dimen/margin_medium"
             android:gravity="center"
             android:clickable="true"
@@ -123,8 +124,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingTop="@dimen/margin_medium"
-                android:paddingLeft="@dimen/margin_medium"
-                android:paddingRight="@dimen/margin_medium"
+                android:paddingStart="@dimen/margin_medium"
+                android:paddingEnd="@dimen/margin_medium"
                 android:paddingBottom="0dp"
                 app:srcCompat="@drawable/gridicons_trash"
                 android:contentDescription="@string/edit_comment" />
@@ -141,8 +142,8 @@
         <LinearLayout
             android:id="@+id/btn_spam"
             android:visibility="gone"
-            android:paddingRight="@dimen/margin_small"
-            android:paddingLeft="@dimen/margin_small"
+            android:paddingEnd="@dimen/margin_small"
+            android:paddingStart="@dimen/margin_small"
             android:paddingBottom="@dimen/margin_medium"
             android:gravity="center"
             android:clickable="true"
@@ -155,8 +156,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingTop="@dimen/margin_medium"
-                android:paddingLeft="@dimen/margin_medium"
-                android:paddingRight="@dimen/margin_medium"
+                android:paddingStart="@dimen/margin_medium"
+                android:paddingEnd="@dimen/margin_medium"
                 android:paddingBottom="0dp"
                 app:srcCompat="@drawable/gridicons_spam"
                 android:contentDescription="@string/mnu_comment_spam" />

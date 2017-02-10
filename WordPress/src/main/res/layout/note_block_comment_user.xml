@@ -6,8 +6,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingLeft="@dimen/margin_extra_large"
-    android:paddingRight="@dimen/margin_extra_large"
+    android:paddingStart="@dimen/margin_extra_large"
+    android:paddingEnd="@dimen/margin_extra_large"
     android:paddingTop="@dimen/comment_avatar_margin_top">
 
     <LinearLayout
@@ -61,7 +61,9 @@
                     android:id="@+id/user_comment_bullet"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/margin_small"
                     android:layout_marginLeft="@dimen/margin_small"
+                    android:layout_marginEnd="@dimen/margin_small"
                     android:layout_marginRight="@dimen/margin_small"
                     android:includeFontPadding="false"
                     android:text="@string/bullet"

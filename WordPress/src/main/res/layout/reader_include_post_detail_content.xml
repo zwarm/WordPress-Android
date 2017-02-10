@@ -4,7 +4,6 @@
     included by ReaderPostDetailFragment
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/layout_post_detail_content"
     android:layout_width="wrap_content"
@@ -14,7 +13,9 @@
     <org.wordpress.android.widgets.WPTextView
         android:id="@+id/text_title"
         style="@style/ReaderTextView.Post.Title.Detail"
+        android:layout_alignStart="@+id/reader_webview"
         android:layout_alignLeft="@+id/reader_webview"
+        android:layout_alignEnd="@+id/reader_webview"
         android:layout_alignRight="@+id/reader_webview"
         tools:text="text_title" />
 
@@ -77,6 +78,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
+            android:layout_marginEnd="@dimen/margin_large"
             android:layout_marginRight="@dimen/margin_large"
             android:textColor="@color/grey_darken_10"
             android:textSize="@dimen/text_sz_large"

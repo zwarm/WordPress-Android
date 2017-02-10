@@ -2,7 +2,6 @@
 
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
@@ -11,8 +10,8 @@
         android:id="@+id/number_picker_switch"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="24dp"
-        android:layout_marginRight="24dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
         android:textSize="@dimen/text_sz_large"
         android:textColor="@color/calypso_title_text" />
 
@@ -20,8 +19,8 @@
         android:id="@+id/number_picker_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="24dp"
-        android:layout_marginRight="24dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
         android:textSize="@dimen/text_sz_small"
         android:textColor="@color/grey_darken_10" />
 
@@ -35,9 +34,9 @@
             android:id="@+id/number_picker_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="24dp"
+            android:layout_marginStart="24dp"
             android:layout_marginTop="18dp"
-            android:layout_marginRight="24dp"
+            android:layout_marginEnd="24dp"
             android:layout_marginBottom="8dp"
             android:duplicateParentState="true"
             android:textSize="@dimen/text_sz_large"

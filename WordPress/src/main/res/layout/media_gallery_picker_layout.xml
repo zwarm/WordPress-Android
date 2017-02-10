@@ -5,8 +5,8 @@
           android:layout_height="match_parent"
           android:scrollbarStyle="outsideOverlay"
           android:stretchMode="columnWidth"
-          android:paddingLeft="@dimen/margin_small"
-          android:paddingRight="@dimen/margin_small"
+          android:paddingStart="@dimen/margin_small"
+          android:paddingEnd="@dimen/margin_small"
           android:verticalSpacing="@dimen/margin_small"
           android:horizontalSpacing="@dimen/margin_small"
           android:numColumns="@integer/media_grid_num_columns"/>

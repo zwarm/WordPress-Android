@@ -6,6 +6,6 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:textColor="#ffffff"
-    android:paddingRight="0dp"
-    android:paddingLeft="0dp"
+    android:paddingEnd="0dp"
+    android:paddingStart="0dp"
     tools:text="spinner item"/>

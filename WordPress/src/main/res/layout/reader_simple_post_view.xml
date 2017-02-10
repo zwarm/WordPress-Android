@@ -23,6 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/margin_medium"
+        android:layout_toEndOf="@+id/image_featured"
         android:layout_toRightOf="@+id/image_featured"
         android:visibility="gone"
         tools:visibility="visible">
@@ -31,8 +32,10 @@
             android:id="@+id/simple_post_follow_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
+            android:layout_marginStart="@dimen/margin_medium"
             android:layout_marginLeft="@dimen/margin_medium"
             android:padding="@dimen/reader_follow_button_padding"
             app:wpShowFollowButtonCaption="false" />
@@ -41,6 +44,7 @@
             android:id="@+id/image_avatar"
             style="@style/ReaderImageView.Avatar.ExtraSmall"
             android:layout_centerVertical="true"
+            android:layout_marginEnd="@dimen/margin_medium"
             android:layout_marginRight="@dimen/margin_medium"
             tools:src="@drawable/gravatar_placeholder" />
 
@@ -48,7 +52,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
+            android:layout_toStartOf="@+id/simple_post_follow_button"
             android:layout_toLeftOf="@+id/simple_post_follow_button"
+            android:layout_toEndOf="@+id/image_avatar"
             android:layout_toRightOf="@+id/image_avatar"
             android:orientation="vertical">
 
@@ -80,6 +86,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/layout_simple_post_site_header"
+        android:layout_toEndOf="@+id/image_featured"
         android:layout_toRightOf="@+id/image_featured"
         android:ellipsize="end"
         android:maxLines="2"
@@ -95,6 +102,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/text_simple_post_title"
         android:layout_marginTop="@dimen/margin_small"
+        android:layout_toEndOf="@+id/image_featured"
         android:layout_toRightOf="@+id/image_featured"
         android:ellipsize="end"
         android:maxLines="3"

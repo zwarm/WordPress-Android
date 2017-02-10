@@ -4,7 +4,6 @@
     included by ReaderPostDetailFragment
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     xmlns:wp="http://schemas.android.com/apk/res-auto"
     android:id="@+id/layout_post_detail_footer"
     android:layout_width="match_parent"
@@ -23,7 +22,9 @@
         android:layout_width="@dimen/reader_webview_width"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
+        android:layout_marginStart="@dimen/reader_detail_margin"
         android:layout_marginLeft="@dimen/reader_detail_margin"
+        android:layout_marginEnd="@dimen/reader_detail_margin"
         android:layout_marginRight="@dimen/reader_detail_margin"
         android:layout_marginTop="@dimen/margin_medium">
 
@@ -31,6 +32,7 @@
             android:id="@+id/layout_icons"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
             android:orientation="horizontal">
@@ -49,7 +51,9 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:paddingBottom="@dimen/margin_medium"
+                android:paddingStart="@dimen/margin_medium"
                 android:paddingLeft="@dimen/margin_medium"
+                android:paddingEnd="0dp"
                 android:paddingRight="0dp"
                 android:paddingTop="@dimen/margin_medium"
                 wp:readerIcon="like" />

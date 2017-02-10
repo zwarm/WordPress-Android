@@ -10,7 +10,8 @@
     <ImageView android:layout_width="@dimen/category_row_height"
                android:layout_height="@dimen/category_row_height"
                app:srcCompat="@drawable/ic_level_indicator"
-               android:id="@+id/categoryRowLevelIndicator" android:scaleType="fitEnd"/>
+               android:id="@+id/categoryRowLevelIndicator"
+               android:scaleType="fitEnd"/>
     <TextView
             android:orientation="vertical"
             android:layout_width="fill_parent"
@@ -18,8 +19,8 @@
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:gravity="center_vertical"
             android:textColor="#464646"
-            android:paddingLeft="6dip"
-            android:paddingRight="6dip"
+            android:paddingStart="6dip"
+            android:paddingEnd="6dip"
             android:checkMark="?android:attr/listChoiceIndicatorMultiple"
             android:id="@+id/categoryRowText"/>
 </LinearLayout>

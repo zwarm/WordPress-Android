@@ -10,8 +10,8 @@
         android:layout_height="wrap_content"
         android:paddingTop="@dimen/margin_medium"
         android:paddingBottom="@dimen/margin_medium"
-        android:paddingLeft="@dimen/margin_extra_large"
-        android:paddingRight="@dimen/margin_extra_large"
+        android:paddingStart="@dimen/margin_extra_large"
+        android:paddingEnd="@dimen/margin_extra_large"
         android:orientation="vertical">
 
         <org.wordpress.android.widgets.WPTextView
@@ -41,6 +41,7 @@
             android:layout_height="wrap_content"
             android:paddingTop="@dimen/margin_small"
             android:paddingBottom="@dimen/margin_small"
+            android:layout_marginStart="@dimen/margin_medium"
             android:layout_marginLeft="@dimen/margin_medium"
             android:background="@drawable/selectable_background_wordpress"
             android:text="@string/immediately"
@@ -78,7 +79,9 @@
 
             <org.wordpress.android.widgets.FlowLayout
                 android:id="@+id/sectionCategories"
+                android:layout_marginStart="8dp"
                 android:layout_marginLeft="8dp"
+                android:layout_marginEnd="8dp"
                 android:layout_marginRight="8dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
@@ -87,7 +90,9 @@
                 android:id="@+id/tags"
                 android:layout_width="match_parent"
                 android:layout_marginTop="@dimen/margin_small"
+                android:layout_marginStart="@dimen/margin_small"
                 android:layout_marginLeft="@dimen/margin_small"
+                android:layout_marginEnd="@dimen/margin_small"
                 android:layout_marginRight="@dimen/margin_small"
                 android:layout_height="wrap_content"
                 android:textSize="@dimen/text_sz_large"
@@ -100,7 +105,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/margin_extra_large"
+            android:layout_marginStart="@dimen/margin_small"
             android:layout_marginLeft="@dimen/margin_small"
+            android:layout_marginEnd="@dimen/margin_small"
             android:layout_marginRight="@dimen/margin_small"
             android:textSize="@dimen/text_sz_large"
             android:gravity="top"
@@ -111,7 +118,9 @@
         <org.wordpress.android.widgets.WPEditText
             android:id="@+id/post_password"
             android:layout_marginTop="@dimen/margin_extra_large"
+            android:layout_marginStart="@dimen/margin_small"
             android:layout_marginLeft="@dimen/margin_small"
+            android:layout_marginEnd="@dimen/margin_small"
             android:layout_marginRight="@dimen/margin_small"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

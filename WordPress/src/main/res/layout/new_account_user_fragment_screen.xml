@@ -16,7 +16,7 @@
             android:orientation="horizontal"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:gravity="right"
+            android:gravity="end"
             android:baselineAligned="true"
             android:layout_gravity="center_horizontal|bottom">
 
@@ -25,6 +25,7 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/info_button"
                 app:srcCompat="@drawable/dashicon_info"
+                android:layout_marginEnd="16dp"
                 android:layout_marginRight="16dp"
                 android:layout_marginTop="16dp"
                 android:contentDescription="@string/help"
@@ -43,7 +44,9 @@
             <org.wordpress.android.widgets.WPTextView
                 android:id="@+id/create_account_label"
                 android:text="@string/create_account_wpcom"
+                android:layout_marginStart="@dimen/margin_medium"
                 android:layout_marginLeft="@dimen/margin_medium"
+                android:layout_marginEnd="@dimen/margin_medium"
                 android:layout_marginRight="@dimen/margin_medium"
                 style="@style/WordPress.NUXTitle"
                 android:fontFamily="sans-serif-light"
@@ -69,9 +72,12 @@
                     android:id="@+id/imageView"
                     android:layout_gravity="center_horizontal"
                     android:layout_alignParentEnd="false"
+                    android:layout_alignParentRight="false"
                     android:layout_alignParentStart="false"
+                    android:layout_alignParentLeft="false"
                     app:srcCompat="@drawable/dashicon_email"
                     android:layout_centerVertical="true"
+                    android:layout_marginStart="10dp"
                     android:layout_marginLeft="10dp"
                     android:tint="@color/grey_darken_10"/>
 
@@ -100,9 +106,12 @@
                     android:id="@+id/imageView2"
                     android:layout_gravity="center_horizontal"
                     android:layout_alignParentEnd="false"
+                    android:layout_alignParentRight="false"
                     android:layout_alignParentStart="false"
+                    android:layout_alignParentLeft="false"
                     app:srcCompat="@drawable/gridicons_user"
                     android:layout_centerVertical="true"
+                    android:layout_marginStart="10dp"
                     android:layout_marginLeft="10dp"
                     android:tint="@color/grey_darken_10"/>
             </RelativeLayout>
@@ -121,7 +130,8 @@
                     style="@style/WordPress.NUXEditText"
                     android:hint="@string/password"
                     android:maxLength="@integer/max_length_password"
-                    android:layout_marginRight="38dp"/>
+                    android:layout_marginEnd="38dp"
+                    android:layout_marginRight="38dp" />
 
                 <ImageView
                     android:layout_width="wrap_content"
@@ -129,9 +139,12 @@
                     android:id="@+id/imageView3"
                     android:layout_gravity="center_horizontal"
                     android:layout_alignParentEnd="false"
+                    android:layout_alignParentRight="false"
                     android:layout_alignParentStart="false"
+                    android:layout_alignParentLeft="false"
                     app:srcCompat="@drawable/gridicons_lock"
                     android:layout_centerVertical="true"
+                    android:layout_marginStart="10dp"
                     android:layout_marginLeft="10dp"
                     android:tint="@color/grey_darken_10"/>
 
@@ -140,12 +153,14 @@
                     android:layout_height="wrap_content"
                     android:id="@+id/password_visibility"
                     android:layout_gravity="center_horizontal"
-                    android:layout_alignParentEnd="false"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentRight="true"
                     android:layout_alignParentStart="false"
+                    android:layout_alignParentLeft="false"
                     app:srcCompat="@drawable/dashicon_eye_closed"
                     android:layout_centerVertical="true"
+                    android:layout_marginEnd="16dp"
                     android:layout_marginRight="16dp"
-                    android:layout_alignParentRight="true"
                     android:tint="@color/nux_eye_icon_color_closed"/>
             </RelativeLayout>
 
@@ -164,10 +179,13 @@
                     android:inputType="textUri"
                     android:digits="0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
                     android:clickable="true"
+                    android:paddingStart="0dp"
                     android:paddingLeft="0dp"
                     android:paddingTop="12dp"
+                    android:paddingEnd="0dp"
                     android:paddingRight="0dp"
                     android:paddingBottom="12dp"
+                    android:layout_toStartOf="@+id/textView"
                     android:layout_toLeftOf="@+id/textView"
                     app:persistenceEnabled="true"/>
 
@@ -176,15 +194,20 @@
                     android:layout_height="wrap_content"
                     android:text="@string/dot_wordpress_dot_com_url"
                     android:id="@+id/textView"
-                    android:layout_alignParentEnd="false"
                     android:layout_marginTop="4dp"
+                    android:layout_alignParentEnd="false"
+                    android:layout_alignParentRight="true"
                     android:layout_alignParentStart="false"
+                    android:layout_alignParentLeft="false"
                     android:layout_alignParentTop="false"
+                    android:paddingEnd="8dp"
                     android:paddingRight="8dp"
+                    android:paddingStart="0dp"
+                    android:paddingLeft="0dp"
                     android:enabled="false"
                     android:focusable="false"
-                    android:layout_alignParentRight="true"
                     android:layout_centerVertical="true"
+                    android:layout_marginEnd="4dp"
                     android:layout_marginRight="4dp"
                     android:textColor="@color/grey_darken_10"
                     android:textSize="@dimen/nux_edit_field_font_size"/>
@@ -195,9 +218,12 @@
                     android:id="@+id/imageView4"
                     android:layout_gravity="center_horizontal"
                     android:layout_alignParentEnd="false"
+                    android:layout_alignParentRight="false"
                     android:layout_alignParentStart="false"
+                    android:layout_alignParentLeft="false"
                     app:srcCompat="@drawable/gridicons_globe"
                     android:layout_centerVertical="true"
+                    android:layout_marginStart="10dp"
                     android:layout_marginLeft="10dp"
                     android:tint="@color/grey_darken_10"/>
             </RelativeLayout>
@@ -205,8 +231,8 @@
             <RelativeLayout
                 android:layout_width="wrap_content"
                 android:layout_height="@dimen/nux_main_button_height"
-                android:layout_marginLeft="16dp"
-                android:layout_marginRight="16dp">
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp">
 
                 <org.wordpress.android.widgets.WPTextView
                     style="@style/WordPress.NUXPrimaryButton"
@@ -247,7 +273,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/agree_terms_of_service"
+                android:layout_marginStart="16dp"
                 android:layout_marginLeft="16dp"
+                android:layout_marginEnd="16dp"
                 android:layout_marginRight="16dp"
                 style="@style/WordPress.NUXGreyButtonNoBg"
                 app:fixWidowWords="true"/>

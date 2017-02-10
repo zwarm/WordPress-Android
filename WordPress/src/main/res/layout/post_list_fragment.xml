@@ -31,8 +31,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/empty_list_title_bottom_margin"
-            android:layout_marginLeft="@dimen/empty_list_title_side_margin"
-            android:layout_marginRight="@dimen/empty_list_title_side_margin"
+            android:layout_marginStart="@dimen/empty_list_title_side_margin"
+            android:layout_marginEnd="@dimen/empty_list_title_side_margin"
             android:text="@string/empty_list_default"
             app:fixWidowWords="true" />
 
@@ -64,6 +64,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="end|bottom"
             android:layout_marginBottom="@dimen/fab_margin"
+            android:layout_marginEnd="@dimen/fab_margin"
             android:layout_marginRight="@dimen/fab_margin"
             app:srcCompat="@drawable/gridicon_create_light"
             android:contentDescription="@string/new_post"

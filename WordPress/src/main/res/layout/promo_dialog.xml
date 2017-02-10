@@ -42,7 +42,7 @@
         android:layout_height="52dp"
         android:layout_below="@+id/promo_dialog_text"
         android:padding="8dp"
-        android:gravity="right|end">
+        android:gravity="end">
 
         <android.support.v7.widget.AppCompatButton
             android:id="@+id/promo_dialog_cancel_button"

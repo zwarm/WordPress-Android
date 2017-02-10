@@ -63,7 +63,9 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:paddingTop="@dimen/margin_large"
+                android:paddingStart="@dimen/margin_medium"
                 android:paddingLeft="@dimen/margin_medium"
+                android:paddingEnd="@dimen/margin_extra_small"
                 android:paddingRight="@dimen/margin_extra_small"
                 android:paddingBottom="@dimen/margin_large"
                 android:minHeight="@dimen/stats_barchart_height"
@@ -87,6 +89,8 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     app:srcCompat="@drawable/stats_icon_info"
+                    android:paddingStart="0dp"
+                    android:paddingLeft="0dp"
                     android:paddingEnd="@dimen/margin_medium"
                     android:paddingRight="@dimen/margin_medium"/>
                 <TextView

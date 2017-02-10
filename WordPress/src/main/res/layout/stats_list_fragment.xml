@@ -20,16 +20,16 @@
 
             <org.wordpress.android.widgets.WPTextView
                 android:id="@+id/stats_module_title"
-                android:layout_marginLeft="@dimen/margin_large"
-                android:layout_marginRight="@dimen/margin_large"
+                android:layout_marginStart="@dimen/margin_large"
+                android:layout_marginEnd="@dimen/margin_large"
                 android:layout_marginBottom="@dimen/margin_small"
                 style="@style/StatsModuleTitle" />
 
             <include
                 android:id="@+id/stats_empty_module_placeholder"
                 layout="@layout/stats_empty_module_placeholder"
-                android:layout_marginLeft="@dimen/margin_large"
-                android:layout_marginRight="@dimen/margin_large"
+                android:layout_marginStart="@dimen/margin_large"
+                android:layout_marginEnd="@dimen/margin_large"
                 android:layout_marginTop="@dimen/margin_large"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
@@ -43,8 +43,8 @@
                 android:orientation="horizontal"
                 android:paddingBottom="@dimen/margin_small"
                 android:paddingTop="@dimen/margin_small"
-                android:layout_marginLeft="@dimen/margin_large"
-                android:layout_marginRight="@dimen/margin_large"
+                android:layout_marginStart="@dimen/margin_large"
+                android:layout_marginEnd="@dimen/margin_large"
                 android:visibility="gone"/>
 
             <org.wordpress.android.widgets.WPTextView
@@ -56,8 +56,8 @@
                 android:gravity="center"
                 android:paddingTop="@dimen/margin_large"
                 android:paddingBottom="@dimen/margin_medium"
-                android:layout_marginLeft="@dimen/margin_large"
-                android:layout_marginRight="@dimen/margin_large"
+                android:layout_marginStart="@dimen/margin_large"
+                android:layout_marginEnd="@dimen/margin_large"
                 android:visibility="gone" />
 
             <include
@@ -77,8 +77,8 @@
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/margin_large"
-                    android:layout_marginRight="@dimen/margin_large"
+                    android:layout_marginStart="@dimen/margin_large"
+                    android:layout_marginEnd="@dimen/margin_large"
                     android:paddingTop="@dimen/margin_small"
                     android:paddingBottom="@dimen/margin_small">
 
@@ -87,6 +87,7 @@
                         style="@style/StatsHeader"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
                         android:layout_alignParentLeft="true"
                         tools:text="TITLE" />
 
@@ -95,6 +96,7 @@
                         style="@style/StatsHeader"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
                         android:layout_alignParentRight="true"
                         tools:text="VIEWS" />
                 </RelativeLayout>

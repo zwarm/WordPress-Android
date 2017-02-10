@@ -11,8 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/theme_browser_cardview_margin_large"
-        android:layout_marginLeft="@dimen/theme_browser_cardview_margin_large"
-        android:layout_marginRight="@dimen/theme_browser_cardview_margin_large"
+        android:layout_marginStart="@dimen/theme_browser_cardview_margin_large"
+        android:layout_marginEnd="@dimen/theme_browser_cardview_margin_large"
         card_view:cardCornerRadius="@dimen/cardview_default_radius"
         card_view:cardElevation="@dimen/card_elevation">
 
@@ -48,6 +48,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
+                    android:layout_alignParentStart="true"
                     android:layout_alignParentLeft="true">
 
                     <org.wordpress.android.widgets.WPTextView
@@ -56,6 +57,7 @@
                         android:layout_height="wrap_content"
                         android:textColor="@color/black"
                         android:textStyle="bold"
+                        android:layout_marginStart="@dimen/theme_browser_cardview_header_margin"
                         android:layout_marginLeft="@dimen/theme_browser_cardview_header_margin" />
 
                     <org.wordpress.android.widgets.WPTextView
@@ -64,6 +66,7 @@
                         android:layout_height="wrap_content"
                         android:textStyle="bold"
                         android:textColor="@color/theme_price"
+                        android:layout_marginStart="@dimen/theme_browser_cardview_margin_large"
                         android:layout_marginLeft="@dimen/theme_browser_cardview_margin_large"/>
 
                     <org.wordpress.android.widgets.WPTextView
@@ -76,6 +79,7 @@
                         android:visibility="gone"
                         android:textAllCaps="true"
                         android:text="@string/active"
+                        android:layout_marginStart="@dimen/theme_browser_cardview_margin_large"
                         android:layout_marginLeft="@dimen/theme_browser_cardview_margin_large"/>
 
                 </LinearLayout>
@@ -83,6 +87,7 @@
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
                     android:layout_alignParentRight="true">
 
                     <View

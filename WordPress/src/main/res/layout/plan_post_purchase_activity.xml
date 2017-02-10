@@ -25,8 +25,8 @@
         android:layout_height="?attr/actionBarSize"
         android:layout_alignParentBottom="true"
         android:background="@color/color_primary"
-        android:paddingLeft="@dimen/content_margin"
-        android:paddingRight="@dimen/content_margin">
+        android:paddingStart="@dimen/content_margin"
+        android:paddingEnd="@dimen/content_margin">
 
         <org.wordpress.android.widgets.WPTextView
             android:id="@+id/text_skip"
@@ -46,8 +46,8 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:layout_centerVertical="true"
-            android:layout_marginLeft="@dimen/margin_large"
-            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginStart="@dimen/margin_large"
+            android:layout_marginEnd="@dimen/margin_large"
             android:gravity="center_horizontal"
             android:orientation="horizontal">
 
@@ -55,32 +55,32 @@
                 android:id="@+id/image_indicator_1"
                 android:layout_width="@dimen/plan_indicator_size"
                 android:layout_height="@dimen/plan_indicator_size"
-                android:layout_marginLeft="@dimen/plan_indicator_margin"
-                android:layout_marginRight="@dimen/plan_indicator_margin"
+                android:layout_marginStart="@dimen/plan_indicator_margin"
+                android:layout_marginEnd="@dimen/plan_indicator_margin"
                 android:background="@drawable/indicator_circle_selected"/>
 
             <ImageView
                 android:id="@+id/image_indicator_2"
                 android:layout_width="@dimen/plan_indicator_size"
                 android:layout_height="@dimen/plan_indicator_size"
-                android:layout_marginLeft="@dimen/plan_indicator_margin"
-                android:layout_marginRight="@dimen/plan_indicator_margin"
+                android:layout_marginStart="@dimen/plan_indicator_margin"
+                android:layout_marginEnd="@dimen/plan_indicator_margin"
                 android:background="@drawable/indicator_circle_unselected"/>
 
             <ImageView
                 android:id="@+id/image_indicator_3"
                 android:layout_width="@dimen/plan_indicator_size"
                 android:layout_height="@dimen/plan_indicator_size"
-                android:layout_marginLeft="@dimen/plan_indicator_margin"
-                android:layout_marginRight="@dimen/plan_indicator_margin"
+                android:layout_marginStart="@dimen/plan_indicator_margin"
+                android:layout_marginEnd="@dimen/plan_indicator_margin"
                 android:background="@drawable/indicator_circle_unselected"/>
 
             <ImageView
                 android:id="@+id/image_indicator_4"
                 android:layout_width="@dimen/plan_indicator_size"
                 android:layout_height="@dimen/plan_indicator_size"
-                android:layout_marginLeft="@dimen/plan_indicator_margin"
-                android:layout_marginRight="@dimen/plan_indicator_margin"
+                android:layout_marginStart="@dimen/plan_indicator_margin"
+                android:layout_marginEnd="@dimen/plan_indicator_margin"
                 android:background="@drawable/indicator_circle_unselected"/>
 
         </LinearLayout>
@@ -89,6 +89,7 @@
             android:id="@+id/text_next"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
             android:background="?android:selectableItemBackground"

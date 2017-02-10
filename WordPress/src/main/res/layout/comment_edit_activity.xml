@@ -5,11 +5,11 @@
     android:fillViewport="true"
     android:clipToPadding="false"
     android:paddingBottom="@dimen/margin_large"
-    android:paddingLeft="@dimen/margin_extra_large"
-    android:paddingRight="@dimen/margin_extra_large"
+    android:paddingStart="@dimen/margin_extra_large"
+    android:paddingEnd="@dimen/margin_extra_large"
     android:paddingTop="@dimen/margin_large"
     android:background="@color/white"
-    android:scrollbarStyle="outsideInset" >
+    android:scrollbarStyle="outsideInset">
 
     <RelativeLayout
         android:layout_width="match_parent"

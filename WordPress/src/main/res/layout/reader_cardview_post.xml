@@ -20,8 +20,8 @@
         android:layout_height="wrap_content"
         android:background="?android:selectableItemBackground"
         android:orientation="vertical"
-        android:paddingLeft="@dimen/reader_card_content_padding"
-        android:paddingRight="@dimen/reader_card_content_padding">
+        android:paddingStart="@dimen/reader_card_content_padding"
+        android:paddingEnd="@dimen/reader_card_content_padding">
 
         <RelativeLayout
             android:id="@+id/layout_post_header"
@@ -34,6 +34,7 @@
             <org.wordpress.android.widgets.WPNetworkImageView
                 android:id="@+id/image_avatar_or_blavatar"
                 style="@style/ReaderImageView.Avatar"
+                android:layout_marginEnd="@dimen/margin_large"
                 android:layout_marginRight="@dimen/margin_large"
                 tools:src="@drawable/blavatar_placeholder" />
 
@@ -41,15 +42,23 @@
                 android:id="@+id/follow_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
                 android:layout_alignParentRight="true"
+                android:layout_marginStart="@dimen/margin_large"
                 android:layout_marginLeft="@dimen/margin_large"
+                android:paddingEnd="0dp"
+                android:paddingRight="0dp"
+                android:paddingStart="@dimen/reader_follow_button_padding"
                 android:paddingLeft="@dimen/reader_follow_button_padding" />
 
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/margin_large"
                 android:layout_marginRight="@dimen/margin_large"
+                android:layout_toStartOf="@+id/follow_button"
                 android:layout_toLeftOf="@+id/follow_button"
+                android:layout_toEndOf="@+id/image_avatar_or_blavatar"
                 android:layout_toRightOf="@+id/image_avatar_or_blavatar">
 
                 <org.wordpress.android.widgets.WPTextView
@@ -93,8 +102,9 @@
                 android:id="@+id/text_photo_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="bottom|left"
+                android:layout_gravity="bottom|start"
                 android:layout_marginBottom="@dimen/margin_large"
+                android:layout_marginStart="@dimen/margin_large"
                 android:layout_marginLeft="@dimen/margin_large"
                 android:ellipsize="end"
                 android:maxLines="1"
@@ -150,6 +160,7 @@
             <org.wordpress.android.widgets.WPNetworkImageView
                 android:id="@+id/image_discover_avatar"
                 style="@style/ReaderImageView.Avatar.Small"
+                android:layout_marginEnd="@dimen/margin_large"
                 android:layout_marginRight="@dimen/margin_large"
                 android:background="?android:selectableItemBackground"
                 tools:src="@drawable/gravatar_placeholder" />
@@ -178,7 +189,9 @@
                 android:layout_width="@dimen/reader_count_icon"
                 android:layout_height="@dimen/reader_count_icon"
                 android:layout_centerVertical="true"
+                android:layout_marginStart="-2dp"
                 android:layout_marginLeft="-2dp"
+                android:layout_marginEnd="@dimen/margin_extra_small"
                 android:layout_marginRight="@dimen/margin_extra_small"
                 android:background="?android:selectableItemBackground"
                 app:srcCompat="@drawable/reader_visit" />
@@ -188,6 +201,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
+                android:layout_toEndOf="@+id/image_visit_icon"
                 android:layout_toRightOf="@+id/image_visit_icon"
                 android:background="?android:selectableItemBackground"
                 android:gravity="center_vertical"
@@ -201,6 +215,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignWithParentIfMissing="true"
                 android:layout_centerVertical="true"
+                android:layout_toStartOf="@+id/count_likes"
                 android:layout_toLeftOf="@+id/count_likes"
                 android:padding="@dimen/margin_medium"
                 wp:readerIcon="comment" />
@@ -211,6 +226,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignWithParentIfMissing="true"
                 android:layout_centerVertical="true"
+                android:layout_toStartOf="@+id/image_more"
                 android:layout_toLeftOf="@+id/image_more"
                 android:padding="@dimen/margin_medium"
                 wp:readerIcon="like" />
@@ -219,6 +235,7 @@
                 android:id="@+id/image_more"
                 android:layout_width="@dimen/reader_more_icon"
                 android:layout_height="@dimen/reader_more_icon"
+                android:layout_alignParentEnd="true"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
                 android:background="?android:selectableItemBackground"

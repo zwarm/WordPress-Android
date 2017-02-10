@@ -13,8 +13,8 @@
         android:gravity="center"
         android:orientation="vertical"
         android:layout_weight="1"
-        android:layout_marginLeft="16dp"
-        android:layout_marginRight="16dp">
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp">
 
         <ImageView
             android:id="@+id/nux_dialog_image"
@@ -38,8 +38,8 @@
             android:shadowDy="1"
             android:shadowRadius="2"
             android:fontFamily="sans-serif-light"
-            android:layout_marginLeft="16dp"
-            android:layout_marginRight="16dp"/>
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"/>
 
         <org.wordpress.android.widgets.WPTextView
             android:id="@+id/nux_dialog_description"
@@ -54,8 +54,8 @@
             android:shadowDx="0"
             android:shadowDy="1"
             android:shadowRadius="2"
-            android:layout_marginLeft="16dp"
-            android:layout_marginRight="16dp"/>
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"/>
     </LinearLayout>
 
     <LinearLayout
@@ -64,8 +64,8 @@
         android:layout_marginBottom="8dp"
         android:gravity="center"
         android:layout_width="fill_parent"
-        android:layout_marginLeft="12dp"
-        android:layout_marginRight="12dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
         android:orientation="vertical">
 
         <org.wordpress.android.widgets.WPTextView
