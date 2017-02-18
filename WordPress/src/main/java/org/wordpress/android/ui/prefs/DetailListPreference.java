@@ -215,9 +215,9 @@ public class DetailListPreference extends ListPreference
         }
 
         @Override
-        public View getView(final int position, View convertView, ViewGroup parent) {
+        @NonNull
+        public View getView(final int position, View convertView, @NonNull ViewGroup parent) {
             if (convertView == null) {
-                convertView = View.inflate(getContext(), R.layout.detail_list_preference, null);
             }
 
             final RadioButton radioButton = (RadioButton) convertView.findViewById(R.id.radio);
