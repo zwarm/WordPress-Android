@@ -135,6 +135,9 @@ public class AppPrefs {
 
         // aztec editor available
         AZTEC_EDITOR_AVAILABLE,
+
+        // camera permissions,
+        CAMERA_PERMISSION_ACCESS,
     }
 
     private static SharedPreferences prefs() {
@@ -391,6 +394,14 @@ public class AppPrefs {
         } else {
             return getInt(UndeletablePrefKey.THEME_IMAGE_SIZE_WIDTH);
         }
+    }
+
+    public static boolean hasCameraPermissionBeenShown() {
+        return getBoolean(UndeletablePrefKey.CAMERA_PERMISSION_ACCESS, false);
+    }
+
+    public static void setCameraPermissionShown(boolean wasShown) {
+        setBoolean(UndeletablePrefKey.CAMERA_PERMISSION_ACCESS, wasShown);
     }
 
     // Aztec Editor
