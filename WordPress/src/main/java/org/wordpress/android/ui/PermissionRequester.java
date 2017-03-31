@@ -1,8 +1,11 @@
 package org.wordpress.android.ui;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.pm.PackageManager;
+import android.support.v4.content.ContextCompat;
 
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.util.PermissionUtils;
@@ -22,13 +25,30 @@ public class PermissionRequester {
 
     public void showAndRequestCameraPermission() {
         if (AppPrefs.hasCameraPermissionBeenShown()) {
-            if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(mActivity, 1)) {
+            if (checkCameraAndStoragePermissions(mActivity)) {
 
             }
         } else {
             showCameraSoftAsk();
         }
     }
+
+    public static boolean checkCameraAndStoragePermissions(Activity activity) {
+        return checkPermissions(activity,
+                new String[]{
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.CAMERA});
+    }
+
+    public static boolean checkPermissions(Activity activity, String[] permissionList) {
+        for (String permission : permissionList) {
+            if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     private void showCameraSoftAsk() {
         AlertDialog.Builder builder = new AlertDialog.Builder(mActivity);
