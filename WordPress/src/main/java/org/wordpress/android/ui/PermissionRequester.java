@@ -26,7 +26,9 @@ public class PermissionRequester {
     public void showAndRequestCameraPermission() {
         if (AppPrefs.hasCameraPermissionBeenShown()) {
             if (checkCameraAndStoragePermissions(mActivity)) {
-
+                PermissionUtils.checkAndRequestCameraAndStoragePermissions(mActivity, 1);
+            } else {
+                // go to settings
             }
         } else {
             showCameraSoftAsk();
