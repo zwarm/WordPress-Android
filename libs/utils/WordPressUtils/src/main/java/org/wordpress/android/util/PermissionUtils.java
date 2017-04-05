@@ -1,13 +1,12 @@
 package org.wordpress.android.util;
 
-import android.Manifest;
 import android.Manifest.permission;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.support.v13.app.ActivityCompat;
 import android.support.v13.app.FragmentCompat;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 
 import java.util.ArrayList;
@@ -77,13 +76,6 @@ public class PermissionUtils {
                         permission.CAMERA});
     }
 
-    public static boolean checkAndRequestCameraAndStoragePermissions(Fragment fragment, int requestCode) {
-        return checkAndRequestPermissions(fragment, requestCode, new String[]{
-                permission.WRITE_EXTERNAL_STORAGE,
-                permission.CAMERA
-        });
-    }
-
     public static boolean checkAndRequestCameraAndStoragePermissions(Activity activity, int requestCode) {
         return checkAndRequestPermissions(activity, requestCode, new String[]{
                 permission.WRITE_EXTERNAL_STORAGE,
@@ -97,21 +89,8 @@ public class PermissionUtils {
         });
     }
 
-    public static boolean checkAndRequestStoragePermission(Fragment fragment, int requestCode) {
-        return checkAndRequestPermissions(fragment, requestCode, new String[]{
-                permission.WRITE_EXTERNAL_STORAGE
-        });
-    }
-
     public static boolean checkLocationPermissions(Activity activity, int requestCode) {
         return checkAndRequestPermissions(activity, requestCode, new String[]{
-                permission.ACCESS_FINE_LOCATION,
-                permission.ACCESS_COARSE_LOCATION
-        });
-    }
-
-    public static boolean checkLocationPermissions(Fragment fragment, int requestCode) {
-        return checkAndRequestPermissions(fragment, requestCode, new String[]{
                 permission.ACCESS_FINE_LOCATION,
                 permission.ACCESS_COARSE_LOCATION
         });
