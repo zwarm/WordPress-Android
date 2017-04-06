@@ -49,6 +49,7 @@ import org.wordpress.android.fluxc.store.AccountStore.OnAccountChanged;
 import org.wordpress.android.fluxc.store.SiteStore;
 import org.wordpress.android.networking.GravatarApi;
 import org.wordpress.android.ui.ActivityLauncher;
+import org.wordpress.android.ui.PermissionRequester;
 import org.wordpress.android.ui.RequestCodes;
 import org.wordpress.android.ui.photopicker.PhotoPickerActivity;
 import org.wordpress.android.ui.photopicker.PhotoPickerActivity.PhotoPickerMediaSource;
@@ -208,8 +209,8 @@ public class MeFragment extends Fragment {
                 // and no need to promote the feature any more
                 AppPrefs.setGravatarChangePromoRequired(false);
 
-                if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(MeFragment.this,
-                        CAMERA_AND_MEDIA_PERMISSION_REQUEST_CODE)) {
+                PermissionRequester permissionRequester = new PermissionRequester(getActivity());
+                if (permissionRequester.showAndRequestCameraPermission()) {
                     showPhotoPickerForGravatar();
                 } else {
                     AppLockManager.getInstance().setExtendedTimeout();
