@@ -35,20 +35,7 @@ public class PermissionRequester {
         }
     }
 
-    public static boolean checkCameraAndStoragePermissions(Activity activity) {
-        return checkPermissions(activity,
-                new String[]{
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.CAMERA});
-    }
 
-    public static boolean checkPermissions(Activity activity, String[] permissionList) {
-        for (String permission : permissionList) {
-            if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED) {
-                return false;
-            }
-        }
-        return true;
     }
 
 
