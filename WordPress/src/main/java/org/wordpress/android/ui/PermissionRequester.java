@@ -1,11 +1,9 @@
 package org.wordpress.android.ui;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.pm.PackageManager;
-import android.support.v4.content.ContextCompat;
+import android.content.Intent;
 
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.util.PermissionUtils;
@@ -19,23 +17,24 @@ public class PermissionRequester {
 
     public PermissionRequester(Activity activity) {
         if (activity == null) {
+            return;
+        } else {
             mActivity = activity;
         }
     }
 
-    public void showAndRequestCameraPermission() {
+    public boolean showAndRequestCameraPermission() {
         if (AppPrefs.hasCameraPermissionBeenShown()) {
-            if (checkCameraAndStoragePermissions(mActivity)) {
-                PermissionUtils.checkAndRequestCameraAndStoragePermissions(mActivity, 1);
+            if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(mActivity, 1)) {
+                return true;
             } else {
                 // go to settings
             }
         } else {
             showCameraSoftAsk();
         }
-    }
 
-
+        return false;
     }
 
 
