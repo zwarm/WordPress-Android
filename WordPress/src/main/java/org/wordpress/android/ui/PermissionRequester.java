@@ -58,5 +58,6 @@ public class PermissionRequester {
         });
 
         AlertDialog dialog = builder.create();
+        dialog.show();
     }
 }
