@@ -40,16 +40,16 @@ public class PermissionRequester {
 
     private void showCameraSoftAsk() {
         AlertDialog.Builder builder = new AlertDialog.Builder(mActivity);
-        builder.setMessage("Listen here noob, we're gonna need permission, k?");
-        builder.setTitle("LET US IN");
-        builder.setPositiveButton("K, brah", new DialogInterface.OnClickListener() {
+        builder.setMessage("We require CAMERA and STORAGE permissions. Please select \"Allow\".");
+        builder.setTitle("Permissions Request");
+        builder.setPositiveButton("Understood", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                AppPrefs.setCameraPermissionShown(true);
+                AppPrefs.setCameraPermissionShown(false);
                 showAndRequestCameraPermission();
             }
         });
-        builder.setNegativeButton("Nah, bruh", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton("Not now", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.cancel();
