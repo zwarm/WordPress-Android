@@ -28,7 +28,7 @@ public class PermissionRequester {
             if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(mActivity, 1)) {
                 return true;
             } else {
-                mActivity.startActivityForResult(new Intent(android.provider.Settings.ACTION_SETTINGS), 0);
+                mActivity.startActivityForResult(new Intent(android.provider.Settings.ACTION_APPLICATION_SETTINGS), 0);
             }
         } else {
             showCameraSoftAsk();
