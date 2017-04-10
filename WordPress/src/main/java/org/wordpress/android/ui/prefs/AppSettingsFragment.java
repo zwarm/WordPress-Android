@@ -246,7 +246,7 @@ public class AppSettingsFragment extends PreferenceFragment implements OnPrefere
     }
 
     private boolean handleDevicePreferenceClick() {
-        PermissionUtils.openAppSettings(this);
+        PermissionUtils.openAppSettings(getActivity());
 
         return true;
     }
