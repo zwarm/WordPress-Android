@@ -1,11 +1,9 @@
 package org.wordpress.android.ui.prefs;
 
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.net.Uri;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -25,8 +23,8 @@ import org.wordpress.android.analytics.AnalyticsTracker.Stat;
 import org.wordpress.android.fluxc.store.AccountStore;
 import org.wordpress.android.fluxc.store.SiteStore;
 import org.wordpress.android.util.AnalyticsUtils;
-import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.LanguageUtils;
+import org.wordpress.android.util.PermissionUtils;
 import org.wordpress.android.util.WPPrefUtils;
 
 import java.util.HashMap;
@@ -248,17 +246,7 @@ public class AppSettingsFragment extends PreferenceFragment implements OnPrefere
     }
 
     private boolean handleDevicePreferenceClick() {
-        try {
-            // open specific app info screen
-            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            intent.setData(Uri.parse("package:" + getActivity().getPackageName()));
-            startActivity(intent);
-        } catch (ActivityNotFoundException exception) {
-            AppLog.w(AppLog.T.SETTINGS, exception.getMessage());
-            // open generic apps screen
-            Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS);
-            startActivity(intent);
-        }
+        PermissionUtils.openAppSettings(this);
 
         return true;
     }

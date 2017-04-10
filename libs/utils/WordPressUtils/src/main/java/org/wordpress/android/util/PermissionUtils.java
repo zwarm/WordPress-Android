@@ -3,8 +3,11 @@ package org.wordpress.android.util;
 import android.Manifest.permission;
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.support.v13.app.ActivityCompat;
 import android.support.v13.app.FragmentCompat;
 import android.support.v4.content.ContextCompat;
@@ -94,5 +97,19 @@ public class PermissionUtils {
                 permission.ACCESS_FINE_LOCATION,
                 permission.ACCESS_COARSE_LOCATION
         });
+    }
+
+    public static void openAppSettings(Activity activity) {
+        try {
+            // open specific app info screen
+            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse("package:" + activity.getPackageName()));
+            activity.startActivity(intent);
+        } catch (ActivityNotFoundException exception) {
+            AppLog.w(AppLog.T.SETTINGS, exception.getMessage());
+            // open generic apps screen
+            Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS);
+            activity.startActivity(intent);
+        }
     }
 }
