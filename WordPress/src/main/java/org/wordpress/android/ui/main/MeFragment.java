@@ -209,12 +209,11 @@ public class MeFragment extends Fragment {
                 // and no need to promote the feature any more
                 AppPrefs.setGravatarChangePromoRequired(false);
 
-                PermissionRequester permissionRequester = new PermissionRequester(getActivity());
-                if (permissionRequester.showAndRequestCameraPermission()) {
-                    showPhotoPickerForGravatar();
-                } else {
-                    AppLockManager.getInstance().setExtendedTimeout();
+                if (!AppPrefs.hasCameraPermissionBeenShown()) {
+                    showCameraSoftAsk();
                 }
+
+
             }
         });
         mMyProfileView.setOnClickListener(new View.OnClickListener() {
@@ -608,6 +607,32 @@ public class MeFragment extends Fragment {
                 Toast.makeText(getActivity(), getString(R.string.error_downloading_image), Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    private void showCameraSoftAsk() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setMessage("We require CAMERA and STORAGE permissions. Please select \"Allow\".");
+        builder.setTitle("Permissions Request");
+        builder.setPositiveButton("Understood", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                AppPrefs.setCameraPermissionShown(true);
+                if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(MeFragment.this, CAMERA_AND_MEDIA_PERMISSION_REQUEST_CODE)) {
+                    showPhotoPickerForGravatar();
+                } else {
+                    AppLockManager.getInstance().setExtendedTimeout();
+                }
+            }
+        });
+        builder.setNegativeButton("Not now", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     private void startGravatarUpload(final String filePath) {
