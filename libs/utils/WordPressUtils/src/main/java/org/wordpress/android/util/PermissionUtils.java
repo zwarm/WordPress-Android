@@ -88,6 +88,13 @@ public class PermissionUtils {
                         permission.CAMERA});
     }
 
+    public static boolean areCameraAndStoragePermissionsDenied(Activity activity) {
+        return arePermissionsDenied(activity,
+                new String[]{
+                        permission.WRITE_EXTERNAL_STORAGE,
+                        permission.CAMERA});
+    }
+
     public static boolean checkAndRequestCameraAndStoragePermissions(Activity activity, int requestCode) {
         return checkAndRequestPermissions(activity, requestCode, new String[]{
                 permission.WRITE_EXTERNAL_STORAGE,
