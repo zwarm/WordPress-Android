@@ -72,6 +72,15 @@ public class PermissionUtils {
         return true;
     }
 
+    public static boolean arePermissionsDenied(Activity activity, String[] permissionList) {
+        for (String permission : permissionList) {
+            if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_DENIED) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean checkCameraAndStoragePermissions(Activity activity) {
         return checkPermissions(activity,
                 new String[]{
