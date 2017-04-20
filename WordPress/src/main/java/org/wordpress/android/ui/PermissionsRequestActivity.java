@@ -19,9 +19,16 @@ public class PermissionsRequestActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        overridePendingTransition(0, 0);
         setContentView(R.layout.activity_permissions_request);
         showAndRequestCameraPermission();
         setFinishOnTouchOutside(true);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        overridePendingTransition(0, 0);
     }
 
     public boolean showAndRequestCameraPermission() {
