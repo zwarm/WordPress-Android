@@ -605,7 +605,6 @@
 
         <activity
             android:name=".ui.PermissionsRequestActivity"
-            android:label="@string/title_activity_permissions_request"
             android:theme="@style/NoDisplay"></activity>
     </application>
 </manifest>
