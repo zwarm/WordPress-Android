@@ -11,6 +11,9 @@
         <variable
             name="person"
             type="org.wordpress.android.models.Person" />
+        <variable
+            name="listener"
+            type="org.wordpress.android.ui.people.PeopleListFragment.OnPersonSelectedListener" />
     </data>
 
     <RelativeLayout
@@ -18,7 +21,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?android:selectableItemBackground"
-        android:minHeight="@dimen/people_list_row_height">
+        android:minHeight="@dimen/people_list_row_height"
+        android:onClick="@{() -> listener.onPersonSelected(person)}">
 
         <org.wordpress.android.widgets.WPNetworkImageView
             android:id="@+id/person_avatar"

@@ -345,7 +345,7 @@ public class PeopleListFragment extends Fragment {
             }
         }
 
-        public class PeopleViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        public class PeopleViewHolder extends RecyclerView.ViewHolder {
             private final WPNetworkImageView imgAvatar;
             private final PeopleListRowBinding binding;
 
@@ -353,20 +353,12 @@ public class PeopleListFragment extends Fragment {
                 super(binding.getRoot());
                 this.binding = binding;
                 imgAvatar = (WPNetworkImageView) binding.getRoot().findViewById(R.id.person_avatar);
-                itemView.setOnClickListener(this);
             }
 
             public void bind(Person person) {
                 binding.setPerson(person);
+                binding.setListener(mOnPersonSelectedListener);
                 binding.executePendingBindings();
-            }
-
-            @Override
-            public void onClick(View v) {
-                if (mOnPersonSelectedListener != null) {
-                    Person person = getPerson(getAdapterPosition());
-                    mOnPersonSelectedListener.onPersonSelected(person);
-                }
             }
         }
     }
