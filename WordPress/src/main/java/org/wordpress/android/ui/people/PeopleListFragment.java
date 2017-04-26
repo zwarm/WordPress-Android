@@ -12,10 +12,10 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
+import org.wordpress.android.databinding.PeopleListRowBinding;
 import org.wordpress.android.datasets.PeopleTable;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.models.FilterCriteria;
@@ -27,10 +27,8 @@ import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.GravatarUtils;
 import org.wordpress.android.util.NetworkUtils;
-import org.wordpress.android.util.StringUtils;
 import org.wordpress.android.widgets.WPNetworkImageView;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -327,41 +325,18 @@ public class PeopleListFragment extends Fragment {
 
         @Override
         public PeopleViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = mInflater.inflate(R.layout.people_list_row, parent, false);
-
-            return new PeopleViewHolder(view);
+            return new PeopleViewHolder(PeopleListRowBinding.inflate(mInflater));
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            PeopleViewHolder peopleViewHolder = (PeopleViewHolder) holder;
             final Person person = getPerson(position);
 
             if (person != null) {
+                PeopleViewHolder peopleViewHolder = (PeopleViewHolder) holder;
+                peopleViewHolder.bind(person);
                 String avatarUrl = GravatarUtils.fixGravatarUrl(person.getAvatarUrl(), mAvatarSz);
                 peopleViewHolder.imgAvatar.setImageUrl(avatarUrl, WPNetworkImageView.ImageType.AVATAR);
-                peopleViewHolder.txtDisplayName.setText(StringUtils.unescapeHTML(person.getDisplayName()));
-                if (person.getRole() != null) {
-                    peopleViewHolder.txtRole.setVisibility(View.VISIBLE);
-                    peopleViewHolder.txtRole.setText(StringUtils.capitalize(person.getRole().toDisplayString()));
-                } else {
-                    peopleViewHolder.txtRole.setVisibility(View.GONE);
-                }
-                if (!person.getUsername().isEmpty()) {
-                    peopleViewHolder.txtUsername.setVisibility(View.VISIBLE);
-                    peopleViewHolder.txtUsername.setText(String.format("@%s", person.getUsername()));
-                } else {
-                    peopleViewHolder.txtUsername.setVisibility(View.GONE);
-                }
-                if (person.getPersonType() == Person.PersonType.USER
-                        || person.getPersonType() == Person.PersonType.VIEWER) {
-                    peopleViewHolder.txtSubscribed.setVisibility(View.GONE);
-                } else {
-                    peopleViewHolder.txtSubscribed.setVisibility(View.VISIBLE);
-                    String dateSubscribed = SimpleDateFormat.getDateInstance().format(person.getDateSubscribed());
-                    String dateText = getString(R.string.follower_subscribed_since, dateSubscribed);
-                    peopleViewHolder.txtSubscribed.setText(dateText);
-                }
             }
 
             // end of list is reached
@@ -372,20 +347,18 @@ public class PeopleListFragment extends Fragment {
 
         public class PeopleViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
             private final WPNetworkImageView imgAvatar;
-            private final TextView txtDisplayName;
-            private final TextView txtUsername;
-            private final TextView txtRole;
-            private final TextView txtSubscribed;
+            private final PeopleListRowBinding binding;
 
-            public PeopleViewHolder(View view) {
-                super(view);
-                imgAvatar = (WPNetworkImageView) view.findViewById(R.id.person_avatar);
-                txtDisplayName = (TextView) view.findViewById(R.id.person_display_name);
-                txtUsername = (TextView) view.findViewById(R.id.person_username);
-                txtRole = (TextView) view.findViewById(R.id.person_role);
-                txtSubscribed = (TextView) view.findViewById(R.id.follower_subscribed_date);
-
+            public PeopleViewHolder(PeopleListRowBinding binding) {
+                super(binding.getRoot());
+                this.binding = binding;
+                imgAvatar = (WPNetworkImageView) binding.getRoot().findViewById(R.id.person_avatar);
                 itemView.setOnClickListener(this);
+            }
+
+            public void bind(Person person) {
+                binding.setPerson(person);
+                binding.executePendingBindings();
             }
 
             @Override
