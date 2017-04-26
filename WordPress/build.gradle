@@ -23,6 +23,10 @@ apply plugin: 'io.fabric'
 android {
     useLibrary 'org.apache.http.legacy'
 
+    dataBinding {
+        enabled = true
+    }
+
     dexOptions {
         jumboMode = true
         javaMaxHeapSize = "6g"
