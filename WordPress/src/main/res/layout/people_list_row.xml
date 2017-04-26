@@ -57,7 +57,6 @@
             android:text="@{person.displayName}"
             tools:text="display_name" />
 
-        <!-- TODO add '@' before username text -->
         <org.wordpress.android.widgets.WPTextView
             android:id="@+id/person_username"
             style="@style/PersonTextView"
