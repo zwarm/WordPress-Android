@@ -263,19 +263,18 @@ public class MediaPreviewActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // enable editing metadata if we have a valid site
-        if (mEnableMetadata && mSite != null) {
-            getMenuInflater().inflate(R.menu.media_edit, menu);
-        }
+        getMenuInflater().inflate(R.menu.media_preview, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem mnuEdit = menu.findItem(R.id.menu_edit);
-        if (mnuEdit != null) {
-            mnuEdit.setVisible(mShowEditMenuItem);
-        }
+        mnuEdit.setVisible(mShowEditMenuItem);
+
+        MenuItem mnuShare = menu.findItem(R.id.menu_share);
+        mnuShare.setVisible(mMediaId != 0);
+
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -292,6 +291,8 @@ public class MediaPreviewActivity extends AppCompatActivity {
         } else if (item.getItemId() == R.id.menu_edit) {
             showEditFragment(mMediaId);
             return true;
+        } else if (item.getItemId() == R.id.menu_share) {
+            shareMedia();
         }
 
         return super.onOptionsItemSelected(item);
@@ -303,16 +304,17 @@ public class MediaPreviewActivity extends AppCompatActivity {
     private void loadImage(@NonNull String mediaUri) {
         int width = DisplayUtils.getDisplayPixelWidth(this);
         int height = DisplayUtils.getDisplayPixelHeight(this);
+        int size = Math.max(width, height);
 
         if (mediaUri.startsWith("http")) {
             showProgress(true);
-            String imageUrl = PhotonUtils.getPhotonImageUrl(mediaUri, width, height);
+            String imageUrl = PhotonUtils.getPhotonImageUrl(mediaUri, size, 0);
             mImageLoader.get(imageUrl, new ImageLoader.ImageListener() {
                 @Override
                 public void onResponse(ImageLoader.ImageContainer response, boolean isImmediate) {
                     if (!isFinishing() && response.getBitmap() != null) {
                         showProgress(false);
-                        mImageView.setImageBitmap(response.getBitmap());
+                        setBitmap(response.getBitmap());
                     }
                 }
                 @Override
@@ -323,9 +325,9 @@ public class MediaPreviewActivity extends AppCompatActivity {
                         delayedFinish(true);
                     }
                 }
-            }, width, height);
+            }, size, 0);
         } else {
-            byte[] bytes = ImageUtils.createThumbnailFromUri(this, Uri.parse(mediaUri), width, null, 0);
+            byte[] bytes = ImageUtils.createThumbnailFromUri(this, Uri.parse(mediaUri), size, null, 0);
             if (bytes == null) {
                 delayedFinish(true);
                 return;
@@ -333,14 +335,17 @@ public class MediaPreviewActivity extends AppCompatActivity {
 
             Bitmap bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
             if (bmp != null) {
-                mImageView.setImageBitmap(bmp);
+                setBitmap(bmp);
             } else {
                 delayedFinish(true);
                 return;
             }
         }
+    }
 
-        // assign the photo attacher to enable pinch/zoom
+    private void setBitmap(@NonNull Bitmap bmp) {
+        // assign the photo attacher to enable pinch/zoom - must come before setImageBitmap
+        // for it to be correctly resized upon loading
         PhotoViewAttacher attacher = new PhotoViewAttacher(mImageView);
 
         // fade in metadata when tapped
@@ -354,6 +359,8 @@ public class MediaPreviewActivity extends AppCompatActivity {
                 }
             });
         }
+
+        mImageView.setImageBitmap(bmp);
     }
 
     /*
@@ -509,6 +516,28 @@ public class MediaPreviewActivity extends AppCompatActivity {
     private void setLookClosable(boolean lookClosable) {
         if (mToolbar != null) {
             mToolbar.setNavigationIcon(lookClosable ? R.drawable.ic_close_white_24dp : R.drawable.ic_arrow_left_white_24dp);
+        }
+    }
+
+    private void shareMedia() {
+        MediaModel media = mMediaStore.getMediaWithLocalId(mMediaId);
+        if (media == null) {
+            ToastUtils.showToast(this, R.string.error_media_not_found);
+            return;
+        }
+
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TEXT, media.getUrl());
+        if (!TextUtils.isEmpty(media.getTitle())) {
+            intent.putExtra(Intent.EXTRA_SUBJECT, media.getTitle());
+        } else if (!TextUtils.isEmpty(media.getDescription())) {
+            intent.putExtra(Intent.EXTRA_SUBJECT, media.getDescription());
+        }
+        try {
+            startActivity(Intent.createChooser(intent, getString(R.string.share_link)));
+        } catch (android.content.ActivityNotFoundException ex) {
+            ToastUtils.showToast(this, R.string.reader_toast_err_share_intent);
         }
     }
 
