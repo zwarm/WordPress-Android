@@ -7,11 +7,22 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.FrameLayout;
 
 import org.wordpress.android.R;
+import org.wordpress.android.analytics.AnalyticsTracker;
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.util.PermissionUtils;
+import org.wordpress.android.util.ToastUtils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class PermissionsRequestActivity extends Activity {
     private static final int CAMERA_AND_MEDIA_PERMISSION_REQUEST_CODE = 1;
@@ -25,10 +36,41 @@ public class PermissionsRequestActivity extends Activity {
         setFinishOnTouchOutside(true);
     }
 
+
     @Override
-    protected void onPause() {
-        super.onPause();
-        overridePendingTransition(0, 0);
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case CAMERA_AND_MEDIA_PERMISSION_REQUEST_CODE:
+                if (permissions.length == 0) {
+                    AnalyticsTracker.track(AnalyticsTracker.Stat.ME_GRAVATAR_PERMISSIONS_INTERRUPTED);
+                }  else {
+                    List<String> granted = new ArrayList<>();
+                    List<String> denied = new ArrayList<>();
+
+                    for (int i = 0; i < grantResults.length; i++) {
+                        if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                            granted.add(permissions[i]);
+                        } else {
+                            denied.add(permissions[i]);
+                        }
+                    }
+
+                    if (denied.size() == 0) {
+                        AnalyticsTracker.track(AnalyticsTracker.Stat.ME_GRAVATAR_PERMISSIONS_ACCEPTED);
+                        showPhotoPickerForGravatar();
+                    } else {
+                        ToastUtils.showToast(this.getActivity(), getString(R.string
+                                .gravatar_camera_and_media_permission_required), ToastUtils.Duration.LONG);
+                        Map<String, Object> properties = new HashMap<>();
+                        properties.put("permissions granted", granted.size() == 0 ? "[none]" : TextUtils
+                                .join(",", granted));
+                        properties.put("permissions denied", TextUtils.join(",", denied));
+                        AnalyticsTracker.track(AnalyticsTracker.Stat.ME_GRAVATAR_PERMISSIONS_DENIED, properties);
+                    }
+                }
+                break;
+        }
     }
 
     public boolean showAndRequestCameraPermission() {
