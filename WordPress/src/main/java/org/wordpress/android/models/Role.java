@@ -15,6 +15,7 @@ public enum Role {
     CONTRIBUTOR(R.string.role_contributor),
     FOLLOWER(R.string.role_follower),
     VIEWER(R.string.role_viewer),
+    PENDING(R.string.role_pending),
     SUBSCRIBER(R.string.role_subscriber); // Jetpack only
 
     private static final Role[] USER_ROLES_WPCOM = { ADMIN, EDITOR, AUTHOR, CONTRIBUTOR };
@@ -47,6 +48,8 @@ public enum Role {
                 return FOLLOWER;
             case "viewer":
                 return VIEWER;
+            case "pending":
+                return PENDING;
             case "subscriber":
                 return SUBSCRIBER;
         }
@@ -73,6 +76,8 @@ public enum Role {
                 return "follower";
             case VIEWER:
                 return "viewer";
+            case PENDING:
+                return "pending";
             case SUBSCRIBER:
                 return "subscriber";
         }
@@ -97,6 +102,8 @@ public enum Role {
             case VIEWER:
                 // the remote expects "follower" as the role parameter even if the role is "viewer"
                 return "follower";
+            case PENDING:
+                return "pending";
             case SUBSCRIBER:
                 return "subscriber";
         }
