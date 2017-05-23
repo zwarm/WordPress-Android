@@ -5,8 +5,6 @@ import android.support.annotation.StringRes;
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
 import org.wordpress.android.fluxc.model.SiteModel;
-import org.wordpress.android.util.AppLog;
-import org.wordpress.android.util.CrashlyticsUtils;
 
 public enum Role {
     ADMIN(R.string.role_admin),
@@ -15,7 +13,8 @@ public enum Role {
     CONTRIBUTOR(R.string.role_contributor),
     FOLLOWER(R.string.role_follower),
     VIEWER(R.string.role_viewer),
-    SUBSCRIBER(R.string.role_subscriber); // Jetpack only
+    SUBSCRIBER(R.string.role_subscriber), // Jetpack only
+    CUSTOM(R.string.role_custom); // Jetpack only
 
     private static final Role[] USER_ROLES_WPCOM = { ADMIN, EDITOR, AUTHOR, CONTRIBUTOR };
     private static final Role[] USER_ROLES_JETPACK = { ADMIN, EDITOR, AUTHOR, CONTRIBUTOR, SUBSCRIBER };
@@ -24,6 +23,8 @@ public enum Role {
     private static final Role[] INVITE_ROLES_JETPACK = { FOLLOWER };
 
     private final int mLabelResId;
+    // TODO
+//    private String mCustomRoleLabel;
 
     Role(@StringRes int labelResId) {
         mLabelResId = labelResId;
@@ -50,12 +51,9 @@ public enum Role {
             case "subscriber":
                 return SUBSCRIBER;
         }
-        Exception e = new IllegalArgumentException("All roles must be handled: " + role);
-        CrashlyticsUtils.logException(e, AppLog.T.PEOPLE);
 
-        // All roles should have been handled, but in case an edge case occurs,
-        // using "Contributor" role is the safest option
-        return CONTRIBUTOR;
+        // All known roles should have been handled, this must
+        return CUSTOM;
     }
 
     @Override
@@ -75,6 +73,9 @@ public enum Role {
                 return "viewer";
             case SUBSCRIBER:
                 return "subscriber";
+            case CUSTOM:
+                // TODO
+                break;
         }
         throw new IllegalArgumentException("All roles must be handled");
     }
@@ -99,6 +100,9 @@ public enum Role {
                 return "follower";
             case SUBSCRIBER:
                 return "subscriber";
+            case CUSTOM:
+                // TODO
+                break;
         }
         throw new IllegalArgumentException("All roles must be handled");
     }
