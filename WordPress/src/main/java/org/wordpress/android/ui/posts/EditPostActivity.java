@@ -218,6 +218,8 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
     // For opening the context menu after permissions have been granted
     private View mMenuView = null;
 
+    private SiteSettingsInterface mSiteSettings;
+
     @Inject Dispatcher mDispatcher;
     @Inject AccountStore mAccountStore;
     @Inject SiteStore mSiteStore;
