@@ -67,6 +67,7 @@ import org.wordpress.android.ui.media.MediaBrowserActivity.MediaBrowserType;
 import org.wordpress.android.ui.media.WordPressMediaUtils;
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.ui.prefs.SiteSettingsInterface;
+import org.wordpress.android.ui.prefs.SiteSettingsInterface.SiteSettingsListener;
 import org.wordpress.android.ui.suggestion.adapters.TagSuggestionAdapter;
 import org.wordpress.android.ui.suggestion.util.SuggestionServiceConnectionManager;
 import org.wordpress.android.ui.suggestion.util.SuggestionUtils;
@@ -292,6 +293,35 @@ public class EditPostSettingsFragment extends Fragment
 
             if (!TextUtils.isEmpty(mPost.getPostFormat())) {
                 activePostFormat = mPost.getPostFormat();
+            } else {
+                // if there is no post format we need to fetch site settings in order to set the default format
+                mSiteSettings = SiteSettingsInterface.getInterface(getActivity(), mSite, new SiteSettingsListener() {
+                    @Override
+                    public void onSettingsUpdated(Exception error) {
+                        if (error == null) {
+                            mPost.setPostFormat(mSiteSettings.getDefaultPostFormat());
+                            if (isAdded()) {
+                                int idx = mPostFormatKeys.indexOf(mPost.getPostFormat());
+                                if (idx != -1) {
+                                    mPostFormatSpinner.setSelection(idx);
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onSettingsSaved(Exception error) {
+                        // no-op
+                    }
+
+                    @Override
+                    public void onCredentialsValidated(Exception error) {
+                        // no-op
+                    }
+                });
+                if (mSiteSettings != null) {
+                    mSiteSettings.init(true);
+                }
             }
 
             for (int i = 0; i < mPostFormatKeys.size(); i++) {
