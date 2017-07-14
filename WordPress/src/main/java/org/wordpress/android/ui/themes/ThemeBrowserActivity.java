@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -40,6 +41,7 @@ import org.wordpress.android.widgets.WPAlertDialogFragment;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -506,23 +508,10 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             final ArrayList<Theme> themes = new ArrayList<>();
 
             if (response != null) {
-                JSONArray array;
-                try {
-                    array = response.getJSONArray("themes");
-
-                    if (array != null) {
-                        int count = array.length();
-                        for (int i = 0; i < count; i++) {
-                            JSONObject object = array.getJSONObject(i);
-                            Theme theme = Theme.fromJSONV1_2(object, mSite);
-                            if (theme != null) {
-                                theme.save();
-                                themes.add(theme);
-                            }
-                        }
-                    }
-                } catch (JSONException e) {
-                    AppLog.e(T.THEMES, e);
+                if (mSite.isJetpackConnected()) {
+                    deserializeJetpackResponse(themes, response);
+                } else {
+                    deserializeResponse(themes, response);
                 }
             }
 
@@ -544,6 +533,48 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             } else if (mThemeSearchFragment != null && mThemeSearchFragment.isVisible()) {
                 mThemeSearchFragment.getEmptyTextView().setText(R.string.theme_no_search_result_found);
                 mThemeSearchFragment.setRefreshing(false);
+            }
+        }
+
+        private void deserializeResponse(@NonNull final List<Theme> themes, @NonNull final JSONObject response) {
+            JSONArray array;
+            try {
+                array = response.getJSONArray("themes");
+
+                if (array != null) {
+                    int count = array.length();
+                    for (int i = 0; i < count; i++) {
+                        JSONObject object = array.getJSONObject(i);
+                        Theme theme = Theme.fromJSONV1_2(object, mSite);
+                        if (theme != null) {
+                            theme.save();
+                            themes.add(theme);
+                        }
+                    }
+                }
+            } catch (JSONException e) {
+                AppLog.e(T.THEMES, e);
+            }
+        }
+
+        private void deserializeJetpackResponse(@NonNull final List<Theme> themes, @NonNull final JSONObject response) {
+            JSONArray array;
+            try {
+                array = response.getJSONArray("themes");
+
+                if (array != null) {
+                    int count = array.length();
+                    for (int i = 0; i < count; i++) {
+                        JSONObject object = array.getJSONObject(i);
+                        Theme theme = Theme.fromJetpackJSON(object, mSite);
+                        if (theme != null) {
+                            theme.save();
+                            themes.add(theme);
+                        }
+                    }
+                }
+            } catch (JSONException e) {
+                AppLog.e(T.THEMES, e);
             }
         }
     }

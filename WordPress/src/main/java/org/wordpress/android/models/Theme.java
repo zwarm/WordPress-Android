@@ -32,6 +32,23 @@ public class Theme {
     private String mBlogId;
     private boolean mIsCurrent;
 
+    public static Theme fromJetpackJSON(JSONObject object, SiteModel site) throws JSONException {
+        if (object == null) {
+            return null;
+        }
+
+        String id = object.optString(ID);
+        String author = "";
+        String screenshot = object.optString(SCREENSHOT);
+        String authorURI = "";
+        String demoURI = object.optString(PREVIEW_URL);
+        String name = object.optString(NAME);
+        String stylesheet = "";
+
+        return new Theme(id, author, screenshot, authorURI, demoURI, name, stylesheet, null,
+                String.valueOf(site.getSiteId()), false);
+    }
+
     public static Theme fromJSONV1_1(JSONObject object, SiteModel site) throws JSONException {
         if (object == null) {
             return null;
