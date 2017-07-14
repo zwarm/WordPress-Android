@@ -33,6 +33,7 @@ import org.wordpress.android.util.AnalyticsUtils;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.AppLog.T;
 import org.wordpress.android.util.NetworkUtils;
+import org.wordpress.android.util.SiteUtils;
 import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.widgets.WPAlertDialogFragment;
 
@@ -61,8 +62,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
 
     public static boolean isAccessible(SiteModel site) {
         // themes are only accessible to admin wordpress.com users
-        // TODO: Support themes for Jetpack and AT sites (and use SiteUtils.isAccessedViaWPComRest(site))
-        return site != null && site.isWPCom() && site.getHasCapabilityEditThemeOptions();
+        return site != null && SiteUtils.isAccessedViaWPComRest(site) && site.getHasCapabilityEditThemeOptions();
     }
 
     @Override
