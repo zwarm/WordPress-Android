@@ -1,5 +1,6 @@
 package org.wordpress.android.models;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.wordpress.android.WordPress;
@@ -38,14 +39,23 @@ public class Theme {
         }
 
         String id = object.optString(ID);
-        String author = "";
+        String author = object.optString(AUTHOR);
         String screenshot = object.optString(SCREENSHOT);
-        String authorURI = "";
-        String demoURI = object.optString(PREVIEW_URL);
+        if (!screenshot.startsWith("http")) {
+            screenshot = "https:" + screenshot;
+        }
+        String authorURI = object.optString(AUTHOR_URI);
         String name = object.optString(NAME);
-        String stylesheet = "";
+        boolean active = object.optBoolean("active");
+        String themeUri = object.optString("theme_uri");
+        String description = object.optString("description");
+        JSONArray tagsArray = object.optJSONArray("tags");
+        // TODO: get String array of tags
+        String version = object.optString("version");
+        boolean autoUpdate = object.optBoolean("autoupdate");
+        boolean autoUpdateTranslation = object.optBoolean("autoupdate_translation");
 
-        return new Theme(id, author, screenshot, authorURI, demoURI, name, stylesheet, null,
+        return new Theme(id, author, screenshot, authorURI, null, name, null, null,
                 String.valueOf(site.getSiteId()), false);
     }
 
