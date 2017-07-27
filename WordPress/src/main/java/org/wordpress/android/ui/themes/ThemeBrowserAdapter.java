@@ -24,15 +24,14 @@ import org.wordpress.android.widgets.WPNetworkImageView;
 
 /**
  * Adapter for the {@link ThemeBrowserFragment}'s listview
- *
  */
-public class ThemeBrowserAdapter extends CursorAdapter {
+class ThemeBrowserAdapter extends CursorAdapter {
     private static final String THEME_IMAGE_PARAMETER = "?w=";
     private final LayoutInflater mInflater;
     private final ThemeBrowserFragment.ThemeBrowserFragmentCallback mCallback;
     private int mViewWidth;
 
-    public ThemeBrowserAdapter(Context context, Cursor c, boolean autoRequery, ThemeBrowserFragment.ThemeBrowserFragmentCallback callback) {
+    ThemeBrowserAdapter(Context context, Cursor c, boolean autoRequery, ThemeBrowserFragment.ThemeBrowserFragmentCallback callback) {
         super(context, c, autoRequery);
         mInflater = LayoutInflater.from(context);
         mCallback = callback;
@@ -91,6 +90,7 @@ public class ThemeBrowserAdapter extends CursorAdapter {
         configureCardView(context, themeViewHolder, isCurrent);
     }
 
+    @SuppressWarnings("deprecation") // suppress getColor deprecation warning until min API is 23+
     private void configureCardView(Context context, ThemeViewHolder themeViewHolder, boolean isCurrent) {
         Resources resources = context.getResources();
         if (isCurrent) {
