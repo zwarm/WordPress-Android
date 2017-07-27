@@ -210,17 +210,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
                     @Override
                     public void onErrorResponse(VolleyError response) {
                         if (response.toString().equals(AuthFailureError.class.getName())) {
-                            String errorTitle = getString(R.string.theme_auth_error_title);
-                            String errorMsg = getString(R.string.theme_auth_error_message);
-
-                            if (mIsRunning) {
-                                FragmentTransaction ft = getFragmentManager().beginTransaction();
-                                WPAlertDialogFragment fragment = WPAlertDialogFragment.newAlertDialog(errorMsg,
-                                        errorTitle);
-                                ft.add(fragment, ALERT_TAB);
-                                ft.commitAllowingStateLoss();
-                            }
-                            AppLog.d(T.THEMES, getString(R.string.theme_auth_error_authenticate));
+                            handleAuthError();
                         } else {
                             ToastUtils.showToast(ThemeBrowserActivity.this, R.string.theme_fetch_failed,
                                     ToastUtils.Duration.LONG);
@@ -249,17 +239,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
                     @Override
                     public void onErrorResponse(VolleyError response) {
                         if (response.toString().equals(AuthFailureError.class.getName())) {
-                            String errorTitle = getString(R.string.theme_auth_error_title);
-                            String errorMsg = getString(R.string.theme_auth_error_message);
-
-                            if (mIsRunning) {
-                                FragmentTransaction ft = getFragmentManager().beginTransaction();
-                                WPAlertDialogFragment fragment = WPAlertDialogFragment.newAlertDialog(errorMsg,
-                                        errorTitle);
-                                ft.add(fragment, ALERT_TAB);
-                                ft.commitAllowingStateLoss();
-                            }
-                            AppLog.d(T.THEMES, getString(R.string.theme_auth_error_authenticate));
+                            handleAuthError();
                         }
                         mFetchingThemes = false;
                     }
@@ -499,6 +479,20 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         }
 
         ToastUtils.showToast(this, toastText, ToastUtils.Duration.SHORT);
+    }
+
+    private void handleAuthError() {
+        String errorTitle = getString(R.string.theme_auth_error_title);
+        String errorMsg = getString(R.string.theme_auth_error_message);
+
+        if (mIsRunning) {
+            FragmentTransaction ft = getFragmentManager().beginTransaction();
+            WPAlertDialogFragment fragment = WPAlertDialogFragment.newAlertDialog(errorMsg,
+                    errorTitle);
+            ft.add(fragment, ALERT_TAB);
+            ft.commitAllowingStateLoss();
+        }
+        AppLog.d(T.THEMES, getString(R.string.theme_auth_error_authenticate));
     }
 
     /**
