@@ -182,6 +182,11 @@ public class RestClientUtils {
         get(path, listener, errorListener);
     }
 
+    public void getInstalledJetpackThemes(long siteId, Listener listener, ErrorListener errorListener) {
+        String path = String.format(Locale.US, "sites/%d/themes/", siteId);
+        get(path, listener, errorListener);
+    }
+
     /**
      * Set a site's theme
      */
