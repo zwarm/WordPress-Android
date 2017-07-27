@@ -198,6 +198,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
                     @Override
                     public void onResponse(JSONObject response) {
                         AppLog.d(T.THEMES, "Successfully fetched WordPress.com themes");
+                        new DeserializeThemesRestResponse().execute(response);
                     }
                 }, new ErrorListener() {
                     @Override
@@ -209,6 +210,31 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
                             ToastUtils.showToast(ThemeBrowserActivity.this, R.string.theme_fetch_failed,
                                     ToastUtils.Duration.LONG);
                             AppLog.d(T.THEMES, getString(R.string.theme_fetch_failed) + ": " + response.toString());
+                        }
+                        mFetchingThemes = false;
+                    }
+                }
+        );
+    }
+
+    public void fetchInstalledJetpackThemes() {
+        if (mFetchingThemes) {
+            return;
+        }
+        mFetchingThemes = true;
+        WordPress.getRestClientUtils().getInstalledJetpackThemes(mSite.getSiteId(),
+                new Listener() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        AppLog.d(T.THEMES, "Successfully fetched installed Jetpack themes");
+                        new DeserializeThemesRestResponse().execute(response);
+                    }
+                }, new ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError response) {
+                        AppLog.d(T.THEMES, "Error fetching installed Jetpack themes");
+                        if (response.toString().equals(AuthFailureError.class.getName())) {
+                            handleAuthError();
                         }
                         mFetchingThemes = false;
                     }
