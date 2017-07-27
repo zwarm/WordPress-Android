@@ -1,7 +1,8 @@
 package org.wordpress.android.ui.themes;
 
-import android.app.Activity;
+import android.annotation.SuppressLint;
 import android.app.Fragment;
+import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -40,7 +41,7 @@ import org.wordpress.android.widgets.WPNetworkImageView;
  */
 public class ThemeBrowserFragment extends Fragment implements RecyclerListener, AdapterView.OnItemSelectedListener,
         AbsListView.OnScrollListener {
-    public interface ThemeBrowserFragmentCallback {
+    interface ThemeBrowserFragmentCallback {
         void onActivateSelected(String themeId);
         void onTryAndCustomizeSelected(String themeId);
         void onViewSelected(String themeId);
@@ -96,14 +97,14 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
+    public void onAttach(Context context) {
+        super.onAttach(context);
 
         try {
-            mCallback = (ThemeBrowserFragmentCallback) activity;
-            mThemeBrowserActivity = (ThemeBrowserActivity) activity;
+            mCallback = (ThemeBrowserFragmentCallback) context;
+            mThemeBrowserActivity = (ThemeBrowserActivity) context;
         } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString() + " must implement ThemeBrowserFragmentCallback");
+            throw new ClassCastException(context.toString() + " must implement ThemeBrowserFragmentCallback");
         }
     }
 
@@ -213,6 +214,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     }
 
     private void addMainHeader(LayoutInflater inflater) {
+        @SuppressLint("InflateParams")
         View header = inflater.inflate(R.layout.theme_grid_cardview_header, null);
         mCurrentThemeTextView = (TextView) header.findViewById(R.id.header_theme_text);
 
@@ -263,6 +265,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     }
 
     private void configureAndAddSearchHeader(LayoutInflater inflater) {
+        @SuppressLint("InflateParams")
         View headerSearch = inflater.inflate(R.layout.theme_grid_cardview_header_search, null);
         headerSearch.setOnClickListener(new View.OnClickListener() {
             @Override
