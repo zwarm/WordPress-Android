@@ -1,5 +1,7 @@
 package org.wordpress.android.models;
 
+import android.text.TextUtils;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.wordpress.android.fluxc.model.SiteModel;
@@ -30,6 +32,23 @@ public class Theme {
     private String mPrice;
     private String mBlogId;
     private boolean mIsCurrent;
+
+    public static Theme fromJSONV1(JSONObject object, SiteModel site) throws JSONException {
+        if (object == null) {
+            return null;
+        }
+        Theme result = new Theme();
+        result.setId(object.optString(ID));
+        result.setAuthor(object.optString(AUTHOR));
+        result.setAuthorURI(object.optString(AUTHOR_URI));
+        result.setName(object.optString(NAME));
+
+        // screenshot may (read: does) come from server without URL protocol
+        final String screenshot = object.optString(SCREENSHOT);
+        result.setScreenshot(!TextUtils.isEmpty(screenshot) ? "https:" + screenshot : null);
+
+        return result;
+    }
 
     public static Theme fromJSONV1_1(JSONObject object, SiteModel site) throws JSONException {
         if (object == null) {
@@ -90,6 +109,9 @@ public class Theme {
         setPrice(price);
         setBlogId(blogId);
         setIsCurrent(isCurrent);
+    }
+
+    private Theme() {
     }
 
     public void setId(String id) {
