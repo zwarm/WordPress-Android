@@ -177,6 +177,11 @@ public class RestClientUtils {
         get(path, listener, errorListener);
     }
 
+    public void getWpThemes(int limit, int offset, Listener listener, ErrorListener errorListener) {
+        String path = String.format(Locale.US, "themes/?number=%d&offset=%d", limit, offset);
+        get(path, listener, errorListener);
+    }
+
     /**
      * Set a site's theme
      */
