@@ -188,8 +188,32 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         addSearchFragment();
     }
 
-    public void setIsInSearchMode(boolean isInSearchMode) {
-        mIsInSearchMode = isInSearchMode;
+    public void fetchWpThemes() {
+        if (mFetchingThemes) {
+            return;
+        }
+        mFetchingThemes = true;
+        WordPress.getRestClientUtilsV1_1().getWpThemes(THEME_FETCH_MAX, getPageToFetch(),
+                new Listener() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        AppLog.d(T.THEMES, "Successfully fetched WordPress.com themes");
+                    }
+                }, new ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError response) {
+                        AppLog.d(T.THEMES, "Error fetching WordPress.com themes");
+                        if (response.toString().equals(AuthFailureError.class.getName())) {
+                            handleAuthError();
+                        } else {
+                            ToastUtils.showToast(ThemeBrowserActivity.this, R.string.theme_fetch_failed,
+                                    ToastUtils.Duration.LONG);
+                            AppLog.d(T.THEMES, getString(R.string.theme_fetch_failed) + ": " + response.toString());
+                        }
+                        mFetchingThemes = false;
+                    }
+                }
+        );
     }
 
     public void fetchThemes() {
@@ -197,11 +221,8 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             return;
         }
         mFetchingThemes = true;
-        int page = 1;
-        if (mThemeBrowserFragment != null) {
-            page = mThemeBrowserFragment.getPage();
-        }
-        WordPress.getRestClientUtilsV1_2().getFreeThemes(mSite.getSiteId(), THEME_FETCH_MAX, page, new Listener() {
+        WordPress.getRestClientUtilsV1_2().getFreeThemes(mSite.getSiteId(), THEME_FETCH_MAX, getPageToFetch(),
+                new Listener() {
                     @Override
                     public void onResponse(JSONObject response) {
                         new DeserializeThemesRestResponse().execute(response);
@@ -290,6 +311,10 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
                     }
                 }
         );
+    }
+
+    public void setIsInSearchMode(boolean isInSearchMode) {
+        mIsInSearchMode = isInSearchMode;
     }
 
     protected Theme getCurrentTheme() {
@@ -479,6 +504,10 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         }
 
         ToastUtils.showToast(this, toastText, ToastUtils.Duration.SHORT);
+    }
+
+    private int getPageToFetch() {
+        return mThemeBrowserFragment != null ? mThemeBrowserFragment.getPage() : 1;
     }
 
     private void handleAuthError() {
