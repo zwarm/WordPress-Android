@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.support.v7.widget.CardView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -80,7 +81,7 @@ class ThemeBrowserAdapter extends CursorAdapter {
         final String price = cursor.getString(cursor.getColumnIndex(Theme.PRICE));
         final String themeId = cursor.getString(cursor.getColumnIndex(Theme.ID));
         final boolean isCurrent = cursor.getInt(cursor.getColumnIndex(Theme.IS_CURRENT)) == 1;
-        final boolean isPremium = !price.isEmpty();
+        final boolean isPremium = !TextUtils.isEmpty(price);
 
         themeViewHolder.nameView.setText(name);
         themeViewHolder.priceView.setText(price);
