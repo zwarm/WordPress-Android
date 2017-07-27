@@ -62,7 +62,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     private SiteModel mSite;
 
     public static boolean isAccessible(SiteModel site) {
-        // themes are only accessible to admin wordpress.com users
+        // themes are only accessible to WP.com REST consuming sites as a user with appropriate capabilities
         return site != null && SiteUtils.isAccessedViaWPComRest(site) && site.getHasCapabilityEditThemeOptions();
     }
 
