@@ -16,9 +16,9 @@ public class Theme {
     public static final String BLOG_ID = "blogId";
     public static final String IS_CURRENT = "isCurrent";
 
-    public static final String PREVIEW_URL = "preview_url";
-    public static final String COST = "cost";
-    public static final String DISPLAY = "display";
+    private static final String PREVIEW_URL = "preview_url";
+    private static final String COST = "cost";
+    private static final String DISPLAY = "display";
 
     private String mId;
     private String mAuthor;
