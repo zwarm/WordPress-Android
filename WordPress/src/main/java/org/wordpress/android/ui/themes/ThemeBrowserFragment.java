@@ -41,15 +41,6 @@ import org.wordpress.android.widgets.WPNetworkImageView;
  */
 public class ThemeBrowserFragment extends Fragment implements RecyclerListener, AdapterView.OnItemSelectedListener,
         AbsListView.OnScrollListener {
-    interface ThemeBrowserFragmentCallback {
-        void onActivateSelected(String themeId);
-        void onTryAndCustomizeSelected(String themeId);
-        void onViewSelected(String themeId);
-        void onDetailsSelected(String themeId);
-        void onSupportSelected(String themeId);
-        void onSearchClicked();
-    }
-
     protected static final String BUNDLE_PAGE = "BUNDLE_PAGE";
     protected static final int THEME_FILTER_ALL_INDEX = 0;
     protected static final int THEME_FILTER_FREE_INDEX = 1;
@@ -64,7 +55,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     private TextView mCurrentThemeTextView;
     private ThemeBrowserAdapter mAdapter;
     private Spinner mSpinner;
-    private ThemeBrowserFragmentCallback mCallback;
+    private ThemeBrowserAdapter.ThemeBrowserCallback mCallback;
     private int mPage = 1;
     private boolean mShouldRefreshOnStart;
     private TextView mEmptyTextView;
@@ -101,10 +92,10 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         super.onAttach(context);
 
         try {
-            mCallback = (ThemeBrowserFragmentCallback) context;
+            mCallback = (ThemeBrowserAdapter.ThemeBrowserCallback) context;
             mThemeBrowserActivity = (ThemeBrowserActivity) context;
         } catch (ClassCastException e) {
-            throw new ClassCastException(context.toString() + " must implement ThemeBrowserFragmentCallback");
+            throw new ClassCastException(context.toString() + " must implement ThemeBrowserCallback");
         }
     }
 

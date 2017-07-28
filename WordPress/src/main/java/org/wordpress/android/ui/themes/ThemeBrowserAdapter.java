@@ -27,12 +27,21 @@ import org.wordpress.android.widgets.WPNetworkImageView;
  * Adapter for the {@link ThemeBrowserFragment}'s listview
  */
 class ThemeBrowserAdapter extends CursorAdapter {
+    interface ThemeBrowserCallback {
+        void onActivateSelected(String themeId);
+        void onTryAndCustomizeSelected(String themeId);
+        void onViewSelected(String themeId);
+        void onDetailsSelected(String themeId);
+        void onSupportSelected(String themeId);
+        void onSearchClicked();
+    }
+
     private static final String THEME_IMAGE_PARAMETER = "?w=";
     private final LayoutInflater mInflater;
-    private final ThemeBrowserFragment.ThemeBrowserFragmentCallback mCallback;
+    private final ThemeBrowserCallback mCallback;
     private int mViewWidth;
 
-    ThemeBrowserAdapter(Context context, Cursor c, boolean autoRequery, ThemeBrowserFragment.ThemeBrowserFragmentCallback callback) {
+    ThemeBrowserAdapter(Context context, Cursor c, boolean autoRequery, ThemeBrowserCallback callback) {
         super(context, c, autoRequery);
         mInflater = LayoutInflater.from(context);
         mCallback = callback;

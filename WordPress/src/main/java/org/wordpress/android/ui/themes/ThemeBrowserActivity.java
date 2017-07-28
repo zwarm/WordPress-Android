@@ -29,7 +29,7 @@ import org.wordpress.android.datasets.ThemeTable;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.models.Theme;
 import org.wordpress.android.ui.ActivityId;
-import org.wordpress.android.ui.themes.ThemeBrowserFragment.ThemeBrowserFragmentCallback;
+import org.wordpress.android.ui.themes.ThemeBrowserAdapter.ThemeBrowserCallback;
 import org.wordpress.android.util.AnalyticsUtils;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.AppLog.T;
@@ -45,7 +45,7 @@ import java.util.Map;
 /**
  * The theme browser.
  */
-public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrowserFragmentCallback {
+public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrowserCallback {
     public static final int THEME_FETCH_MAX = 100;
     public static final int ACTIVATE_THEME = 1;
     public static final String THEME_ID = "theme_id";
