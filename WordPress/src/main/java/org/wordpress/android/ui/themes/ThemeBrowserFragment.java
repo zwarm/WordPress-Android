@@ -135,7 +135,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
             return;
         }
 
-        mAdapter = new ThemeBrowserAdapter(mThemeBrowserActivity, cursor, false, mCallback);
+        mAdapter = new ThemeBrowserAdapter(mThemeBrowserActivity, mCallback);
         setEmptyViewVisible(mAdapter.getCount() == 0);
         mGridView.setAdapter(mAdapter);
         restoreState(savedInstanceState);
@@ -328,12 +328,11 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
             return;
         }
         if (mAdapter == null) {
-            mAdapter = new ThemeBrowserAdapter(mThemeBrowserActivity, cursor, false, mCallback);
+            mAdapter = new ThemeBrowserAdapter(mThemeBrowserActivity, mCallback);
         }
         if (mNoResultText.isShown()) {
             mNoResultText.setVisibility(View.GONE);
         }
-        mAdapter.changeCursor(cursor);
         mAdapter.notifyDataSetChanged();
         setEmptyViewVisible(mAdapter.getCount() == 0);
         mProgressBar.setVisibility(View.GONE);
