@@ -111,7 +111,7 @@ public class Theme {
         setIsCurrent(isCurrent);
     }
 
-    private Theme() {
+    public Theme() {
     }
 
     public void setId(String id) {
