@@ -51,11 +51,16 @@ class ThemeBrowserAdapter extends ArrayAdapter<Theme> {
 
     private int mViewWidth;
 
-    ThemeBrowserAdapter(Context context, ThemeBrowserCallback callback) {
+    ThemeBrowserAdapter(Context context, ThemeBrowserCallback callback, @NonNull List<List<Theme>> sections) {
         super(context, R.layout.theme_grid_item);
         mInflater = LayoutInflater.from(context);
         mCallback = callback;
         mViewWidth = AppPrefs.getThemeImageSizeWidth();
+        mSections.addAll(sections);
+
+        if (getCount() == 0) {
+            throw new IllegalArgumentException("ThemeBrowserAdapter must be initialize with at least 1 section");
+        }
     }
 
     @Override
@@ -65,10 +70,6 @@ class ThemeBrowserAdapter extends ArrayAdapter<Theme> {
 
     @Override
     public int getCount() {
-        if (mSections.isEmpty()) {
-            return 1;
-        }
-
         int sum = 0;
         for (List<Theme> section : mSections) {
             sum += section.size();
@@ -78,11 +79,6 @@ class ThemeBrowserAdapter extends ArrayAdapter<Theme> {
 
     @Override
     public Theme getItem(int position) {
-        if (getCount() == 0) {
-            // TODO
-            return null;
-        }
-
         int sum = 0;
         int i = 0;
         while (i < mSections.size() && sum + getSection(i).size() > position) {

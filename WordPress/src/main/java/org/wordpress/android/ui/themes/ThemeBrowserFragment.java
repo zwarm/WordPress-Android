@@ -5,12 +5,13 @@ import android.app.Fragment;
 import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AbsListView.RecyclerListener;
-import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -33,6 +34,9 @@ import org.wordpress.android.util.helpers.SwipeToRefreshHelper.RefreshListener;
 import org.wordpress.android.util.widgets.CustomSwipeRefreshLayout;
 import org.wordpress.android.widgets.HeaderGridView;
 import org.wordpress.android.widgets.WPNetworkImageView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A fragment display the themes on a grid view.
@@ -122,15 +126,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         } else {
             mThemeBrowserActivity.setThemeBrowserFragment(this);
         }
-        Cursor cursor = fetchThemes(getSpinnerPosition());
-
-        if (cursor == null) {
-            return;
-        }
-
-        mAdapter = new ThemeBrowserAdapter(mThemeBrowserActivity, mCallback);
-        setEmptyViewVisible(mAdapter.getCount() == 0);
-        mGridView.setAdapter(mAdapter);
+        createNewAdapterOrShowEmptyView();
         restoreState(savedInstanceState);
     }
 
@@ -147,6 +143,43 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
             outState.putInt(BUNDLE_PAGE, mPage);
         }
         outState.putSerializable(WordPress.SITE, mSite);
+    }
+
+    @Override
+    public void onMovedToScrapHeap(View view) {
+        // cancel image fetch requests if the view has been moved to recycler.
+        WPNetworkImageView niv = (WPNetworkImageView) view.findViewById(R.id.theme_grid_item_image);
+        if (niv != null) {
+            // this tag is set in the ThemeBrowserAdapter class
+            String requestUrl = (String) niv.getTag();
+            if (requestUrl != null) {
+                // need a listener to cancel request, even if the listener does nothing
+                ImageContainer container = WordPress.sImageLoader.get(requestUrl, new ImageListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                    }
+
+                    @Override
+                    public void onResponse(ImageContainer response, boolean isImmediate) {
+                    }
+
+                });
+                container.cancelRequest();
+            }
+        }
+    }
+
+    @Override
+    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+        if (shouldFetchThemesOnScroll(firstVisibleItem + visibleItemCount, totalItemCount) && NetworkUtils.isNetworkAvailable(getActivity())) {
+            mPage++;
+            mThemeBrowserActivity.fetchWpThemes();
+            mProgressBar.setVisibility(View.VISIBLE);
+        }
+    }
+
+    @Override
+    public void onScrollStateChanged(AbsListView view, int scrollState) {
     }
 
     public TextView getEmptyTextView() {
@@ -241,6 +274,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         if (mSwipeToRefreshHelper != null) {
             mSwipeToRefreshHelper.setRefreshing(refreshing);
             if (!refreshing) {
+                createNewAdapterOrShowEmptyView();
             }
         }
     }
@@ -281,19 +315,9 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         }
     }
 
-    protected void refreshView(int position) {
-        Cursor cursor = fetchThemes(position);
-        if (cursor == null) {
-            return;
-        }
-        if (mAdapter == null) {
-            mAdapter = new ThemeBrowserAdapter(mThemeBrowserActivity, mCallback);
-        }
-        if (mNoResultText.isShown()) {
-            mNoResultText.setVisibility(View.GONE);
-        }
-        mAdapter.notifyDataSetChanged();
-        setEmptyViewVisible(mAdapter.getCount() == 0);
+    protected void refreshView() {
+        createNewAdapterOrShowEmptyView();
+        mNoResultText.setVisibility(View.GONE);
         mProgressBar.setVisibility(View.GONE);
     }
 
@@ -306,51 +330,56 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         }
     }
 
-    @Override
-    public void onMovedToScrapHeap(View view) {
-        // cancel image fetch requests if the view has been moved to recycler.
-        WPNetworkImageView niv = (WPNetworkImageView) view.findViewById(R.id.theme_grid_item_image);
-        if (niv != null) {
-            // this tag is set in the ThemeBrowserAdapter class
-            String requestUrl = (String) niv.getTag();
-            if (requestUrl != null) {
-                // need a listener to cancel request, even if the listener does nothing
-                ImageContainer container = WordPress.sImageLoader.get(requestUrl, new ImageListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                    }
+    private void createNewAdapterOrShowEmptyView() {
+        final String blogId = String.valueOf(mSite.getSiteId());
+        final Cursor wpCursor = ThemeTable.getThemesAll(WordPress.wpDB.getDatabase(), blogId);
+        final Cursor jetpackCursor = null;//ThemeTable.getThemesAll(WordPress.wpDB.getDatabase(), blogId);
 
-                    @Override
-                    public void onResponse(ImageContainer response, boolean isImmediate) {
-                    }
+        // WP.com sites will generate a single section with no header
+        // Jetpack sites will generate two sections with headers, "Uploaded themes" and "WordPress.com themes"
+        final List<List<Theme>> sections = createSectionsFromCursors(wpCursor, jetpackCursor);
 
-                });
-                container.cancelRequest();
+        // only generate a new adapter if there is data to display
+        if (sections.size() > 0) {
+            mAdapter = new ThemeBrowserAdapter(mThemeBrowserActivity, mCallback, sections);
+            mGridView.setAdapter(mAdapter);
+        }
+
+        setEmptyViewVisible(sections.size() == 0);
+    }
+
+    @NonNull
+    private List<List<Theme>> createSectionsFromCursors(@NonNull Cursor wpCursor, @Nullable Cursor jetpackCursor) {
+        final List<List<Theme>> sections = new ArrayList<>();
+        if (!wpCursor.isFirst() && !wpCursor.moveToFirst()) {
+            return sections;
+        }
+
+        // add "Uploaded themes" section first
+        if (jetpackCursor != null && jetpackCursor.moveToFirst()) {
+            final List<Theme> uploadedSection = new ArrayList<>();
+            do {
+                Theme theme = new Theme();
+                theme.setName(wpCursor.getString(wpCursor.getColumnIndex(Theme.NAME)));
+                theme.setScreenshot(wpCursor.getString(wpCursor.getColumnIndex(Theme.SCREENSHOT)));
+                uploadedSection.add(theme);
+            } while (jetpackCursor.moveToNext());
+            if (uploadedSection.size() > 0) {
+                sections.add(uploadedSection);
             }
         }
-    }
 
-    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        if (mSpinner != null) {
-            refreshView(position);
+        final List<Theme> wpThemes = new ArrayList<>();
+        do {
+            Theme theme = new Theme();
+            theme.setName(wpCursor.getString(wpCursor.getColumnIndex(Theme.NAME)));
+            theme.setScreenshot(wpCursor.getString(wpCursor.getColumnIndex(Theme.SCREENSHOT)));
+            wpThemes.add(theme);
+        } while (wpCursor.moveToNext());
+        if (wpThemes.size() > 0) {
+            sections.add(wpThemes);
         }
-    }
 
-    public void onNothingSelected(AdapterView<?> parent) {
-
-    }
-
-    @Override
-    public void onScrollStateChanged(AbsListView view, int scrollState) {
-
-    }
-
-    @Override
-    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        if (shouldFetchThemesOnScroll(firstVisibleItem + visibleItemCount, totalItemCount) && NetworkUtils.isNetworkAvailable(getActivity())) {
-            mPage++;
-            mThemeBrowserActivity.fetchThemes();
-            mProgressBar.setVisibility(View.VISIBLE);
-        }
+        return sections;
     }
 }
