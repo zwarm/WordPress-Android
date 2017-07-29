@@ -10,13 +10,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AbsListView.RecyclerListener;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.android.volley.VolleyError;
@@ -39,12 +37,8 @@ import org.wordpress.android.widgets.WPNetworkImageView;
 /**
  * A fragment display the themes on a grid view.
  */
-public class ThemeBrowserFragment extends Fragment implements RecyclerListener, AdapterView.OnItemSelectedListener,
-        AbsListView.OnScrollListener {
+public class ThemeBrowserFragment extends Fragment implements RecyclerListener, AbsListView.OnScrollListener {
     protected static final String BUNDLE_PAGE = "BUNDLE_PAGE";
-    protected static final int THEME_FILTER_ALL_INDEX = 0;
-    protected static final int THEME_FILTER_FREE_INDEX = 1;
-    protected static final int THEME_FILTER_PREMIUM_INDEX = 2;
 
     protected SwipeToRefreshHelper mSwipeToRefreshHelper;
     protected ThemeBrowserActivity mThemeBrowserActivity;
@@ -54,7 +48,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     private TextView mNoResultText;
     private TextView mCurrentThemeTextView;
     private ThemeBrowserAdapter mAdapter;
-    private Spinner mSpinner;
     private ThemeBrowserAdapter.ThemeBrowserCallback mCallback;
     private int mPage = 1;
     private boolean mShouldRefreshOnStart;
@@ -144,7 +137,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     @Override
     public void onResume() {
         super.onResume();
-
         mThemeBrowserActivity.fetchCurrentTheme();
     }
 
@@ -191,7 +183,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
                     mEmptyTextView.setText(R.string.no_network_title);
                     return;
                 }
-                mThemeBrowserActivity.fetchThemes();
             }
         });
         mSwipeToRefreshHelper.setRefreshing(mShouldRefreshOnStart);
@@ -250,7 +241,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         if (mSwipeToRefreshHelper != null) {
             mSwipeToRefreshHelper.setRefreshing(refreshing);
             if (!refreshing) {
-                refreshView(getSpinnerPosition());
             }
         }
     }
@@ -264,7 +254,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
                 mCallback.onSearchClicked();
             }
         });
-        configureFilterSpinner(headerSearch);
+        mGridView.addHeaderView(headerSearch);
         ImageButton searchButton = (ImageButton) headerSearch.findViewById(R.id.theme_search);
         searchButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -272,15 +262,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
                 mCallback.onSearchClicked();
             }
         });
-    }
-
-    private void configureFilterSpinner(View headerSearch) {
-        mSpinner = (Spinner) headerSearch.findViewById(R.id.theme_filter_spinner);
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(mThemeBrowserActivity, R.array.themes_filter_array, android.R.layout.simple_spinner_item);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        mSpinner.setAdapter(adapter);
-        mGridView.addHeaderView(headerSearch);
-        mSpinner.setOnItemSelectedListener(this);
     }
 
     private void restoreState(Bundle savedInstanceState) {
@@ -297,28 +278,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         mGridView.setVisibility(visible ? View.GONE : View.VISIBLE);
         if (visible && !NetworkUtils.isNetworkAvailable(mThemeBrowserActivity)) {
             mEmptyTextView.setText(R.string.no_network_title);
-        }
-    }
-
-    /**
-     * Fetch themes for a given ThemeFilterType.
-     *
-     * @return a db Cursor or null if current blog is null
-     */
-    protected Cursor fetchThemes(int position) {
-        if (mSite == null) {
-            return null;
-        }
-
-        String blogId = String.valueOf(mSite.getSiteId());
-        switch (position) {
-            case THEME_FILTER_PREMIUM_INDEX:
-                return ThemeTable.getThemesPremium(WordPress.wpDB.getDatabase(), blogId);
-            case THEME_FILTER_ALL_INDEX:
-                return ThemeTable.getThemesAll(WordPress.wpDB.getDatabase(), blogId);
-            case THEME_FILTER_FREE_INDEX:
-            default:
-                return ThemeTable.getThemesFree(WordPress.wpDB.getDatabase(), blogId);
         }
     }
 
@@ -347,14 +306,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         }
     }
 
-    protected int getSpinnerPosition() {
-        if (mSpinner != null) {
-            return mSpinner.getSelectedItemPosition();
-        } else {
-            return 0;
-        }
-    }
-
     @Override
     public void onMovedToScrapHeap(View view) {
         // cancel image fetch requests if the view has been moved to recycler.
@@ -379,14 +330,12 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         }
     }
 
-    @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
         if (mSpinner != null) {
             refreshView(position);
         }
     }
 
-    @Override
     public void onNothingSelected(AdapterView<?> parent) {
 
     }

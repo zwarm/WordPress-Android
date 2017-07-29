@@ -98,10 +98,7 @@ public class ThemeSearchFragment extends ThemeBrowserFragment implements SearchV
 
     @Override
     public boolean onMenuItemActionExpand(MenuItem item) {
-        if (item.getItemId() == R.id.menu_theme_search) {
-            return true;
-        }
-        return false;
+        return item.getItemId() == R.id.menu_theme_search;
     }
 
     @Override
@@ -149,10 +146,8 @@ public class ThemeSearchFragment extends ThemeBrowserFragment implements SearchV
 
     @Override
     public void setRefreshing(boolean refreshing) {
-        refreshView(getSpinnerPosition());
     }
 
-    @Override
     protected Cursor fetchThemes(int position) {
         String blogId = String.valueOf(mSite.getSiteId());
         return ThemeTable.getThemes(WordPress.wpDB.getDatabase(), blogId, mLastSearch);
@@ -164,7 +159,6 @@ public class ThemeSearchFragment extends ThemeBrowserFragment implements SearchV
         if (NetworkUtils.isNetworkAvailable(mThemeBrowserActivity)) {
             mThemeBrowserActivity.searchThemes(searchTerm);
         } else {
-            refreshView(getSpinnerPosition());
         }
     }
 }
