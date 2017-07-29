@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.CardView;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -81,10 +80,11 @@ class ThemeBrowserAdapter extends ArrayAdapter<Theme> {
     public Theme getItem(int position) {
         int sum = 0;
         int i = 0;
-        while (i < mSections.size() && sum + getSection(i).size() > position) {
+        while (i < mSections.size() && sum + getSection(i).size() < position) {
             sum += getSection(i).size();
+            ++i;
         }
-        return mSections.get(i).get(sum - position);
+        return mSections.get(i).get(position - sum);
     }
 
     @Override
@@ -111,7 +111,7 @@ class ThemeBrowserAdapter extends ArrayAdapter<Theme> {
             configureSectionHeaderView(item, (TextView) convertView);
         } else {
             if (convertView == null) {
-                convertView = mInflater.inflate(R.layout.theme_grid_item, parent);
+                convertView = mInflater.inflate(R.layout.theme_grid_item, null);
             }
             configureThemeItemView(convertView, item);
         }
@@ -119,44 +119,11 @@ class ThemeBrowserAdapter extends ArrayAdapter<Theme> {
     }
 
     public List<Theme> getSection(int position) {
-        if (position > 0 && position < mSections.size()) {
+        if (position >= 0 && position < mSections.size()) {
             return mSections.get(position);
         }
 
         return null;
-    }
-
-    public void addSection(List<Theme> section, String sectionHeader, int position) {
-        if (section == null || section.size() <= 0) {
-            return;
-        }
-
-        // add a header item if a title is provided
-        if (!TextUtils.isEmpty(sectionHeader)) {
-        }
-        mSections.add(position, section);
-    }
-
-    public int getSectionItemCount(int section) {
-        if (section < 0 || section > mSections.size()) {
-            return 0;
-        }
-
-        // calculate the number of items in a section
-        int size = getSection(section).size();
-        if (sectionHasHeader(section)) {
-            // must subtract one for the placeholder header item
-            --size;
-        }
-        return size;
-    }
-
-    public boolean sectionHasHeader(int section) {
-        return getSection(section) != null && HEADER_ITEM_ID.equals(mSections.get(section).get(0).getId());
-    }
-
-    public void addSection(List<Theme> section, String sectionHeader) {
-        addSection(section, sectionHeader, mSections.size());
     }
 
     private void configureSectionHeaderView(@NonNull final Theme theme, @NonNull TextView sectionHeaderView) {

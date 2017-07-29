@@ -1,6 +1,5 @@
 package org.wordpress.android.ui.themes;
 
-import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.SearchView;
@@ -12,7 +11,6 @@ import android.view.View;
 
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
-import org.wordpress.android.datasets.ThemeTable;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.ToastUtils;
@@ -146,11 +144,7 @@ public class ThemeSearchFragment extends ThemeBrowserFragment implements SearchV
 
     @Override
     public void setRefreshing(boolean refreshing) {
-    }
-
-    protected Cursor fetchThemes(int position) {
-        String blogId = String.valueOf(mSite.getSiteId());
-        return ThemeTable.getThemes(WordPress.wpDB.getDatabase(), blogId, mLastSearch);
+        refreshView();
     }
 
     public void search(String searchTerm) {
@@ -159,6 +153,7 @@ public class ThemeSearchFragment extends ThemeBrowserFragment implements SearchV
         if (NetworkUtils.isNetworkAvailable(mThemeBrowserActivity)) {
             mThemeBrowserActivity.searchThemes(searchTerm);
         } else {
+            refreshView();
         }
     }
 }
