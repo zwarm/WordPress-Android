@@ -182,6 +182,16 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     public void onScrollStateChanged(AbsListView view, int scrollState) {
     }
 
+    public void setRefreshing(boolean refreshing) {
+        mShouldRefreshOnStart = refreshing;
+        if (mSwipeToRefreshHelper != null) {
+            mSwipeToRefreshHelper.setRefreshing(refreshing);
+            if (!refreshing) {
+                createNewAdapterOrShowEmptyView();
+            }
+        }
+    }
+
     public TextView getEmptyTextView() {
         return mEmptyTextView;
     }
@@ -269,16 +279,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         }
     }
 
-    public void setRefreshing(boolean refreshing) {
-        mShouldRefreshOnStart = refreshing;
-        if (mSwipeToRefreshHelper != null) {
-            mSwipeToRefreshHelper.setRefreshing(refreshing);
-            if (!refreshing) {
-                createNewAdapterOrShowEmptyView();
-            }
-        }
-    }
-
     private void configureAndAddSearchHeader(LayoutInflater inflater) {
         @SuppressLint("InflateParams")
         View headerSearch = inflater.inflate(R.layout.theme_grid_cardview_header_search, null);
@@ -355,39 +355,42 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
             return sections;
         }
 
-        // add "Uploaded themes" section first
-        if (jetpackCursor != null && jetpackCursor.moveToFirst()) {
+        final List<Theme> wpThemes = new ArrayList<>();
+
+        if (jetpackCursor != null) {
+            // add "Uploaded themes" section first
             final List<Theme> uploadedSection = new ArrayList<>();
-            Theme uploadedHeader = new Theme();
-            uploadedHeader.setId(ThemeBrowserAdapter.HEADER_ITEM_ID);
-            uploadedHeader.setName("Uploaded themes");
-            uploadedSection.add(uploadedHeader);
-            do {
-                Theme theme = new Theme();
-                theme.setName(wpCursor.getString(wpCursor.getColumnIndex(Theme.NAME)));
-                theme.setScreenshot(wpCursor.getString(wpCursor.getColumnIndex(Theme.SCREENSHOT)));
-                uploadedSection.add(theme);
-            } while (jetpackCursor.moveToNext());
-            if (uploadedSection.size() > 0) {
-                sections.add(uploadedSection);
+            uploadedSection.add(createSectionHeader("Uploaded themes"));
+            if (jetpackCursor.moveToFirst()) {
+                do {
+                    Theme theme = new Theme();
+                    theme.setName(wpCursor.getString(wpCursor.getColumnIndex(Theme.NAME)));
+                    theme.setScreenshot(wpCursor.getString(wpCursor.getColumnIndex(Theme.SCREENSHOT)));
+                    uploadedSection.add(theme);
+                } while (jetpackCursor.moveToNext());
             }
+            sections.add(uploadedSection);
+
+            // add section header for WP.com themes
+            wpThemes.add(createSectionHeader("WordPress.com themes"));
         }
 
-        final List<Theme> wpThemes = new ArrayList<>();
-        Theme wpHeader = new Theme();
-        wpHeader.setId(ThemeBrowserAdapter.HEADER_ITEM_ID);
-        wpHeader.setName("WordPress.com themes");
-        wpThemes.add(wpHeader);
+        // add WP.com themes
         do {
             Theme theme = new Theme();
             theme.setName(wpCursor.getString(wpCursor.getColumnIndex(Theme.NAME)));
             theme.setScreenshot(wpCursor.getString(wpCursor.getColumnIndex(Theme.SCREENSHOT)));
             wpThemes.add(theme);
         } while (wpCursor.moveToNext());
-        if (wpThemes.size() > 0) {
-            sections.add(wpThemes);
-        }
+        sections.add(wpThemes);
 
         return sections;
+    }
+
+    private Theme createSectionHeader(@NonNull String sectionName) {
+        Theme sectionHeader = new Theme();
+        sectionHeader.setId(ThemeBrowserAdapter.HEADER_ITEM_ID);
+        sectionHeader.setName(sectionName);
+        return sectionHeader;
     }
 }
