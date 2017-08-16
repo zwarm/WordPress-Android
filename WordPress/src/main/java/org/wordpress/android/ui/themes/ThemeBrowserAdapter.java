@@ -29,7 +29,7 @@ import java.util.List;
  * Displays a list of themes. Provides methods to add header rows to split the theme list into sections.
  */
 class ThemeBrowserAdapter extends ArrayAdapter<Theme> {
-    private static final String HEADER_ITEM_ID = "__wpandroid_list_header_item_";
+    public static final String HEADER_ITEM_ID = "__wpandroid_list_header_item_";
     private static final int HEADER_TYPE = 0;
     private static final int THEME_TYPE = 1;
 

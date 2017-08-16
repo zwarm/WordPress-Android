@@ -358,6 +358,10 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         // add "Uploaded themes" section first
         if (jetpackCursor != null && jetpackCursor.moveToFirst()) {
             final List<Theme> uploadedSection = new ArrayList<>();
+            Theme uploadedHeader = new Theme();
+            uploadedHeader.setId(ThemeBrowserAdapter.HEADER_ITEM_ID);
+            uploadedHeader.setName("Uploaded themes");
+            uploadedSection.add(uploadedHeader);
             do {
                 Theme theme = new Theme();
                 theme.setName(wpCursor.getString(wpCursor.getColumnIndex(Theme.NAME)));
@@ -370,6 +374,10 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         }
 
         final List<Theme> wpThemes = new ArrayList<>();
+        Theme wpHeader = new Theme();
+        wpHeader.setId(ThemeBrowserAdapter.HEADER_ITEM_ID);
+        wpHeader.setName("WordPress.com themes");
+        wpThemes.add(wpHeader);
         do {
             Theme theme = new Theme();
             theme.setName(wpCursor.getString(wpCursor.getColumnIndex(Theme.NAME)));
