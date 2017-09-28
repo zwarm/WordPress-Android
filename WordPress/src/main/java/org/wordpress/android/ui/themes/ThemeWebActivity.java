@@ -9,13 +9,13 @@ import android.view.MenuItem;
 import org.wordpress.android.R;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.model.ThemeModel;
+import org.wordpress.android.ui.ActivityLauncher;
 import org.wordpress.android.ui.WPWebViewActivity;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.ToastUtils;
 
 public class ThemeWebActivity extends WPWebViewActivity {
     public static final String IS_CURRENT_THEME = "is_current_theme";
-    public static final String IS_PREMIUM_THEME = "is_premium_theme";
     public static final String THEME_NAME = "theme_name";
     private static final String THEME_DOMAIN_PUBLIC = "pub";
     private static final String THEME_DOMAIN_PREMIUM = "premium";
@@ -32,52 +32,23 @@ public class ThemeWebActivity extends WPWebViewActivity {
         SUPPORT
     }
 
-    public static void openTheme(Activity activity, SiteModel site, String themeId, ThemeWebActivityType type,
+    public static void openTheme(Activity activity, SiteModel site, ThemeModel theme, ThemeWebActivityType type,
                                  boolean isCurrentTheme) {
+        if (theme == null) {
+            ToastUtils.showToast(activity, R.string.could_not_load_theme);
+            return;
+        }
 
-
+        String url = getUrl(site, theme, type, false);
         if (type == ThemeWebActivityType.PREVIEW) {
             // Do not open the Customizer with the in-app browser.
             // Customizer may need to access local files (mostly pictures) on the device storage,
             // and our internal webview doesn't handle this feature yet.
             // Ref: https://github.com/wordpress-mobile/WordPress-Android/issues/4934
+            ActivityLauncher.openUrlExternal(activity, url);
         } else {
+            openWPCOMURL(activity, url, theme, site, isCurrentTheme);
         }
-    }
-
-    /*
-     * opens the current theme for the current blog
-     */
-    public static void openCurrentTheme(Activity activity, SiteModel site, ThemeWebActivityType type) {
-    }
-
-    private static void requestAndOpenCurrentTheme(final Activity activity, final SiteModel site) {
-    }
-
-    private static void openWPCOMURL(Activity activity, String url, ThemeModel currentTheme, SiteModel site, Boolean
-            isCurrentTheme) {
-        if (activity == null) {
-            AppLog.e(AppLog.T.UTILS, "Context is null");
-            return;
-        }
-
-        if (TextUtils.isEmpty(url)) {
-            AppLog.e(AppLog.T.UTILS, "Empty or null URL passed to openWPCOMURL");
-            ToastUtils.showToast(activity, R.string.invalid_site_url_message, ToastUtils.Duration.SHORT);
-            return;
-        }
-
-        String authURL = ThemeWebActivity.getSiteLoginUrl(site);
-        Intent intent = new Intent(activity, ThemeWebActivity.class);
-        intent.putExtra(WPWebViewActivity.URL_TO_LOAD, url);
-        intent.putExtra(WPWebViewActivity.AUTHENTICATION_URL, authURL);
-        intent.putExtra(WPWebViewActivity.LOCAL_BLOG_ID, site.getId());
-        intent.putExtra(WPWebViewActivity.USE_GLOBAL_WPCOM_USER, true);
-        intent.putExtra(IS_CURRENT_THEME, isCurrentTheme);
-        intent.putExtra(THEME_NAME, currentTheme.getName());
-        intent.putExtra(ThemeBrowserActivity.THEME_ID, currentTheme.getId());
-
-        activity.startActivityForResult(intent, ThemeBrowserActivity.ACTIVATE_THEME);
     }
 
     public static String getUrl(SiteModel site, ThemeModel theme, ThemeWebActivityType type, boolean isPremium) {
@@ -111,41 +82,58 @@ public class ThemeWebActivity extends WPWebViewActivity {
         return url;
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.theme_web, menu);
-        Boolean isPremiumTheme = getIntent().getBooleanExtra(IS_PREMIUM_THEME, false);
-        Boolean isCurrentTheme = getIntent().getBooleanExtra(IS_CURRENT_THEME, false);
-
-        if (isPremiumTheme || isCurrentTheme) {
-            menu.findItem(R.id.action_activate).setVisible(false);
+    private static void openWPCOMURL(Activity activity, String url, ThemeModel theme,
+                                     SiteModel site, boolean isCurrentTheme) {
+        if (activity == null) {
+            AppLog.e(AppLog.T.THEMES, "Context is null");
+            return;
         }
 
+        if (TextUtils.isEmpty(url)) {
+            AppLog.e(AppLog.T.THEMES, "Empty or null URL passed to openWPCOMURL");
+            ToastUtils.showToast(activity, R.string.invalid_site_url_message, ToastUtils.Duration.SHORT);
+            return;
+        }
+
+        String authURL = getSiteLoginUrl(site);
+        Intent intent = new Intent(activity, ThemeWebActivity.class);
+        intent.putExtra(WPWebViewActivity.URL_TO_LOAD, url);
+        intent.putExtra(WPWebViewActivity.AUTHENTICATION_URL, authURL);
+        intent.putExtra(WPWebViewActivity.LOCAL_BLOG_ID, site.getId());
+        intent.putExtra(WPWebViewActivity.USE_GLOBAL_WPCOM_USER, true);
+        intent.putExtra(IS_CURRENT_THEME, isCurrentTheme);
+        intent.putExtra(THEME_NAME, theme.getName());
+        intent.putExtra(ThemeBrowserActivity.THEME_ID, theme.getThemeId());
+
+        activity.startActivityForResult(intent, ThemeBrowserActivity.ACTIVATE_THEME);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // don't add menu for current theme because the only action is to activate a theme
+        if (!getIntent().getBooleanExtra(IS_CURRENT_THEME, false)) {
+            getMenuInflater().inflate(R.menu.theme_web, menu);
+        }
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_activate) {
-            Intent returnIntent = new Intent();
-            setResult(RESULT_OK, returnIntent);
-            returnIntent.putExtra(ThemeBrowserActivity.THEME_ID,
-                    getIntent().getStringExtra(ThemeBrowserActivity.THEME_ID));
+            Intent intent = new Intent();
+            setResult(RESULT_OK, intent);
+            intent.putExtra(ThemeBrowserActivity.THEME_ID, getIntent().getStringExtra(ThemeBrowserActivity.THEME_ID));
             finish();
             return true;
-        } else {
-            return super.onOptionsItemSelected(item);
         }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
     public void configureView() {
         setContentView(R.layout.theme_web_activity);
-        setActionBarTitleToThemeName();
-    }
 
-    private void setActionBarTitleToThemeName() {
+        // update action bar title
         String themeName = getIntent().getStringExtra(THEME_NAME);
         if (getSupportActionBar() != null && themeName != null) {
             getSupportActionBar().setTitle(themeName);

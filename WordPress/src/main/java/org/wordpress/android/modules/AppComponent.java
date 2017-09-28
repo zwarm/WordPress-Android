@@ -228,7 +228,6 @@ public interface AppComponent {
     void inject(WPWebViewActivity object);
     void inject(WPWebViewClient object);
 
-    void inject(ThemeWebActivity object);
     void inject(ThemeBrowserFragment object);
 
     void inject(MediaDeleteService object);
