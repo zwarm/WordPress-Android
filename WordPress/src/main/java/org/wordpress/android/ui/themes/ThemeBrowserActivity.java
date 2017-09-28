@@ -6,6 +6,7 @@ import android.app.FragmentTransaction;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -18,12 +19,19 @@ import com.android.volley.VolleyError;
 import com.wordpress.rest.RestRequest.ErrorListener;
 import com.wordpress.rest.RestRequest.Listener;
 
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 import org.json.JSONObject;
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
 import org.wordpress.android.analytics.AnalyticsTracker;
+import org.wordpress.android.fluxc.Dispatcher;
+import org.wordpress.android.fluxc.generated.ThemeActionBuilder;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.model.ThemeModel;
+import org.wordpress.android.fluxc.store.ThemeStore;
+import org.wordpress.android.fluxc.store.ThemeStore.OnThemeActivated;
+import org.wordpress.android.fluxc.store.ThemeStore.ActivateThemePayload;
 import org.wordpress.android.ui.ActivityId;
 import org.wordpress.android.ui.themes.ThemeBrowserFragment.ThemeBrowserFragmentCallback;
 import org.wordpress.android.util.AnalyticsUtils;
@@ -34,7 +42,10 @@ import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.widgets.WPAlertDialogFragment;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import javax.inject.Inject;
 
 public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrowserFragmentCallback {
     public static final int THEME_FETCH_MAX = 100;
@@ -52,6 +63,9 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
 
     private SiteModel mSite;
     private ThemeModel mCurrentTheme;
+
+    @Inject private Dispatcher mDispatcher;
+    @Inject private ThemeStore mThemeStore;
 
     /** Theme browsing is only supported on WP.com sites and Jetpack sites using the WP.com REST API. */
     public static boolean isAccessible(SiteModel site) {
@@ -177,6 +191,25 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         mIsInSearchMode = true;
         AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.THEMES_ACCESSED_SEARCH, mSite);
         addSearchFragment();
+    }
+
+    @SuppressWarnings("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onThemeActivated(OnThemeActivated event) {
+        if (event.isError()) {
+            AppLog.e(T.THEMES, "Error activating theme: " + event.error.message);
+            ToastUtils.showToast(this, R.string.theme_activation_error, ToastUtils.Duration.SHORT);
+        } else {
+            mCurrentTheme = event.theme;
+
+            Map<String, Object> themeProperties = new HashMap<>();
+            themeProperties.put(THEME_ID, mCurrentTheme.getThemeId());
+            AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.THEMES_CHANGED_THEME, mSite, themeProperties);
+
+            if (!isFinishing()) {
+                showAlertDialogOnNewSettingNewTheme(mCurrentTheme);
+            }
+        }
     }
 
     public void setIsInSearchMode(boolean isInSearchMode) {
@@ -353,7 +386,27 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         fragmentTransaction.commit();
     }
 
+    // TODO: this should be in FluxC
+    private ThemeModel getThemeFromThemeId(final @NonNull String themeId) {
+        List<ThemeModel> themes = mThemeStore.getWpThemes();
+        for (ThemeModel theme : themes) {
+            if (themeId.equals(theme.getThemeId())) {
+                return theme;
+            }
+        }
+
+        return null;
+    }
+
     private void activateTheme(final String themeId) {
+        final ThemeModel theme = getThemeFromThemeId(themeId);
+        if (theme != null) {
+            ActivateThemePayload payload = new ActivateThemePayload(mSite, theme);
+            mDispatcher.dispatch(ThemeActionBuilder.newActivateThemeAction(payload));
+        } else {
+            AppLog.w(T.THEMES, "Could not find theme to activate: themeId=" + themeId);
+            ToastUtils.showToast(this, R.string.theme_activation_error, ToastUtils.Duration.SHORT);
+        }
     }
 
     private void showAlertDialogOnNewSettingNewTheme(ThemeModel newTheme) {
