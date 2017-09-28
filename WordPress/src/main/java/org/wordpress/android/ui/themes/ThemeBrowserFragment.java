@@ -74,7 +74,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
 
     private SiteModel mSite;
 
-    @Inject private ThemeStore mThemeStore;
+    @Inject ThemeStore mThemeStore;
 
     public static ThemeBrowserFragment newInstance(SiteModel site) {
         ThemeBrowserFragment fragment = new ThemeBrowserFragment();

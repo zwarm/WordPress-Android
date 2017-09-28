@@ -59,8 +59,8 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     private SiteModel mSite;
     private ThemeModel mCurrentTheme;
 
-    @Inject private Dispatcher mDispatcher;
-    @Inject private ThemeStore mThemeStore;
+    @Inject Dispatcher mDispatcher;
+    @Inject ThemeStore mThemeStore;
 
     /** Theme browsing is only supported on WP.com sites and Jetpack sites using the WP.com REST API. */
     public static boolean isAccessible(SiteModel site) {
