@@ -80,6 +80,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             mSite = (SiteModel) getIntent().getSerializableExtra(WordPress.SITE);
         } else {
             mSite = (SiteModel) savedInstanceState.getSerializable(WordPress.SITE);
+            mIsInSearchMode = savedInstanceState.getBoolean(IS_IN_SEARCH_MODE);
         }
 
         if (mSite == null) {
@@ -115,12 +116,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     protected void onPause() {
         super.onPause();
         mIsRunning = false;
-    }
-
-    @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-        mIsInSearchMode = savedInstanceState.getBoolean(IS_IN_SEARCH_MODE);
     }
 
     @Override
