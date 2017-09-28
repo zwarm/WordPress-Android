@@ -4,10 +4,10 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
 import android.widget.AbsListView.RecyclerListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -31,7 +31,6 @@ import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.util.helpers.SwipeToRefreshHelper;
 import org.wordpress.android.util.helpers.SwipeToRefreshHelper.RefreshListener;
 import org.wordpress.android.util.widgets.CustomSwipeRefreshLayout;
-import org.wordpress.android.widgets.HeaderGridView;
 import org.wordpress.android.widgets.WPNetworkImageView;
 
 import javax.inject.Inject;
@@ -41,8 +40,7 @@ import static org.wordpress.android.util.WPSwipeToRefreshHelper.buildSwipeToRefr
 /**
  * A fragment display the themes on a grid view.
  */
-public class ThemeBrowserFragment extends Fragment implements RecyclerListener, AdapterView.OnItemSelectedListener,
-        AbsListView.OnScrollListener {
+public class ThemeBrowserFragment extends Fragment implements RecyclerListener, AdapterView.OnItemSelectedListener {
     public interface ThemeBrowserFragmentCallback {
         void onActivateSelected(String themeId);
         void onTryAndCustomizeSelected(String themeId);
@@ -60,7 +58,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     protected SwipeToRefreshHelper mSwipeToRefreshHelper;
     protected ThemeBrowserActivity mThemeBrowserActivity;
     private String mCurrentThemeId;
-    private HeaderGridView mGridView;
+    private RecyclerView mRecyclerView;
     private RelativeLayout mEmptyView;
     private TextView mNoResultText;
     private TextView mCurrentThemeTextView;
@@ -152,7 +150,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
 
         mAdapter = new ThemeBrowserAdapter(mThemeBrowserActivity, cursor, false, mCallback);
         setEmptyViewVisible(mAdapter.getCount() == 0);
-        mGridView.setAdapter(mAdapter);
         restoreState(savedInstanceState);
     }
 
@@ -165,7 +162,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        if (mGridView != null) {
+        if (mRecyclerView != null) {
             outState.putInt(BUNDLE_PAGE, mPage);
         }
         outState.putSerializable(WordPress.SITE, mSite);
@@ -249,10 +246,14 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     }
 
     private void configureGridView(LayoutInflater inflater, View view) {
-        mGridView = (HeaderGridView) view.findViewById(R.id.theme_listview);
+        mRecyclerView = (RecyclerView) view.findViewById(R.id.theme_listview);
         addHeaderViews(inflater);
-        mGridView.setRecyclerListener(this);
-        mGridView.setOnScrollListener(this);
+        mRecyclerView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                // TODO
+            }
+        });
     }
 
     private void addMainHeader(LayoutInflater inflater) {
@@ -284,8 +285,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
                 mCallback.onSupportSelected(mCurrentThemeId);
             }
         });
-
-        mGridView.addHeaderView(header);
     }
 
     private void setThemeNameIfAlreadyAvailable() {
@@ -324,7 +323,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(mThemeBrowserActivity, R.array.themes_filter_array, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mSpinner.setAdapter(adapter);
-        mGridView.addHeaderView(headerSearch);
         mSpinner.setOnItemSelectedListener(this);
     }
 
@@ -339,7 +337,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
             return;
         }
         mEmptyView.setVisibility(visible ? RelativeLayout.VISIBLE : RelativeLayout.GONE);
-        mGridView.setVisibility(visible ? View.GONE : View.VISIBLE);
+        mRecyclerView.setVisibility(visible ? View.GONE : View.VISIBLE);
         if (visible && !NetworkUtils.isNetworkAvailable(mThemeBrowserActivity)) {
             mEmptyTextView.setText(R.string.no_network_title);
         }
@@ -351,6 +349,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
      * @return a db Cursor or null if current blog is null
      */
     protected Cursor fetchThemes(int position) {
+        return null;
     }
 
     protected void refreshView(int position) {
@@ -374,7 +373,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         if (totalItemCount < ThemeBrowserActivity.THEME_FETCH_MAX) {
             return false;
         } else {
-            int numberOfColumns = mGridView.getNumColumns();
+            int numberOfColumns = 2;//mRecyclerView.getNumColumns();
             return lastVisibleCount >= totalItemCount - numberOfColumns;
         }
     }
@@ -384,20 +383,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
             return mSpinner.getSelectedItemPosition();
         } else {
             return 0;
-        }
-    }
-
-    @Override
-    public void onScrollStateChanged(AbsListView view, int scrollState) {
-
-    }
-
-    @Override
-    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        if (shouldFetchThemesOnScroll(firstVisibleItem + visibleItemCount, totalItemCount) && NetworkUtils.isNetworkAvailable(getActivity())) {
-            mPage++;
-            mThemeBrowserActivity.fetchThemes();
-            mProgressBar.setVisibility(View.VISIBLE);
         }
     }
 }
