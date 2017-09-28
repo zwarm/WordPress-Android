@@ -405,7 +405,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
                                 mSite, themeProperties);
                         break;
                 }
-                ThemeWebActivity.openTheme(this, mSite, themeId, type, isCurrentTheme);
                 return;
             } else {
                 toastText = getString(R.string.could_not_load_theme);
