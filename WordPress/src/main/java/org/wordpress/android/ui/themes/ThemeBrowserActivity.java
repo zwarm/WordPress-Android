@@ -217,42 +217,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     }
 
     public void fetchThemes() {
-        if (mFetchingThemes) {
-            return;
-        }
-        mFetchingThemes = true;
-        int page = 1;
-        if (mThemeBrowserFragment != null) {
-            page = mThemeBrowserFragment.getPage();
-        }
-        WordPress.getRestClientUtilsV1_2().getFreeThemes(mSite.getSiteId(), THEME_FETCH_MAX, page, new Listener() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                    }
-                }, new ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError response) {
-                        if (response.toString().equals(AuthFailureError.class.getName())) {
-                            String errorTitle = getString(R.string.theme_auth_error_title);
-                            String errorMsg = getString(R.string.theme_auth_error_message);
-
-                            if (mIsRunning) {
-                                FragmentTransaction ft = getFragmentManager().beginTransaction();
-                                WPAlertDialogFragment fragment = WPAlertDialogFragment.newAlertDialog(errorMsg,
-                                        errorTitle);
-                                ft.add(fragment, ALERT_TAB);
-                                ft.commitAllowingStateLoss();
-                            }
-                            AppLog.d(T.THEMES, getString(R.string.theme_auth_error_authenticate));
-                        } else {
-                            ToastUtils.showToast(ThemeBrowserActivity.this, R.string.theme_fetch_failed,
-                                    ToastUtils.Duration.LONG);
-                            AppLog.d(T.THEMES, getString(R.string.theme_fetch_failed) + ": " + response.toString());
-                        }
-                        mFetchingThemes = false;
-                    }
-                }
-        );
     }
 
     public void searchThemes(String searchTerm) {
