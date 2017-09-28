@@ -107,7 +107,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         showCorrectToolbar();
         ActivityId.trackLastActivity(ActivityId.THEMES);
         fetchThemesIfNoneAvailable();
-        fetchPurchasedThemes();
     }
 
     @Override
@@ -307,9 +306,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     private void fetchThemesIfNoneAvailable() {
     }
 
-    private void fetchPurchasedThemes() {
-    }
-
     private void showCorrectToolbar() {
         if (mIsInSearchMode) {
             showSearchToolbar();
@@ -432,5 +428,4 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
 
         ToastUtils.showToast(this, toastText, ToastUtils.Duration.SHORT);
     }
-
 }
