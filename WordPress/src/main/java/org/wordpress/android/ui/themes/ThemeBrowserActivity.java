@@ -14,14 +14,8 @@ import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.VolleyError;
-import com.wordpress.rest.RestRequest.ErrorListener;
-import com.wordpress.rest.RestRequest.Listener;
-
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
-import org.json.JSONObject;
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
 import org.wordpress.android.analytics.AnalyticsTracker;
@@ -30,7 +24,9 @@ import org.wordpress.android.fluxc.generated.ThemeActionBuilder;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.model.ThemeModel;
 import org.wordpress.android.fluxc.store.ThemeStore;
+import org.wordpress.android.fluxc.store.ThemeStore.OnThemesChanged;
 import org.wordpress.android.fluxc.store.ThemeStore.OnThemeActivated;
+import org.wordpress.android.fluxc.store.ThemeStore.OnCurrentThemeFetched;
 import org.wordpress.android.fluxc.store.ThemeStore.ActivateThemePayload;
 import org.wordpress.android.ui.ActivityId;
 import org.wordpress.android.ui.themes.ThemeBrowserFragment.ThemeBrowserFragmentCallback;
@@ -39,7 +35,6 @@ import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.AppLog.T;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.ToastUtils;
-import org.wordpress.android.widgets.WPAlertDialogFragment;
 
 import java.util.HashMap;
 import java.util.List;
@@ -198,6 +193,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             AppLog.e(T.THEMES, "Error activating theme: " + event.error.message);
             ToastUtils.showToast(this, R.string.theme_activation_error, ToastUtils.Duration.SHORT);
         } else {
+            AppLog.d(T.THEMES, "Theme activation successful! New theme: " + event.theme.getName());
             mCurrentTheme = event.theme;
 
             Map<String, Object> themeProperties = new HashMap<>();
@@ -210,48 +206,73 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         }
     }
 
-    public void setIsInSearchMode(boolean isInSearchMode) {
-        mIsInSearchMode = isInSearchMode;
+    @SuppressWarnings("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onCurrentThemeFetched(OnCurrentThemeFetched event) {
+        if (event.isError()) {
+            AppLog.e(T.THEMES, "Error fetching current theme: " + event.error.message);
+            ToastUtils.showToast(this, R.string.theme_fetch_failed, ToastUtils.Duration.SHORT);
+
+            if (mCurrentTheme != null && mThemeBrowserFragment != null) {
+                if (mThemeBrowserFragment.getCurrentThemeTextView() != null) {
+                    mThemeBrowserFragment.getCurrentThemeTextView().setText(mCurrentTheme.getName());
+                    mThemeBrowserFragment.setCurrentThemeId(mCurrentTheme.getThemeId());
+                }
+            }
+        } else {
+            AppLog.d(T.THEMES, "Current Theme fetch successful!");
+            mCurrentTheme = event.theme;
+
+            if (mThemeBrowserFragment != null) {
+                mThemeBrowserFragment.setRefreshing(false);
+                if (mThemeBrowserFragment.getCurrentThemeTextView() != null) {
+                    mThemeBrowserFragment.getCurrentThemeTextView().setText(mCurrentTheme.getName());
+                    mThemeBrowserFragment.setCurrentThemeId(mCurrentTheme.getThemeId());
+                }
+            }
+
+            if (mThemeSearchFragment != null && mThemeSearchFragment.isVisible()) {
+                mThemeSearchFragment.setRefreshing(false);
+            }
+        }
+    }
+
+    @SuppressWarnings("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onThemesChanged(OnThemesChanged event) {
+        mFetchingThemes = false;
+        if (event.isError()) {
+            AppLog.e(T.THEMES, "Error fetching themes: " + event.error.message);
+            ToastUtils.showToast(this, R.string.theme_fetch_failed, ToastUtils.Duration.SHORT);
+        } else {
+            AppLog.d(T.THEMES, "Theme fetch successful!");
+        }
     }
 
     public void fetchThemes() {
+        // no fetching allowed until response received for existing fetch request
+        if (mFetchingThemes) {
+            return;
+        }
+
+        if (mSite.isWPCom()) {
+            mDispatcher.dispatch(ThemeActionBuilder.newFetchWpComThemesAction());
+            mFetchingThemes = true;
+        }
     }
 
     public void searchThemes(String searchTerm) {
-        mFetchingThemes = true;
-        int page = 1;
-        if (mThemeSearchFragment != null) {
-            page = mThemeSearchFragment.getPage();
-        }
-
-        WordPress.getRestClientUtilsV1_2().getFreeSearchThemes(mSite.getSiteId(), THEME_FETCH_MAX, page, searchTerm,
-                new Listener() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                    }
-                }, new ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError response) {
-                        if (response.toString().equals(AuthFailureError.class.getName())) {
-                            String errorTitle = getString(R.string.theme_auth_error_title);
-                            String errorMsg = getString(R.string.theme_auth_error_message);
-
-                            if (mIsRunning) {
-                                FragmentTransaction ft = getFragmentManager().beginTransaction();
-                                WPAlertDialogFragment fragment = WPAlertDialogFragment.newAlertDialog(errorMsg,
-                                        errorTitle);
-                                ft.add(fragment, ALERT_TAB);
-                                ft.commitAllowingStateLoss();
-                            }
-                            AppLog.d(T.THEMES, getString(R.string.theme_auth_error_authenticate));
-                        }
-                        mFetchingThemes = false;
-                    }
-                }
-        );
     }
 
     public void fetchCurrentTheme() {
+        if (!mSite.isUsingWpComRestApi()) {
+            return;
+        }
+        mDispatcher.dispatch(ThemeActionBuilder.newFetchCurrentThemeAction(mSite));
+    }
+
+    public void setIsInSearchMode(boolean isInSearchMode) {
+        mIsInSearchMode = isInSearchMode;
     }
 
     protected ThemeModel getCurrentTheme() {
@@ -287,23 +308,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     }
 
     private void fetchPurchasedThemes() {
-        if (NetworkUtils.isNetworkAvailable(this)) {
-            WordPress.getRestClientUtilsV1_1().getPurchasedThemes(mSite.getSiteId(), new Listener() {
-                @Override
-                public void onResponse(JSONObject response) {
-                }
-            }, new ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-                    AppLog.d(T.THEMES, error.getMessage());
-                }
-            });
-
-            //do not interact with theme browser fragment if we are in search mode
-            if (!mIsInSearchMode) {
-                mThemeBrowserFragment.setRefreshing(true);
-            }
-        }
     }
 
     private void showCorrectToolbar() {
