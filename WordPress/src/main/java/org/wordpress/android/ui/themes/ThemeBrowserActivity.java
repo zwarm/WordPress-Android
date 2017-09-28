@@ -41,13 +41,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * The theme browser.
- */
 public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrowserFragmentCallback {
     public static final int THEME_FETCH_MAX = 100;
     public static final int ACTIVATE_THEME = 1;
     public static final String THEME_ID = "theme_id";
+
     private static final String IS_IN_SEARCH_MODE = "is_in_search_mode";
     private static final String ALERT_TAB = "alert";
 
@@ -60,10 +58,9 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
 
     private SiteModel mSite;
 
+    /** Theme browsing is only supported on WP.com sites and Jetpack sites using the WP.com REST API. */
     public static boolean isAccessible(SiteModel site) {
-        // themes are only accessible to admin wordpress.com users
-        // TODO: Support themes for Jetpack and AT sites (and use SiteUtils.isAccessedViaWPComRest(site))
-        return site != null && site.isWPCom() && site.getHasCapabilityEditThemeOptions();
+        return site != null && site.isUsingWpComRestApi() && site.getHasCapabilityEditThemeOptions();
     }
 
     @Override
@@ -101,7 +98,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         showCorrectToolbar();
         mIsRunning = true;
         ActivityId.trackLastActivity(ActivityId.THEMES);
-
         fetchThemesIfNoneAvailable();
         fetchPurchasedThemes();
     }
