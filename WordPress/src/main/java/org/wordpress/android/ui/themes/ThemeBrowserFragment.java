@@ -24,9 +24,7 @@ import com.android.volley.toolbox.ImageLoader.ImageListener;
 
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
-import org.wordpress.android.datasets.ThemeTable;
 import org.wordpress.android.fluxc.model.SiteModel;
-import org.wordpress.android.models.Theme;
 import org.wordpress.android.fluxc.store.ThemeStore;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.ToastUtils;
@@ -255,10 +253,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     }
 
     private void setThemeNameIfAlreadyAvailable() {
-        Theme currentTheme = mThemeBrowserActivity.getCurrentTheme();
-        if (currentTheme != null) {
-            mCurrentThemeTextView.setText(currentTheme.getName());
-        }
     }
 
     public void setRefreshing(boolean refreshing) {
@@ -321,20 +315,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
      * @return a db Cursor or null if current blog is null
      */
     protected Cursor fetchThemes(int position) {
-        if (mSite == null) {
-            return null;
-        }
-
-        String blogId = String.valueOf(mSite.getSiteId());
-        switch (position) {
-            case THEME_FILTER_PREMIUM_INDEX:
-                return ThemeTable.getThemesPremium(WordPress.wpDB.getDatabase(), blogId);
-            case THEME_FILTER_ALL_INDEX:
-                return ThemeTable.getThemesAll(WordPress.wpDB.getDatabase(), blogId);
-            case THEME_FILTER_FREE_INDEX:
-            default:
-                return ThemeTable.getThemesFree(WordPress.wpDB.getDatabase(), blogId);
-        }
     }
 
     protected void refreshView(int position) {

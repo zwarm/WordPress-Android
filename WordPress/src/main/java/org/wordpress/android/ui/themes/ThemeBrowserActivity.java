@@ -5,7 +5,6 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -19,15 +18,12 @@ import com.android.volley.VolleyError;
 import com.wordpress.rest.RestRequest.ErrorListener;
 import com.wordpress.rest.RestRequest.Listener;
 
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
 import org.wordpress.android.analytics.AnalyticsTracker;
-import org.wordpress.android.datasets.ThemeTable;
 import org.wordpress.android.fluxc.model.SiteModel;
-import org.wordpress.android.models.Theme;
+import org.wordpress.android.fluxc.model.ThemeModel;
 import org.wordpress.android.ui.ActivityId;
 import org.wordpress.android.ui.themes.ThemeBrowserFragment.ThemeBrowserFragmentCallback;
 import org.wordpress.android.util.AnalyticsUtils;
@@ -37,7 +33,6 @@ import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.widgets.WPAlertDialogFragment;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,10 +48,10 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     private boolean mIsRunning;
     private ThemeBrowserFragment mThemeBrowserFragment;
     private ThemeSearchFragment mThemeSearchFragment;
-    private Theme mCurrentTheme;
     private boolean mIsInSearchMode;
 
     private SiteModel mSite;
+    private ThemeModel mCurrentTheme;
 
     /** Theme browsing is only supported on WP.com sites and Jetpack sites using the WP.com REST API. */
     public static boolean isAccessible(SiteModel site) {
@@ -200,7 +195,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         WordPress.getRestClientUtilsV1_2().getFreeThemes(mSite.getSiteId(), THEME_FETCH_MAX, page, new Listener() {
                     @Override
                     public void onResponse(JSONObject response) {
-                        new DeserializeThemesRestResponse().execute(response);
                     }
                 }, new ErrorListener() {
                     @Override
@@ -239,7 +233,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
                 new Listener() {
                     @Override
                     public void onResponse(JSONObject response) {
-                        new DeserializeThemesRestResponse().execute(response);
                     }
                 }, new ErrorListener() {
                     @Override
@@ -264,51 +257,9 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     }
 
     public void fetchCurrentTheme() {
-        WordPress.getRestClientUtilsV1_1().getCurrentTheme(mSite.getSiteId(), new Listener() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            mCurrentTheme = Theme.fromJSONV1_1(response, mSite);
-                            if (mCurrentTheme == null) {
-                                return;
-                            }
-                            mCurrentTheme.setIsCurrent(true);
-                            ThemeTable.saveTheme(WordPress.wpDB.getDatabase(), mCurrentTheme);
-                            ThemeTable.setCurrentTheme(WordPress.wpDB.getDatabase(), String.valueOf(mSite.getSiteId()),
-                                    mCurrentTheme.getId());
-                            if (mThemeBrowserFragment != null) {
-                                mThemeBrowserFragment.setRefreshing(false);
-                                if (mThemeBrowserFragment.getCurrentThemeTextView() != null) {
-                                    mThemeBrowserFragment.getCurrentThemeTextView().setText(mCurrentTheme.getName());
-                                    mThemeBrowserFragment.setCurrentThemeId(mCurrentTheme.getId());
-                                }
-                            }
-                            if (mThemeSearchFragment != null && mThemeSearchFragment.isVisible()) {
-                                mThemeSearchFragment.setRefreshing(false);
-                            }
-                        } catch (JSONException e) {
-                            AppLog.e(T.THEMES, e);
-                        }
-                    }
-                }, new ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError response) {
-                        String themeId = ThemeTable.getCurrentThemeId(WordPress.wpDB.getDatabase(),
-                                String.valueOf(mSite.getSiteId()));
-                        mCurrentTheme = ThemeTable.getTheme(WordPress.wpDB.getDatabase(),
-                                String.valueOf(mSite.getSiteId()), themeId);
-                        if (mCurrentTheme != null && mThemeBrowserFragment != null) {
-                            if (mThemeBrowserFragment.getCurrentThemeTextView() != null) {
-                                mThemeBrowserFragment.getCurrentThemeTextView().setText(mCurrentTheme.getName());
-                                mThemeBrowserFragment.setCurrentThemeId(mCurrentTheme.getId());
-                            }
-                        }
-                    }
-                }
-        );
     }
 
-    protected Theme getCurrentTheme() {
+    protected ThemeModel getCurrentTheme() {
         return mCurrentTheme;
     }
 
@@ -335,18 +286,9 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     }
 
     private void setCurrentThemeFromDB() {
-        mCurrentTheme = ThemeTable.getCurrentTheme(WordPress.wpDB.getDatabase(), String.valueOf(mSite.getSiteId()));
     }
 
     private void fetchThemesIfNoneAvailable() {
-        if (NetworkUtils.isNetworkAvailable(this)
-                && ThemeTable.getThemeCount(WordPress.wpDB.getDatabase(), String.valueOf(mSite.getSiteId())) == 0) {
-            fetchThemes();
-            //do not interact with theme browser fragment if we are in search mode
-            if (!mIsInSearchMode) {
-                mThemeBrowserFragment.setRefreshing(true);
-            }
-        }
     }
 
     private void fetchPurchasedThemes() {
@@ -354,7 +296,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             WordPress.getRestClientUtilsV1_1().getPurchasedThemes(mSite.getSiteId(), new Listener() {
                 @Override
                 public void onResponse(JSONObject response) {
-                    new DeserializeThemesRestResponse().execute(response);
                 }
             }, new ErrorListener() {
                 @Override
@@ -413,37 +354,14 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     }
 
     private void activateTheme(final String themeId) {
-        WordPress.getRestClientUtils().setTheme(mSite.getSiteId(), themeId, new Listener() {
-            @Override
-            public void onResponse(JSONObject response) {
-                ThemeTable.setCurrentTheme(WordPress.wpDB.getDatabase(), String.valueOf(mSite.getSiteId()), themeId);
-                Theme newTheme = ThemeTable.getTheme(WordPress.wpDB.getDatabase(),
-                        String.valueOf(mSite.getSiteId()), themeId);
-
-                Map<String, Object> themeProperties = new HashMap<>();
-                themeProperties.put(THEME_ID, themeId);
-                AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.THEMES_CHANGED_THEME, mSite, themeProperties);
-
-                if (!isFinishing()) {
-                    showAlertDialogOnNewSettingNewTheme(newTheme);
-                    fetchCurrentTheme();
-                }
-            }
-        }, new ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                ToastUtils.showToast(ThemeBrowserActivity.this, R.string.theme_activation_error,
-                        ToastUtils.Duration.SHORT);
-            }
-        });
     }
 
-    private void showAlertDialogOnNewSettingNewTheme(Theme newTheme) {
+    private void showAlertDialogOnNewSettingNewTheme(ThemeModel newTheme) {
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
 
         String thanksMessage = String.format(getString(R.string.theme_prompt), newTheme.getName());
-        if (!newTheme.getAuthor().isEmpty()) {
-            String append = String.format(getString(R.string.theme_by_author_prompt_append), newTheme.getAuthor());
+        if (!newTheme.getAuthorName().isEmpty()) {
+            String append = String.format(getString(R.string.theme_by_author_prompt_append), newTheme.getAuthorName());
             thanksMessage = thanksMessage + " " + append;
         }
 
@@ -465,7 +383,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
 
         if (NetworkUtils.isNetworkAvailable(this)) {
             if (mCurrentTheme != null && !TextUtils.isEmpty(themeId)) {
-                boolean isCurrentTheme = mCurrentTheme.getId().equals(themeId);
+                boolean isCurrentTheme = mCurrentTheme.getThemeId().equals(themeId);
                 Map<String, Object> themeProperties = new HashMap<>();
                 themeProperties.put(THEME_ID, themeId);
 
@@ -497,53 +415,4 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         ToastUtils.showToast(this, toastText, ToastUtils.Duration.SHORT);
     }
 
-    /**
-     * Converts themes from a JSON REST response object to a list of {@link Theme}'s and saves them to local database.
-     * A {@link JSONObject} containing a {@link JSONArray} with key "themes" is expected.
-     */
-    private class DeserializeThemesRestResponse extends AsyncTask<JSONObject, Void, ArrayList<Theme>> {
-        @Override
-        protected ArrayList<Theme> doInBackground(JSONObject... args) {
-            if (args[0] == null) {
-                return null;
-            }
-
-            // JSONArray of themes is required
-            final JSONArray array = args[0].optJSONArray("themes");
-            if (array == null) {
-                return null;
-            }
-
-            // convert JSON themes to Theme models and store them in database
-            final ArrayList<Theme> themes = new ArrayList<>();
-            for (int i = 0; i < array.length(); i++) {
-                try {
-                    JSONObject object = array.getJSONObject(i);
-                    Theme theme = Theme.fromJSONV1_2(object, mSite);
-                    if (theme != null) {
-                        ThemeTable.saveTheme(WordPress.wpDB.getDatabase(), theme);
-                        themes.add(theme);
-                    }
-                } catch (JSONException e) {
-                    AppLog.e(T.THEMES, e);
-                }
-            }
-
-            fetchCurrentTheme();
-
-            return themes.size() > 0 ? themes : null;
-        }
-
-        @Override
-        protected void onPostExecute(final ArrayList<Theme> result) {
-            mFetchingThemes = false;
-            if (mThemeBrowserFragment != null && mThemeBrowserFragment.isVisible()) {
-                mThemeBrowserFragment.getEmptyTextView().setText(R.string.theme_no_search_result_found);
-                mThemeBrowserFragment.setRefreshing(false);
-            } else if (mThemeSearchFragment != null && mThemeSearchFragment.isVisible()) {
-                mThemeSearchFragment.getEmptyTextView().setText(R.string.theme_no_search_result_found);
-                mThemeSearchFragment.setRefreshing(false);
-            }
-        }
-    }
 }

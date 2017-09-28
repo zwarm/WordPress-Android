@@ -17,7 +17,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import org.wordpress.android.R;
-import org.wordpress.android.models.Theme;
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.widgets.HeaderGridView;
 import org.wordpress.android.widgets.WPNetworkImageView;
@@ -75,20 +74,6 @@ public class ThemeBrowserAdapter extends CursorAdapter {
     @Override
     public void bindView(View view, Context context, Cursor cursor) {
         final ThemeViewHolder themeViewHolder = (ThemeViewHolder) view.getTag();
-
-        final String screenshotURL = cursor.getString(cursor.getColumnIndex(Theme.SCREENSHOT));
-        final String name = cursor.getString(cursor.getColumnIndex(Theme.NAME));
-        final String price = cursor.getString(cursor.getColumnIndex(Theme.PRICE));
-        final String themeId = cursor.getString(cursor.getColumnIndex(Theme.ID));
-        final boolean isCurrent = cursor.getInt(cursor.getColumnIndex(Theme.IS_CURRENT)) == 1;
-        final boolean isPremium = !price.isEmpty();
-
-        themeViewHolder.nameView.setText(name);
-        themeViewHolder.priceView.setText(price);
-
-        configureImageView(themeViewHolder, screenshotURL, themeId, isCurrent);
-        configureImageButton(context, themeViewHolder, themeId, isPremium, isCurrent);
-        configureCardView(context, themeViewHolder, isCurrent);
     }
 
     private void configureCardView(Context context, ThemeViewHolder themeViewHolder, boolean isCurrent) {
