@@ -27,6 +27,7 @@ import org.wordpress.android.WordPress;
 import org.wordpress.android.datasets.ThemeTable;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.models.Theme;
+import org.wordpress.android.fluxc.store.ThemeStore;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.util.helpers.SwipeToRefreshHelper;
@@ -34,6 +35,8 @@ import org.wordpress.android.util.helpers.SwipeToRefreshHelper.RefreshListener;
 import org.wordpress.android.util.widgets.CustomSwipeRefreshLayout;
 import org.wordpress.android.widgets.HeaderGridView;
 import org.wordpress.android.widgets.WPNetworkImageView;
+
+import javax.inject.Inject;
 
 import static org.wordpress.android.util.WPSwipeToRefreshHelper.buildSwipeToRefreshHelper;
 
@@ -72,6 +75,8 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     private ProgressBar mProgressBar;
 
     private SiteModel mSite;
+
+    @Inject private ThemeStore mThemeStore;
 
     public static ThemeBrowserFragment newInstance(SiteModel site) {
         ThemeBrowserFragment fragment = new ThemeBrowserFragment();
