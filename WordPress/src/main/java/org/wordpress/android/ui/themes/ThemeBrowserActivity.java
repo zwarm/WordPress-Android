@@ -48,10 +48,8 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     public static final String THEME_ID = "theme_id";
 
     private static final String IS_IN_SEARCH_MODE = "is_in_search_mode";
-    private static final String ALERT_TAB = "alert";
 
     private boolean mFetchingThemes = false;
-    private boolean mIsRunning;
     private ThemeBrowserFragment mThemeBrowserFragment;
     private ThemeSearchFragment mThemeSearchFragment;
     private boolean mIsInSearchMode;
@@ -103,17 +101,15 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     protected void onResume() {
         super.onResume();
         mDispatcher.register(this);
-        mIsRunning = true;
         showCorrectToolbar();
-        ActivityId.trackLastActivity(ActivityId.THEMES);
         fetchThemesIfNoneAvailable();
+        ActivityId.trackLastActivity(ActivityId.THEMES);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         mDispatcher.unregister(this);
-        mIsRunning = false;
     }
 
     @Override
@@ -356,7 +352,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
                 return theme;
             }
         }
-
         return null;
     }
 

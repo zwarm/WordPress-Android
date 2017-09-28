@@ -138,6 +138,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
         if (this instanceof ThemeSearchFragment) {
             mThemeBrowserActivity.setThemeSearchFragment((ThemeSearchFragment) this);
         } else {
@@ -168,6 +169,41 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
             outState.putInt(BUNDLE_PAGE, mPage);
         }
         outState.putSerializable(WordPress.SITE, mSite);
+    }
+
+    @Override
+    public void onMovedToScrapHeap(View view) {
+        // cancel image fetch requests if the view has been moved to recycler.
+        WPNetworkImageView niv = (WPNetworkImageView) view.findViewById(R.id.theme_grid_item_image);
+        if (niv != null) {
+            // this tag is set in the ThemeBrowserAdapter class
+            String requestUrl = (String) niv.getTag();
+            if (requestUrl != null) {
+                // need a listener to cancel request, even if the listener does nothing
+                ImageContainer container = WordPress.sImageLoader.get(requestUrl, new ImageListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                    }
+
+                    @Override
+                    public void onResponse(ImageContainer response, boolean isImmediate) {
+                    }
+
+                });
+                container.cancelRequest();
+            }
+        }
+    }
+
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        if (mSpinner != null) {
+            refreshView(position);
+        }
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
     }
 
     public TextView getEmptyTextView() {
@@ -349,42 +385,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         } else {
             return 0;
         }
-    }
-
-    @Override
-    public void onMovedToScrapHeap(View view) {
-        // cancel image fetch requests if the view has been moved to recycler.
-        WPNetworkImageView niv = (WPNetworkImageView) view.findViewById(R.id.theme_grid_item_image);
-        if (niv != null) {
-            // this tag is set in the ThemeBrowserAdapter class
-            String requestUrl = (String) niv.getTag();
-            if (requestUrl != null) {
-                // need a listener to cancel request, even if the listener does nothing
-                ImageContainer container = WordPress.sImageLoader.get(requestUrl, new ImageListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                    }
-
-                    @Override
-                    public void onResponse(ImageContainer response, boolean isImmediate) {
-                    }
-
-                });
-                container.cancelRequest();
-            }
-        }
-    }
-
-    @Override
-    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        if (mSpinner != null) {
-            refreshView(position);
-        }
-    }
-
-    @Override
-    public void onNothingSelected(AdapterView<?> parent) {
-
     }
 
     @Override

@@ -21,10 +21,6 @@ import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.widgets.HeaderGridView;
 import org.wordpress.android.widgets.WPNetworkImageView;
 
-/**
- * Adapter for the {@link ThemeBrowserFragment}'s listview
- *
- */
 public class ThemeBrowserAdapter extends CursorAdapter {
     private static final String THEME_IMAGE_PARAMETER = "?w=";
     private final LayoutInflater mInflater;

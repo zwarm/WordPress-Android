@@ -28,8 +28,8 @@
             android:numColumns="auto_fit"
             android:divider="@android:color/transparent"
             android:stretchMode="columnWidth"
-            android:layout_below="@id/theme_no_search_result_text">
-        </org.wordpress.android.widgets.HeaderGridView>
+            android:layout_below="@id/theme_no_search_result_text" />
+
     </org.wordpress.android.util.widgets.CustomSwipeRefreshLayout>
 
     <ProgressBar
