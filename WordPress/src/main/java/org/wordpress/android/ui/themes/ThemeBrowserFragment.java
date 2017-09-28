@@ -87,6 +87,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ((WordPress) getActivity().getApplication()).component().inject(this);
 
         if (savedInstanceState == null) {
             mSite = (SiteModel) getArguments().getSerializable(WordPress.SITE);
@@ -157,7 +158,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     @Override
     public void onResume() {
         super.onResume();
-
         mThemeBrowserActivity.fetchCurrentTheme();
     }
 

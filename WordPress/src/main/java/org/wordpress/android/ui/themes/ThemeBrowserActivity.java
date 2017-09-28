@@ -89,6 +89,8 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             return;
         }
 
+        ((WordPress) getApplication()).component().inject(this);
+
         setContentView(R.layout.theme_browser_activity);
 
         if (savedInstanceState == null) {
@@ -105,8 +107,9 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     @Override
     protected void onResume() {
         super.onResume();
-        showCorrectToolbar();
+        mDispatcher.register(this);
         mIsRunning = true;
+        showCorrectToolbar();
         ActivityId.trackLastActivity(ActivityId.THEMES);
         fetchThemesIfNoneAvailable();
         fetchPurchasedThemes();
@@ -115,6 +118,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     @Override
     protected void onPause() {
         super.onPause();
+        mDispatcher.unregister(this);
         mIsRunning = false;
     }
 
@@ -132,7 +136,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             onBackPressed();
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
