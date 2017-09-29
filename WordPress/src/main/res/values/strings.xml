@@ -1655,6 +1655,9 @@
         <item>@string/theme_premium</item>
     </string-array>
 
+    <string name="installed_themes_header">Uploaded themes</string>
+    <string name="wp_themes_header">WordPress.com themes</string>
+
     <string name="title_activity_theme_support">Themes</string>
     <string name="theme_activate">Activate</string>
     <string name="theme_try_and_customize">Try &amp; Customize</string>
