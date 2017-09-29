@@ -344,50 +344,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         fragmentTransaction.commit();
     }
 
-    // TODO: this should be in FluxC
-    private ThemeModel getThemeFromThemeId(final @NonNull String themeId) {
-        List<ThemeModel> themes = mThemeStore.getWpThemes();
-        for (ThemeModel theme : themes) {
-            if (themeId.equals(theme.getThemeId())) {
-                return theme;
-            }
-        }
-        return null;
-    }
-
-    private void activateTheme(final String themeId) {
-        final ThemeModel theme = getThemeFromThemeId(themeId);
-        if (theme != null) {
-            ActivateThemePayload payload = new ActivateThemePayload(mSite, theme);
-            mDispatcher.dispatch(ThemeActionBuilder.newActivateThemeAction(payload));
-        } else {
-            AppLog.w(T.THEMES, "Could not find theme to activate: themeId=" + themeId);
-            ToastUtils.showToast(this, R.string.theme_activation_error, ToastUtils.Duration.SHORT);
-        }
-    }
-
-    private void showAlertDialogOnNewSettingNewTheme(ThemeModel newTheme) {
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-
-        String thanksMessage = String.format(getString(R.string.theme_prompt), newTheme.getName());
-        if (!newTheme.getAuthorName().isEmpty()) {
-            String append = String.format(getString(R.string.theme_by_author_prompt_append), newTheme.getAuthorName());
-            thanksMessage = thanksMessage + " " + append;
-        }
-
-        dialogBuilder.setMessage(thanksMessage);
-        dialogBuilder.setNegativeButton(R.string.theme_done, null);
-        dialogBuilder.setPositiveButton(R.string.theme_manage_site, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                finish();
-            }
-        });
-
-        AlertDialog alertDialog = dialogBuilder.create();
-        alertDialog.show();
-    }
-
     private void startWebActivity(String themeId, ThemeWebActivity.ThemeWebActivityType type) {
         String toastText = getString(R.string.no_network_message);
 
@@ -422,5 +378,38 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         }
 
         ToastUtils.showToast(this, toastText, ToastUtils.Duration.SHORT);
+    }
+
+    private void activateTheme(final String themeId) {
+        final ThemeModel theme = mThemeStore.getThemeWithId(themeId);
+        if (theme != null) {
+            ActivateThemePayload payload = new ActivateThemePayload(mSite, theme);
+            mDispatcher.dispatch(ThemeActionBuilder.newActivateThemeAction(payload));
+        } else {
+            AppLog.w(T.THEMES, "Could not find theme to activate: themeId=" + themeId);
+            ToastUtils.showToast(this, R.string.theme_activation_error, ToastUtils.Duration.SHORT);
+        }
+    }
+
+    private void showAlertDialogOnNewSettingNewTheme(ThemeModel newTheme) {
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+
+        String thanksMessage = String.format(getString(R.string.theme_prompt), newTheme.getName());
+        if (!newTheme.getAuthorName().isEmpty()) {
+            String append = String.format(getString(R.string.theme_by_author_prompt_append), newTheme.getAuthorName());
+            thanksMessage = thanksMessage + " " + append;
+        }
+
+        dialogBuilder.setMessage(thanksMessage);
+        dialogBuilder.setNegativeButton(R.string.theme_done, null);
+        dialogBuilder.setPositiveButton(R.string.theme_manage_site, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                finish();
+            }
+        });
+
+        AlertDialog alertDialog = dialogBuilder.create();
+        alertDialog.show();
     }
 }
