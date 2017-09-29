@@ -83,6 +83,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         }
 
         ((WordPress) getApplication()).component().inject(this);
+        mDispatcher.register(this);
 
         setContentView(R.layout.theme_browser_activity);
 
@@ -93,14 +94,12 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             addBrowserFragment();
         }
 
-        setCurrentThemeFromDB();
         showToolbar();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mDispatcher.register(this);
         showCorrectToolbar();
         fetchThemesIfNoneAvailable();
         ActivityId.trackLastActivity(ActivityId.THEMES);
