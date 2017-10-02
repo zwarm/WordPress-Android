@@ -106,6 +106,13 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         mEmptyView = (RelativeLayout) view.findViewById(R.id.empty_view);
         mProgressBar = (ProgressBar) view.findViewById(R.id.theme_loading_progress_bar);
 
+        // hide section headers for WordPress.com sites
+        // only Jetpack sites show Uploaded Themes
+        if (mSite.isWPCom()) {
+            view.findViewById(R.id.installed_themes_label).setVisibility(View.GONE);
+            view.findViewById(R.id.wp_themes_label).setVisibility(View.GONE);
+        }
+
         configureGridView(inflater, view);
         configureSwipeToRefresh(view);
 
