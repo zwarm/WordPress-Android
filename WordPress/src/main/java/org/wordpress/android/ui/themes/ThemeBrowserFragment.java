@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,6 +26,7 @@ import com.android.volley.toolbox.ImageLoader.ImageListener;
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
 import org.wordpress.android.fluxc.model.SiteModel;
+import org.wordpress.android.fluxc.model.ThemeModel;
 import org.wordpress.android.fluxc.store.ThemeStore;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.ToastUtils;
@@ -32,6 +34,8 @@ import org.wordpress.android.util.helpers.SwipeToRefreshHelper;
 import org.wordpress.android.util.helpers.SwipeToRefreshHelper.RefreshListener;
 import org.wordpress.android.util.widgets.CustomSwipeRefreshLayout;
 import org.wordpress.android.widgets.WPNetworkImageView;
+
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -202,6 +206,38 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     public void onNothingSelected(AdapterView<?> parent) {
     }
 
+    public void refreshFromStore() {
+        if (mSite.isJetpackConnected() && mSite.isUsingWpComRestApi()) {
+            List<ThemeModel> installedThemes = mThemeStore.getThemesForSite(mSite);
+            if (installedThemes.isEmpty()) {
+                mInstalledThemesAdapter = null;
+            } else {
+                mInstalledThemesAdapter = new ThemesAdapter(getActivity(), mCallback, installedThemes);
+            }
+            mInstalledThemesList.setAdapter(mInstalledThemesAdapter);
+            mInstalledThemesList.setLayoutManager(new GridLayoutManager(getActivity(), 2) {
+            @Override
+            public boolean canScrollVertically() {
+                return false;
+            }
+        });
+        }
+
+        List<ThemeModel> wpThemes = mThemeStore.getWpThemes();
+        if (wpThemes.isEmpty()) {
+            mWpThemesAdapter = null;
+        } else {
+            mWpThemesAdapter = new ThemesAdapter(getActivity(), mCallback, wpThemes);
+        }
+        mWpThemesList.setAdapter(mWpThemesAdapter);
+        mWpThemesList.setLayoutManager(new GridLayoutManager(getActivity(), 2) {
+            @Override
+            public boolean canScrollVertically() {
+                return false;
+            }
+        });
+    }
+
     public TextView getEmptyTextView() {
         return mEmptyTextView;
     }
@@ -354,6 +390,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     }
 
     protected void refreshView(int position) {
+        refreshFromStore();
     }
 
     private boolean shouldFetchThemesOnScroll(int lastVisibleCount, int totalItemCount) {
