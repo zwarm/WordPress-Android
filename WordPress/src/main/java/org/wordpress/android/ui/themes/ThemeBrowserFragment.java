@@ -55,24 +55,24 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     protected static final int THEME_FILTER_FREE_INDEX = 1;
     protected static final int THEME_FILTER_PREMIUM_INDEX = 2;
 
-    protected SwipeToRefreshHelper mSwipeToRefreshHelper;
-    protected ThemeBrowserActivity mThemeBrowserActivity;
     private String mCurrentThemeId;
-    private RecyclerView mRecyclerView;
     private RelativeLayout mEmptyView;
     private TextView mNoResultText;
     private TextView mCurrentThemeTextView;
-    private ThemeBrowserAdapter mAdapter;
     private Spinner mSpinner;
     private ThemeBrowserFragmentCallback mCallback;
     private int mPage = 1;
     private boolean mShouldRefreshOnStart;
     private TextView mEmptyTextView;
     private ProgressBar mProgressBar;
-
     private SiteModel mSite;
+    private RecyclerView mWpThemesList;
+    private RecyclerView mInstalledThemesList;
+    private ThemesAdapter mInstalledThemesAdapter;
+    private ThemesAdapter mWpThemesAdapter;
 
-    @Inject ThemeStore mThemeStore;
+    protected SwipeToRefreshHelper mSwipeToRefreshHelper;
+    protected ThemeBrowserActivity mThemeBrowserActivity;
 
     public static ThemeBrowserFragment newInstance(SiteModel site) {
         ThemeBrowserFragment fragment = new ThemeBrowserFragment();
@@ -81,6 +81,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         fragment.setArguments(bundle);
         return fragment;
     }
+    @Inject ThemeStore mThemeStore;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -119,9 +120,9 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.theme_browser_fragment, container, false);
-
         setRetainInstance(true);
+
+        View view = inflater.inflate(R.layout.theme_browser_fragment, container, false);
         mNoResultText = (TextView) view.findViewById(R.id.theme_no_search_result_text);
         mEmptyTextView = (TextView) view.findViewById(R.id.text_empty);
         mEmptyView = (RelativeLayout) view.findViewById(R.id.empty_view);
@@ -148,8 +149,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
             return;
         }
 
-        mAdapter = new ThemeBrowserAdapter(mThemeBrowserActivity, cursor, false, mCallback);
-        setEmptyViewVisible(mAdapter.getCount() == 0);
         restoreState(savedInstanceState);
     }
 
@@ -246,9 +245,10 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     }
 
     private void configureGridView(LayoutInflater inflater, View view) {
-        mRecyclerView = (RecyclerView) view.findViewById(R.id.theme_listview);
+        mInstalledThemesList = (RecyclerView) view.findViewById(R.id.installed_theme_list);
+        mWpThemesList = (RecyclerView) view.findViewById(R.id.wp_theme_list);
         addHeaderViews(inflater);
-        mRecyclerView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+        mWpThemesList.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 // TODO
@@ -337,7 +337,8 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
             return;
         }
         mEmptyView.setVisibility(visible ? RelativeLayout.VISIBLE : RelativeLayout.GONE);
-        mRecyclerView.setVisibility(visible ? View.GONE : View.VISIBLE);
+        mWpThemesList.setVisibility(visible ? View.GONE : View.VISIBLE);
+        mInstalledThemesList.setVisibility(visible ? View.GONE : View.VISIBLE);
         if (visible && !NetworkUtils.isNetworkAvailable(mThemeBrowserActivity)) {
             mEmptyTextView.setText(R.string.no_network_title);
         }
@@ -353,20 +354,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     }
 
     protected void refreshView(int position) {
-        Cursor cursor = fetchThemes(position);
-        if (cursor == null) {
-            return;
-        }
-        if (mAdapter == null) {
-            mAdapter = new ThemeBrowserAdapter(mThemeBrowserActivity, cursor, false, mCallback);
-        }
-        if (mNoResultText.isShown()) {
-            mNoResultText.setVisibility(View.GONE);
-        }
-        mAdapter.changeCursor(cursor);
-        mAdapter.notifyDataSetChanged();
-        setEmptyViewVisible(mAdapter.getCount() == 0);
-        mProgressBar.setVisibility(View.GONE);
     }
 
     private boolean shouldFetchThemesOnScroll(int lastVisibleCount, int totalItemCount) {

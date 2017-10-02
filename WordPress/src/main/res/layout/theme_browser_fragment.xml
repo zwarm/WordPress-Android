@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -18,17 +20,51 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/theme_listview"
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:horizontalSpacing="@dimen/margin_none"
-            android:scrollbarStyle="outsideOverlay"
-            android:columnWidth="@dimen/theme_browser_default_column_width"
-            android:numColumns="auto_fit"
-            android:divider="@android:color/transparent"
-            android:stretchMode="columnWidth"
-            android:layout_below="@id/theme_no_search_result_text" />
+            android:layout_height="wrap_content"
+            android:layout_below="@id/theme_no_search_result_text"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:id="@+id/ptr_wrapper"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <org.wordpress.android.widgets.WPTextView
+                    android:id="@+id/installed_themes_label"
+                    android:text="@string/installed_themes_header"
+                    android:textColor="@color/wp_grey_darken_20"
+                    android:textSize="@dimen/text_header"
+                    android:paddingTop="@dimen/margin_medium"
+                    android:paddingBottom="@dimen/margin_medium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <android.support.v7.widget.RecyclerView
+                    android:id="@+id/installed_theme_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <org.wordpress.android.widgets.WPTextView
+                    android:id="@+id/wp_themes_label"
+                    android:text="@string/wp_themes_header"
+                    android:textColor="@color/wp_grey_darken_20"
+                    android:textSize="@dimen/text_header"
+                    android:paddingTop="@dimen/margin_medium"
+                    android:paddingBottom="@dimen/margin_medium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <android.support.v7.widget.RecyclerView
+                    android:id="@+id/wp_theme_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+            </LinearLayout>
+
+        </ScrollView>
 
     </org.wordpress.android.util.widgets.CustomSwipeRefreshLayout>
 
@@ -68,7 +104,8 @@
             android:layout_height="wrap_content"
             android:layout_centerHorizontal="true"
             android:text="@string/themes_fetching"
-            app:fixWidowWords="true"/>
+            app:fixWidowWords="true" />
+
     </RelativeLayout>
 
 </RelativeLayout>
