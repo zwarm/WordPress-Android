@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import org.wordpress.android.R;
 import org.wordpress.android.fluxc.model.ThemeModel;
+import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.widgets.WPNetworkImageView;
 
 import java.util.ArrayList;
@@ -36,11 +37,13 @@ public class ThemesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     private final List<ThemeModel> mThemes;
     private final LayoutInflater mLayoutInflater;
     private final OnThemeAction mCallback;
+    private final int mViewWidth;
 
     public ThemesAdapter(Context context, OnThemeAction callback, List<ThemeModel> themes) {
         mLayoutInflater = LayoutInflater.from(context);
         mCallback = callback;
         mThemes = new ArrayList<>();
+        mViewWidth = AppPrefs.getThemeImageSizeWidth();
 
         if (themes != null) {
             mThemes.addAll(themes);
@@ -71,7 +74,8 @@ public class ThemesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             requestURL = theme.getScreenshotUrl();
         }
 
-        themeViewHolder.imageView.setImageUrl(requestURL + THEME_IMAGE_PARAMETER + 64, WPNetworkImageView.ImageType.PHOTO);
+        String imageUrl = requestURL + THEME_IMAGE_PARAMETER + mViewWidth;
+        themeViewHolder.imageView.setImageUrl(imageUrl, WPNetworkImageView.ImageType.PHOTO);
         themeViewHolder.frameLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
