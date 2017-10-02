@@ -134,7 +134,7 @@ dependencies {
     apt 'com.google.dagger:dagger-compiler:2.0.2'
     provided 'org.glassfish:javax.annotation:10.0-b28'
 
-    compile ('com.github.wordpress-mobile.WordPress-FluxC-Android:fluxc:ee81c18ce1647e80978497a16ae7004cb1c7953d') {
+    compile ('com.github.wordpress-mobile.WordPress-FluxC-Android:fluxc:1a8b678b2c29cd687923607e682e774cfcf953e0') {
         exclude group: "com.android.volley";
     }
 
