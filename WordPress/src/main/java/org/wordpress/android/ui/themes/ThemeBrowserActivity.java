@@ -29,7 +29,7 @@ import org.wordpress.android.fluxc.store.ThemeStore.OnThemeActivated;
 import org.wordpress.android.fluxc.store.ThemeStore.OnCurrentThemeFetched;
 import org.wordpress.android.fluxc.store.ThemeStore.ActivateThemePayload;
 import org.wordpress.android.ui.ActivityId;
-import org.wordpress.android.ui.themes.ThemeBrowserFragment.ThemeBrowserFragmentCallback;
+import org.wordpress.android.ui.themes.ThemesAdapter.OnThemeAction;
 import org.wordpress.android.util.AnalyticsUtils;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.AppLog.T;
@@ -42,7 +42,12 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
-public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrowserFragmentCallback {
+public class ThemeBrowserActivity extends AppCompatActivity implements OnThemeAction {
+    /** Theme browsing is only supported on WP.com sites and Jetpack sites using the WP.com REST API. */
+    public static boolean isAccessible(SiteModel site) {
+        return site != null && site.isUsingWpComRestApi() && site.getHasCapabilityEditThemeOptions();
+    }
+
     public static final int THEME_FETCH_MAX = 100;
     public static final int ACTIVATE_THEME = 1;
     public static final String THEME_ID = "theme_id";
@@ -50,20 +55,14 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     private static final String IS_IN_SEARCH_MODE = "is_in_search_mode";
 
     private boolean mFetchingThemes = false;
+    private boolean mIsInSearchMode;
     private ThemeBrowserFragment mThemeBrowserFragment;
     private ThemeSearchFragment mThemeSearchFragment;
-    private boolean mIsInSearchMode;
-
-    private SiteModel mSite;
     private ThemeModel mCurrentTheme;
+    private SiteModel mSite;
 
     @Inject Dispatcher mDispatcher;
     @Inject ThemeStore mThemeStore;
-
-    /** Theme browsing is only supported on WP.com sites and Jetpack sites using the WP.com REST API. */
-    public static boolean isAccessible(SiteModel site) {
-        return site != null && site.isUsingWpComRestApi() && site.getHasCapabilityEditThemeOptions();
-    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -85,7 +84,14 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         ((WordPress) getApplication()).component().inject(this);
         mDispatcher.register(this);
 
+        // fetch WP.com themes if none are present in ThemeStore
+        List<ThemeModel> wpThemes = mThemeStore.getWpThemes();
+        if (wpThemes == null || wpThemes.isEmpty()) {
+            mDispatcher.dispatch(ThemeActionBuilder.newFetchWpComThemesAction());
+        }
+
         setContentView(R.layout.theme_browser_activity);
+        showToolbar();
 
         if (savedInstanceState == null) {
             AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.THEMES_ACCESSED_THEMES_BROWSER, mSite);
@@ -93,8 +99,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             mThemeSearchFragment = ThemeSearchFragment.newInstance(mSite);
             addBrowserFragment();
         }
-
-        showToolbar();
     }
 
     @Override
@@ -103,12 +107,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
         showCorrectToolbar();
         fetchThemesIfNoneAvailable();
         ActivityId.trackLastActivity(ActivityId.THEMES);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mDispatcher.unregister(this);
     }
 
     @Override
@@ -129,16 +127,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     }
 
     @Override
-    public void onBackPressed() {
-        FragmentManager fm = getFragmentManager();
-        if (fm.getBackStackEntryCount() > 0) {
-            fm.popBackStack();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == ACTIVATE_THEME && resultCode == RESULT_OK && data != null) {
             String themeId = data.getStringExtra(THEME_ID);
@@ -149,28 +137,49 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     }
 
     @Override
-    public void onActivateSelected(String themeId) {
-        activateTheme(themeId);
+    public void onBackPressed() {
+        FragmentManager fm = getFragmentManager();
+        if (fm.getBackStackEntryCount() > 0) {
+            fm.popBackStack();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     @Override
-    public void onTryAndCustomizeSelected(String themeId) {
-        startWebActivity(themeId, ThemeWebActivity.ThemeWebActivityType.PREVIEW);
+    protected void onDestroy() {
+        super.onDestroy();
+        mDispatcher.unregister(this);
     }
 
     @Override
-    public void onViewSelected(String themeId) {
-        startWebActivity(themeId, ThemeWebActivity.ThemeWebActivityType.DEMO);
+    public void onThemeClicked(String themeId) {
+        if (themeId.equals(mCurrentTheme.getThemeId())) {
+            onThemeAction(OnThemeAction.ACTION_CUSTOMIZE, themeId);
+        } else {
+            onThemeAction(OnThemeAction.ACTION_VIEW, themeId);
+        }
     }
 
     @Override
-    public void onDetailsSelected(String themeId) {
-        startWebActivity(themeId, ThemeWebActivity.ThemeWebActivityType.DETAILS);
-    }
-
-    @Override
-    public void onSupportSelected(String themeId) {
-        startWebActivity(themeId, ThemeWebActivity.ThemeWebActivityType.SUPPORT);
+    public void onThemeAction(int action, String themeId) {
+        switch (action) {
+            case OnThemeAction.ACTION_ACTIVATE:
+                activateTheme(themeId);
+                break;
+            case OnThemeAction.ACTION_CUSTOMIZE:
+                startWebActivity(themeId, ThemeWebActivity.ThemeWebActivityType.PREVIEW);
+                break;
+            case OnThemeAction.ACTION_VIEW:
+                startWebActivity(themeId, ThemeWebActivity.ThemeWebActivityType.DEMO);
+                break;
+            case OnThemeAction.ACTION_DETAILS:
+                startWebActivity(themeId, ThemeWebActivity.ThemeWebActivityType.DETAILS);
+                break;
+            case OnThemeAction.ACTION_SUPPORT:
+                startWebActivity(themeId, ThemeWebActivity.ThemeWebActivityType.SUPPORT);
+                break;
+        }
     }
 
     @Override
@@ -293,9 +302,6 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             findViewById(R.id.toolbar).setVisibility(View.VISIBLE);
             findViewById(R.id.toolbar_search).setVisibility(View.GONE);
         }
-    }
-
-    private void setCurrentThemeFromDB() {
     }
 
     private void fetchThemesIfNoneAvailable() {

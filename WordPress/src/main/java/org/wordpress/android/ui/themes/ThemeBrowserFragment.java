@@ -1,7 +1,7 @@
 package org.wordpress.android.ui.themes;
 
-import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
@@ -45,13 +45,12 @@ import static org.wordpress.android.util.WPSwipeToRefreshHelper.buildSwipeToRefr
  * A fragment display the themes on a grid view.
  */
 public class ThemeBrowserFragment extends Fragment implements RecyclerListener, AdapterView.OnItemSelectedListener {
-    public interface ThemeBrowserFragmentCallback {
-        void onActivateSelected(String themeId);
-        void onTryAndCustomizeSelected(String themeId);
-        void onViewSelected(String themeId);
-        void onDetailsSelected(String themeId);
-        void onSupportSelected(String themeId);
-        void onSearchClicked();
+    public static ThemeBrowserFragment newInstance(SiteModel site) {
+        ThemeBrowserFragment fragment = new ThemeBrowserFragment();
+        Bundle bundle = new Bundle();
+        bundle.putSerializable(WordPress.SITE, site);
+        fragment.setArguments(bundle);
+        return fragment;
     }
 
     protected static final String BUNDLE_PAGE = "BUNDLE_PAGE";
@@ -64,7 +63,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     private TextView mNoResultText;
     private TextView mCurrentThemeTextView;
     private Spinner mSpinner;
-    private ThemeBrowserFragmentCallback mCallback;
+    private ThemesAdapter.OnThemeAction mCallback;
     private int mPage = 1;
     private boolean mShouldRefreshOnStart;
     private TextView mEmptyTextView;
@@ -78,13 +77,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     protected SwipeToRefreshHelper mSwipeToRefreshHelper;
     protected ThemeBrowserActivity mThemeBrowserActivity;
 
-    public static ThemeBrowserFragment newInstance(SiteModel site) {
-        ThemeBrowserFragment fragment = new ThemeBrowserFragment();
-        Bundle bundle = new Bundle();
-        bundle.putSerializable(WordPress.SITE, site);
-        fragment.setArguments(bundle);
-        return fragment;
-    }
     @Inject ThemeStore mThemeStore;
 
     @Override
@@ -105,24 +97,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-
-        try {
-            mCallback = (ThemeBrowserFragmentCallback) activity;
-            mThemeBrowserActivity = (ThemeBrowserActivity) activity;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString() + " must implement ThemeBrowserFragmentCallback");
-        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mCallback = null;
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         setRetainInstance(true);
 
@@ -136,6 +110,39 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         configureSwipeToRefresh(view);
 
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mThemeBrowserActivity.fetchCurrentTheme();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (mWpThemesList != null) {
+            outState.putInt(BUNDLE_PAGE, mPage);
+        }
+        outState.putSerializable(WordPress.SITE, mSite);
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        try {
+            mCallback = (ThemesAdapter.OnThemeAction) context;
+            mThemeBrowserActivity = (ThemeBrowserActivity) context;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(context.toString() + " must implement OnThemeAction");
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallback = null;
     }
 
     @Override
@@ -154,21 +161,6 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         }
 
         restoreState(savedInstanceState);
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        mThemeBrowserActivity.fetchCurrentTheme();
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        if (mRecyclerView != null) {
-            outState.putInt(BUNDLE_PAGE, mPage);
-        }
-        outState.putSerializable(WordPress.SITE, mSite);
     }
 
     @Override
@@ -216,11 +208,11 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
             }
             mInstalledThemesList.setAdapter(mInstalledThemesAdapter);
             mInstalledThemesList.setLayoutManager(new GridLayoutManager(getActivity(), 2) {
-            @Override
-            public boolean canScrollVertically() {
-                return false;
-            }
-        });
+                @Override
+                public boolean canScrollVertically() {
+                    return false;
+                }
+            });
         }
 
         List<ThemeModel> wpThemes = mThemeStore.getWpThemes();
