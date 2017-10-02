@@ -301,7 +301,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         customize.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCallback.onTryAndCustomizeSelected(mCurrentThemeId);
+                mCallback.onThemeAction(ThemesAdapter.OnThemeAction.ACTION_CUSTOMIZE, mCurrentThemeId);
             }
         });
 
@@ -309,7 +309,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         details.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCallback.onDetailsSelected(mCurrentThemeId);
+                mCallback.onThemeAction(ThemesAdapter.OnThemeAction.ACTION_DETAILS, mCurrentThemeId);
             }
         });
 
@@ -317,7 +317,7 @@ public class ThemeBrowserFragment extends Fragment implements RecyclerListener, 
         support.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCallback.onSupportSelected(mCurrentThemeId);
+                mCallback.onThemeAction(ThemesAdapter.OnThemeAction.ACTION_SUPPORT, mCurrentThemeId);
             }
         });
     }
