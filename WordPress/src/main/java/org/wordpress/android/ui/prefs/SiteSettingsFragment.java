@@ -130,6 +130,7 @@ public class SiteSettingsFragment extends PreferenceFragment
     private static final int CLOSE_AFTER_REQUEST_CODE = 4;
     private static final int MULTIPLE_LINKS_REQUEST_CODE = 5;
     private static final int DELETE_SITE_REQUEST_CODE = 6;
+    private static final int POSTS_PER_PAGE_REQUEST_CODE = 7;
     private static final String DELETE_SITE_TAG = "delete-site";
     private static final String PURCHASE_ORIGINAL_RESPONSE_KEY = "originalResponse";
     private static final String PURCHASE_ACTIVE_KEY = "active";
@@ -166,7 +167,11 @@ public class SiteSettingsFragment extends PreferenceFragment
     // Writing settings
     private DetailListPreference mCategoryPref;
     private DetailListPreference mFormatPref;
-    private Preference mRelatedPostsPref;
+    private DetailListPreference mTimezonePref;
+    private DetailListPreference mDateFormatPref;
+    private DetailListPreference mTimeFormatPref;
+    private DetailListPreference mWeekStartPref;
+    private Preference mPostsPerPagePref;
 
     // Discussion settings preview
     private WPSwitchPreference mAllowCommentsPref;
@@ -190,6 +195,10 @@ public class SiteSettingsFragment extends PreferenceFragment
     private Preference mMultipleLinksPref;
     private Preference mModerationHoldPref;
     private Preference mBlacklistPref;
+
+    // Traffic
+    private Preference mRelatedPostsPref;
+    private WPSwitchPreference mAmpPref;
 
     // Advanced settings
     private Preference mStartOverPref;
@@ -358,6 +367,11 @@ public class SiteSettingsFragment extends PreferenceFragment
                     if (numLinks < 0 || numLinks == mSiteSettings.getMultipleLinks()) return;
                     onPreferenceChange(mMultipleLinksPref, numLinks);
                     break;
+                case POSTS_PER_PAGE_REQUEST_CODE:
+                    int numPosts = data.getIntExtra(NumberPickerDialog.CUR_VALUE_KEY, -1);
+                    if (numPosts < 0 || numPosts == 10) return;
+                    onPreferenceChange(mPostsPerPagePref, numPosts);
+                    break;
             }
         } else {
             switch (requestCode) {
@@ -468,6 +482,8 @@ public class SiteSettingsFragment extends PreferenceFragment
             showRelatedPostsDialog();
         } else if (preference == mMultipleLinksPref) {
             showMultipleLinksDialog();
+        } else if (preference == mPostsPerPagePref) {
+            showPostsPerPageDialog();
         } else if (preference == mModerationHoldPref) {
             mEditingList = mSiteSettings.getModerationKeys();
             showListEditorDialog(R.string.site_settings_moderation_hold_title,
@@ -631,6 +647,19 @@ public class SiteSettingsFragment extends PreferenceFragment
             mModerationHoldPref.setSummary(mSiteSettings.getModerationHoldDescription());
         } else if (preference == mBlacklistPref) {
             mBlacklistPref.setSummary(mSiteSettings.getBlacklistDescription());
+        } else if (preference == mPostsPerPagePref) {
+            mPostsPerPagePref.setSummary(newValue.toString());
+            // TODO
+        } else if (preference == mAmpPref) {
+            // TODO
+        } else if (preference == mWeekStartPref) {
+            // TODO
+        } else if (preference == mDateFormatPref) {
+            // TODO
+        } else if (preference == mTimeFormatPref) {
+            // TODO
+        } else if (preference == mTimezonePref) {
+            // TODO
         } else {
             return false;
         }
@@ -762,6 +791,12 @@ public class SiteSettingsFragment extends PreferenceFragment
         mStartOverPref = getClickPref(R.string.pref_key_site_start_over);
         mExportSitePref = getClickPref(R.string.pref_key_site_export_site);
         mDeleteSitePref = getClickPref(R.string.pref_key_site_delete_site);
+        mPostsPerPagePref = getClickPref(R.string.pref_key_site_posts_per_page);
+        mTimezonePref = (DetailListPreference) getChangePref(R.string.pref_key_site_timezone);
+        mDateFormatPref = (DetailListPreference) getChangePref(R.string.pref_key_site_date_format);
+        mTimeFormatPref = (DetailListPreference) getChangePref(R.string.pref_key_site_time_format);
+        mWeekStartPref = (DetailListPreference) getChangePref(R.string.pref_key_site_week_start);
+        mAmpPref = (WPSwitchPreference) getChangePref(R.string.pref_key_site_amp);
         mJpSecuritySettings = (PreferenceScreen) getClickPref(R.string.pref_key_jetpack_security_screen);
         mJpMonitorActivePref = (WPSwitchPreference) getChangePref(R.string.pref_key_jetpack_monitor_uptime);
         mJpMonitorEmailNotesPref = (WPSwitchPreference) getChangePref(R.string.pref_key_jetpack_send_email_notifications);
@@ -803,9 +838,10 @@ public class SiteSettingsFragment extends PreferenceFragment
                 mAllowCommentsNested, mSendPingbacksPref, mSendPingbacksNested, mReceivePingbacksPref,
                 mReceivePingbacksNested, mIdentityRequiredPreference, mUserAccountRequiredPref,
                 mSortByPref, mWhitelistPref, mRelatedPostsPref, mCloseAfterPref, mPagingPref,
-                mThreadingPref, mMultipleLinksPref, mModerationHoldPref, mBlacklistPref,
-                mDeleteSitePref, mJpMonitorActivePref, mJpMonitorEmailNotesPref, mJpSsoPref,
-                mJpMonitorWpNotesPref, mJpBruteForcePref, mJpWhitelistPref, mJpMatchEmailPref, mJpUseTwoFactorPref
+                mThreadingPref, mMultipleLinksPref, mModerationHoldPref, mBlacklistPref, mDeleteSitePref,
+                mPostsPerPagePref, mTimezonePref, mDateFormatPref, mTimeFormatPref, mAmpPref, mWeekStartPref,
+                mJpMonitorActivePref, mJpMonitorEmailNotesPref, mJpSsoPref, mJpUseTwoFactorPref,
+                mJpMonitorWpNotesPref, mJpBruteForcePref, mJpWhitelistPref, mJpMatchEmailPref
         };
 
         for (Preference preference : editablePreference) {
@@ -907,7 +943,7 @@ public class SiteSettingsFragment extends PreferenceFragment
             public void onResponse(JSONObject response) {
                 dismissProgressDialog(progressDialog);
                 if (isAdded()) {
-                    showPurchasesOrDeleteSiteDialog(response, mSite);
+                    showPurchasesOrDeleteSiteDialog(response);
                 }
             }
         }, new RestRequest.ErrorListener() {
@@ -922,11 +958,11 @@ public class SiteSettingsFragment extends PreferenceFragment
         });
     }
 
-    private void showPurchasesOrDeleteSiteDialog(JSONObject response, final SiteModel site) {
+    private void showPurchasesOrDeleteSiteDialog(JSONObject response) {
         try {
             JSONArray purchases = response.getJSONArray(PURCHASE_ORIGINAL_RESPONSE_KEY);
             if (hasActivePurchases(purchases)) {
-                showPurchasesDialog(site);
+                showPurchasesDialog();
             } else {
                 showDeleteSiteWarningDialog();
             }
@@ -935,7 +971,7 @@ public class SiteSettingsFragment extends PreferenceFragment
         }
     }
 
-    private void showPurchasesDialog(final SiteModel site) {
+    private void showPurchasesDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(R.string.premium_upgrades_title);
         builder.setMessage(R.string.premium_upgrades_message);
@@ -1025,6 +1061,16 @@ public class SiteSettingsFragment extends PreferenceFragment
         showNumberPickerDialog(args, MULTIPLE_LINKS_REQUEST_CODE, "multiple-links-dialog");
     }
 
+    private void showPostsPerPageDialog() {
+        Bundle args = new Bundle();
+        args.putBoolean(NumberPickerDialog.SHOW_SWITCH_KEY, false);
+        args.putString(NumberPickerDialog.TITLE_KEY, getString(R.string.site_settings_posts_per_page_title));
+        args.putInt(NumberPickerDialog.MIN_VALUE_KEY, 0);
+        args.putInt(NumberPickerDialog.MAX_VALUE_KEY, getResources().getInteger(R.integer.posts_per_page_limit));
+        args.putInt(NumberPickerDialog.CUR_VALUE_KEY, 10);
+        showNumberPickerDialog(args, POSTS_PER_PAGE_REQUEST_CODE, "posts-per-page-dialog");
+    }
+
     public void setPreferencesFromSiteSettings() {
         changeEditTextPreferenceValue(mTitlePref, mSiteSettings.getTitle());
         changeEditTextPreferenceValue(mTaglinePref, mSiteSettings.getTagline());
@@ -1059,6 +1105,12 @@ public class SiteSettingsFragment extends PreferenceFragment
         mRelatedPostsPref.setSummary(mSiteSettings.getRelatedPostsDescription());
         mModerationHoldPref.setSummary(mSiteSettings.getModerationHoldDescription());
         mBlacklistPref.setSummary(mSiteSettings.getBlacklistDescription());
+        // TODO
+        mPostsPerPagePref.setSummary("10");
+        mWeekStartPref.setSummary("Monday");
+        mTimezonePref.setSummary("UTC+8");
+        mDateFormatPref.setSummary("December 31, 2017");
+        mTimeFormatPref.setSummary("23:59");
         mJpMonitorActivePref.setChecked(mSiteSettings.isJetpackMonitorEnabled());
         mJpMonitorEmailNotesPref.setChecked(mSiteSettings.shouldSendJetpackMonitorEmailNotifications());
         mJpMonitorWpNotesPref.setChecked(mSiteSettings.shouldSendJetpackMonitorWpNotifications());
