@@ -1106,12 +1106,11 @@ public class SiteSettingsFragment extends PreferenceFragment
         mRelatedPostsPref.setSummary(mSiteSettings.getRelatedPostsDescription());
         mModerationHoldPref.setSummary(mSiteSettings.getModerationHoldDescription());
         mBlacklistPref.setSummary(mSiteSettings.getBlacklistDescription());
-        // TODO
-        mPostsPerPagePref.setSummary("10");
-        mWeekStartPref.setSummary("Monday");
-        mTimezonePref.setSummary("UTC+8");
-        mDateFormatPref.setSummary("December 31, 2017");
-        mTimeFormatPref.setSummary("23:59");
+        mPostsPerPagePref.setSummary(String.valueOf(mSiteSettings.getPostsPerPage()));
+        mWeekStartPref.setSummary(mSiteSettings.getStartOfWeek());
+        mTimezonePref.setSummary(mSiteSettings.getTimezone());
+        mDateFormatPref.setSummary(mSiteSettings.getTimeFormat());
+        mTimeFormatPref.setSummary(mSiteSettings.getDateFormat());
         mJpMonitorActivePref.setChecked(mSiteSettings.isJetpackMonitorEnabled());
         mJpMonitorEmailNotesPref.setChecked(mSiteSettings.shouldSendJetpackMonitorEmailNotifications());
         mJpMonitorWpNotesPref.setChecked(mSiteSettings.shouldSendJetpackMonitorWpNotifications());
