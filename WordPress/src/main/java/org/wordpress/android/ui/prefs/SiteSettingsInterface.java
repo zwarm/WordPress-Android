@@ -760,6 +760,34 @@ public abstract class SiteSettingsInterface {
         mSettings.defaultCategory = category;
     }
 
+    public void setTimezone(String timezone) {
+        mSettings.timezone = timezone;
+    }
+
+    public void setDateFormat(String dateFormat) {
+        mSettings.dateFormat = dateFormat;
+    }
+
+    public void setTimeFormat(String timeFormat) {
+        mSettings.timeFormat = timeFormat;
+    }
+
+    public void setStartOfWeek(String startOfWeek) {
+        mSettings.startOfWeek = startOfWeek;
+    }
+
+    public void setPostsPerPage(int postsPerPage) {
+        mSettings.postsPerPage = postsPerPage;
+    }
+
+    public void setAmpSupported(boolean ampSupported) {
+        mSettings.ampSupported = ampSupported;
+    }
+
+    public void setAmpEnabled(boolean ampEnabled) {
+        mSettings.ampEnabled = ampEnabled;
+    }
+
     /**
      * Sets the default post format.
      *
