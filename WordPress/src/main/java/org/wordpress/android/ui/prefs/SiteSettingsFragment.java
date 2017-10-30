@@ -1504,6 +1504,7 @@ public class SiteSettingsFragment extends PreferenceFragment
     private void removeNonDotComPreferences() {
         WPPrefUtils.removePreference(this, R.string.pref_key_site_screen, R.string.pref_key_site_account);
         WPPrefUtils.removePreference(this, R.string.pref_key_site_screen, R.string.pref_key_jetpack_settings);
+        WPPrefUtils.removePreference(this, R.string.pref_key_site_traffic, R.string.pref_key_site_amp);
     }
 
     private Preference getChangePref(int id) {
