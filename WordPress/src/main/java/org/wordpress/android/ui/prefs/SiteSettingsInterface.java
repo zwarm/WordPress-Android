@@ -555,6 +555,34 @@ public abstract class SiteSettingsInterface {
                 R.string.site_settings_list_editor_summary_other, count);
     }
 
+    public String getTimezone() {
+        return mSettings.timezone;
+    }
+
+    public String getDateFormat() {
+        return mSettings.dateFormat;
+    }
+
+    public String getTimeFormat() {
+        return mSettings.timeFormat;
+    }
+
+    public String getStartOfWeek() {
+        return mSettings.startOfWeek;
+    }
+
+    public int getPostsPerPage() {
+        return mSettings.postsPerPage;
+    }
+
+    public boolean getAmpSupported() {
+        return mSettings.ampSupported;
+    }
+
+    public boolean getAmpEnabled() {
+        return mSettings.ampEnabled;
+    }
+
     public boolean isJetpackMonitorEnabled() {
         return mJpSettings.monitorActive;
     }
