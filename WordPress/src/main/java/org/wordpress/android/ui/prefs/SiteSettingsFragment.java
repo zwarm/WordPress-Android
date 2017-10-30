@@ -649,17 +649,18 @@ public class SiteSettingsFragment extends PreferenceFragment
             mBlacklistPref.setSummary(mSiteSettings.getBlacklistDescription());
         } else if (preference == mPostsPerPagePref) {
             mPostsPerPagePref.setSummary(newValue.toString());
-            // TODO
+            mSiteSettings.setPostsPerPage(Integer.parseInt(newValue.toString()));
         } else if (preference == mAmpPref) {
-            // TODO
+            mSiteSettings.setAmpEnabled((Boolean) newValue);
         } else if (preference == mWeekStartPref) {
-            // TODO
+            mSiteSettings.setStartOfWeek(newValue.toString());
+            mWeekStartPref.setSummary(newValue.toString());
         } else if (preference == mDateFormatPref) {
-            // TODO
+            mSiteSettings.setDateFormat(newValue.toString());
         } else if (preference == mTimeFormatPref) {
-            // TODO
+            mSiteSettings.setTimeFormat(newValue.toString());
         } else if (preference == mTimezonePref) {
-            // TODO
+            mSiteSettings.setTimezone(newValue.toString());
         } else {
             return false;
         }
