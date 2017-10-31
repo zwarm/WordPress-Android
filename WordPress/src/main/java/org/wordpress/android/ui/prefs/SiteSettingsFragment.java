@@ -665,7 +665,6 @@ public class SiteSettingsFragment extends PreferenceFragment
         } else {
             return false;
         }
-
         mSiteSettings.saveSettings();
 
         return true;
