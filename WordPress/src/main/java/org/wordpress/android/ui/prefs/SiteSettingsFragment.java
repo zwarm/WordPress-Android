@@ -658,8 +658,10 @@ public class SiteSettingsFragment extends PreferenceFragment
             mWeekStartPref.setSummary(mWeekStartPref.getEntry());
         } else if (preference == mDateFormatPref) {
             mSiteSettings.setDateFormat(newValue.toString());
+            mDateFormatPref.setSummary(getDateFormatSummary(newValue.toString()));
         } else if (preference == mTimeFormatPref) {
             mSiteSettings.setTimeFormat(newValue.toString());
+            mTimeFormatPref.setSummary(getTimeFormatSummary(newValue.toString()));
         } else if (preference == mTimezonePref) {
             mSiteSettings.setTimezone(newValue.toString());
         } else {
@@ -1110,8 +1112,8 @@ public class SiteSettingsFragment extends PreferenceFragment
         mWeekStartPref.setValue(mSiteSettings.getStartOfWeek());
         mWeekStartPref.setSummary(mWeekStartPref.getEntry());
         mTimezonePref.setSummary(mSiteSettings.getTimezone());
-        mDateFormatPref.setSummary(mSiteSettings.getTimeFormat());
-        mTimeFormatPref.setSummary(mSiteSettings.getDateFormat());
+        mDateFormatPref.setSummary(getDateFormatSummary(mSiteSettings.getDateFormat()));
+        mTimeFormatPref.setSummary(getTimeFormatSummary(mSiteSettings.getTimeFormat()));
         mJpMonitorActivePref.setChecked(mSiteSettings.isJetpackMonitorEnabled());
         mJpMonitorEmailNotesPref.setChecked(mSiteSettings.shouldSendJetpackMonitorEmailNotifications());
         mJpMonitorWpNotesPref.setChecked(mSiteSettings.shouldSendJetpackMonitorWpNotifications());
@@ -1667,5 +1669,13 @@ public class SiteSettingsFragment extends PreferenceFragment
     /** Show Disconnect button for development purposes. Only available in debug builds on Jetpack sites. */
     private boolean shouldShowDisconnect() {
         return BuildConfig.DEBUG && mSite.isJetpackConnected() && mSite.isUsingWpComRestApi();
+    }
+
+    private String getDateFormatSummary(String format) {
+        return WPPrefUtils.formatDateWithPhpCodes(format, null);
+    }
+
+    private String getTimeFormatSummary(String format) {
+        return WPPrefUtils.formatTimeWithPhpCodes(format, null);
     }
 }
