@@ -35,6 +35,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager.LayoutParams;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListAdapter;
@@ -512,11 +513,73 @@ public class SiteSettingsFragment extends PreferenceFragment
             AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.SITE_SETTINGS_DELETE_SITE_ACCESSED, mSite);
             requestPurchasesForDeletionCheck();
         } else if (preference == mDateFormatPref) {
+            String[] dateFormats = getResources().getStringArray(R.array.date_format_values);
+            showDateFormatDialog(dateFormats, getDateFormatPreviews(dateFormats), mDateFormatPref);
         } else if (preference == mTimeFormatPref) {
+            String[] timeFormats = getResources().getStringArray(R.array.time_format_values);
+            showDateFormatDialog(timeFormats, getTimeFormatPreviews(timeFormats), mTimeFormatPref);
         } else {
             return false;
         }
 
+        return true;
+    }
+
+    private String[] getDateFormatPreviews(String[] dateFormats) {
+        String[] dateFormatPreviews = new String[dateFormats.length];
+        for (int i = 0; i < dateFormats.length - 1; ++i) {
+            dateFormatPreviews[i] = WPPrefUtils.formatDateWithPhpCodes(dateFormats[i], null);
+        }
+        dateFormatPreviews[dateFormatPreviews.length - 1] = getString(R.string.custom);
+        return dateFormatPreviews;
+    }
+
+    private String[] getTimeFormatPreviews(String[] timeFormats) {
+        String[] timeFormatPreviews = new String[timeFormats.length];
+        for (int i = 0; i < timeFormats.length - 1; ++i) {
+            timeFormatPreviews[i] = WPPrefUtils.formatTimeWithPhpCodes(timeFormats[i], null);
+        }
+        timeFormatPreviews[timeFormatPreviews.length - 1] = getString(R.string.custom);
+        return timeFormatPreviews;
+    }
+
+    private void showDateFormatDialog(final String[] formats, final String[] previews, final Preference pref) {
+        final View dialogView = getActivity().getLayoutInflater().inflate(R.layout.datetime_format_dialog, null);
+        final ListView choices = (ListView) dialogView.findViewById(R.id.datetime_format_list);
+        final EditText customInput = (EditText) dialogView.findViewById(R.id.custom_format_input);
+
+        choices.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_single_choice, previews));
+        choices.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // set EditText value to newly selected format
+                if (position < formats.length - 1) {
+                    customInput.setText(formats[position]);
+                }
+            }
+        });
+
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(getActivity());
+        dialogBuilder.setView(dialogView);
+        dialogBuilder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String formatValue = customInput.getText().toString();
+                if (isValidDateFormat(formatValue)) {
+                    onPreferenceChange(pref, formatValue);
+                } else {
+                    ToastUtils.showToast(getActivity(), R.string.site_settings_invalid_date_format);
+                }
+            }
+        });
+        dialogBuilder.setNegativeButton(android.R.string.cancel, null);
+        dialogBuilder.create().show();
+    }
+
+    private boolean isValidDateFormat(String format) {
+        if (TextUtils.isEmpty(format)) {
+            return false;
+        }
         return true;
     }
 
