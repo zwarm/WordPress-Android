@@ -654,7 +654,8 @@ public class SiteSettingsFragment extends PreferenceFragment
             mSiteSettings.setAmpEnabled((Boolean) newValue);
         } else if (preference == mWeekStartPref) {
             mSiteSettings.setStartOfWeek(newValue.toString());
-            mWeekStartPref.setSummary(newValue.toString());
+            mWeekStartPref.setValue(newValue.toString());
+            mWeekStartPref.setSummary(mWeekStartPref.getEntry());
         } else if (preference == mDateFormatPref) {
             mSiteSettings.setDateFormat(newValue.toString());
         } else if (preference == mTimeFormatPref) {
@@ -1107,7 +1108,8 @@ public class SiteSettingsFragment extends PreferenceFragment
         mModerationHoldPref.setSummary(mSiteSettings.getModerationHoldDescription());
         mBlacklistPref.setSummary(mSiteSettings.getBlacklistDescription());
         mPostsPerPagePref.setSummary(String.valueOf(mSiteSettings.getPostsPerPage()));
-        mWeekStartPref.setSummary(mSiteSettings.getStartOfWeek());
+        mWeekStartPref.setValue(mSiteSettings.getStartOfWeek());
+        mWeekStartPref.setSummary(mWeekStartPref.getEntry());
         mTimezonePref.setSummary(mSiteSettings.getTimezone());
         mDateFormatPref.setSummary(mSiteSettings.getTimeFormat());
         mTimeFormatPref.setSummary(mSiteSettings.getDateFormat());
