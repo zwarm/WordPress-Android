@@ -16,7 +16,9 @@ import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
 
 import java.text.Collator;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
@@ -27,7 +29,6 @@ import java.util.Map;
  */
 
 public class WPPrefUtils {
-
     /**
      * Length of a {@link String} (representing a language code) when there is no region included.
      * For example: "en" contains no region, "en_US" contains a region (US)
@@ -42,6 +43,84 @@ public class WPPrefUtils {
      * (e.g. us, au, gb).
      */
     private static final int REGION_SUBSTRING_INDEX = 3;
+
+    /**
+     * @param wpFormat
+     *  WP sites recognize PHP time format options specified https://codex.wordpress.org/Formatting_Date_and_Time
+     * @param time
+     *  timestamp to format, if null the current time is used via {@link Calendar#getInstance()}
+     * @return
+     *  the given time formatted with the given format, null if format is malformed
+     */
+    public static String formatTimeWithPhpCodes(String wpFormat, Calendar time) {
+        if (TextUtils.isEmpty(wpFormat)) {
+            return null;
+        }
+
+        if (time == null) {
+            time = Calendar.getInstance();
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (byte character : wpFormat.getBytes()) {
+            switch (character) {
+                case 'a':
+                    // lower-case am/pm
+                    SimpleDateFormat lAmPm = new SimpleDateFormat("a", Locale.getDefault());
+                    builder.append(lAmPm.format(time).toLowerCase());
+                    break;
+                case 'A':
+                    // upper-case AM/PM
+                    SimpleDateFormat uAmPm = new SimpleDateFormat("a", Locale.getDefault());
+                    builder.append(uAmPm.format(time));
+                    break;
+                case 'g':
+                    // no leading zeroes 12 hour format
+                    SimpleDateFormat nlzTwelve = new SimpleDateFormat("h", Locale.getDefault());
+                    builder.append(nlzTwelve.format(time));
+                    break;
+                case 'h':
+                    // leading zeroes 12 hour format
+                    SimpleDateFormat lzTwelve = new SimpleDateFormat("hh", Locale.getDefault());
+                    builder.append(lzTwelve.format(time));
+                    break;
+                case 'G':
+                    // no leading zeroes 24 hour format
+                    SimpleDateFormat nlzTwoFour = new SimpleDateFormat("H", Locale.getDefault());
+                    builder.append(nlzTwoFour.format(time));
+                    break;
+                case 'H':
+                    // leading zeroes 24 hour format
+                    SimpleDateFormat lzTwoFour = new SimpleDateFormat("HH", Locale.getDefault());
+                    builder.append(lzTwoFour.format(time));
+                    break;
+                case 'i':
+                    // minutes with leading zeroes
+                    SimpleDateFormat lzMinutes = new SimpleDateFormat("mm", Locale.getDefault());
+                    builder.append(lzMinutes.format(time));
+                    break;
+                case 's':
+                    // seconds with leading zeroes
+                    SimpleDateFormat lzSeconds = new SimpleDateFormat("ss", Locale.getDefault());
+                    builder.append(lzSeconds.format(time));
+                    break;
+                case 'v':
+                    // milliseconds with leading zeroes
+                    SimpleDateFormat millis = new SimpleDateFormat("SSS", Locale.getDefault());
+                    builder.append(millis.format(time));
+                    break;
+                case 'T':
+                    // timezone abbreviation
+                    builder.append(time.getTimeZone().getID());
+                    break;
+                default:
+                    builder.append(character);
+                    break;
+            }
+        }
+
+        return builder.toString();
+    }
 
     /**
      * Gets a preference and sets the {@link android.preference.Preference.OnPreferenceChangeListener}.
