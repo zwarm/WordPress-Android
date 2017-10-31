@@ -112,14 +112,14 @@
             android:entryValues="@array/post_format_display_names"
             app:longClickHint="@string/site_settings_format_hint" />
 
-        <org.wordpress.android.ui.prefs.DetailListPreference
+        <org.wordpress.android.ui.prefs.WPPreference
             android:id="@+id/pref_date_format"
             android:key="@string/pref_key_site_date_format"
             android:title="@string/site_settings_date_format_title"
             android:entries="@array/date_format_entries"
             android:entryValues="@array/date_format_values" />
 
-        <org.wordpress.android.ui.prefs.DetailListPreference
+        <org.wordpress.android.ui.prefs.WPPreference
             android:id="@+id/pref_time_format"
             android:key="@string/pref_key_site_time_format"
             android:title="@string/site_settings_time_format_title"

@@ -168,8 +168,8 @@ public class SiteSettingsFragment extends PreferenceFragment
     private DetailListPreference mCategoryPref;
     private DetailListPreference mFormatPref;
     private DetailListPreference mTimezonePref;
-    private DetailListPreference mDateFormatPref;
-    private DetailListPreference mTimeFormatPref;
+    private WPPreference mDateFormatPref;
+    private WPPreference mTimeFormatPref;
     private DetailListPreference mWeekStartPref;
     private Preference mPostsPerPagePref;
 
@@ -511,6 +511,8 @@ public class SiteSettingsFragment extends PreferenceFragment
         } else if (preference == mDeleteSitePref) {
             AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.SITE_SETTINGS_DELETE_SITE_ACCESSED, mSite);
             requestPurchasesForDeletionCheck();
+        } else if (preference == mDateFormatPref) {
+        } else if (preference == mTimeFormatPref) {
         } else {
             return false;
         }
@@ -793,8 +795,8 @@ public class SiteSettingsFragment extends PreferenceFragment
         mDeleteSitePref = getClickPref(R.string.pref_key_site_delete_site);
         mPostsPerPagePref = getClickPref(R.string.pref_key_site_posts_per_page);
         mTimezonePref = (DetailListPreference) getChangePref(R.string.pref_key_site_timezone);
-        mDateFormatPref = (DetailListPreference) getChangePref(R.string.pref_key_site_date_format);
-        mTimeFormatPref = (DetailListPreference) getChangePref(R.string.pref_key_site_time_format);
+        mDateFormatPref = (WPPreference) getClickPref(R.string.pref_key_site_date_format);
+        mTimeFormatPref = (WPPreference) getClickPref(R.string.pref_key_site_time_format);
         mWeekStartPref = (DetailListPreference) getChangePref(R.string.pref_key_site_week_start);
         mAmpPref = (WPSwitchPreference) getChangePref(R.string.pref_key_site_amp);
         mJpSecuritySettings = (PreferenceScreen) getClickPref(R.string.pref_key_jetpack_security_screen);
