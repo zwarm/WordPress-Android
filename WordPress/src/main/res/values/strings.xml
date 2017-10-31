@@ -98,6 +98,7 @@
     <string name="invalid_ip_or_range">Invalid IP or IP range</string>
     <string name="copy">Copy</string>
     <string name="error_please_choose_browser">Error opening the default web browser. Please choose another app:</string>
+    <string name="custom">Custom</string>
 
     <string name="button_skip">Skip</string>
     <string name="button_next">Next</string>
@@ -686,6 +687,8 @@
     <string name="site_settings_unsupported_version_error">Unsupported WordPress version</string>
     <string name="site_settings_unknown_language_code_error">Language code not recognized</string>
     <string name="site_settings_disconnected_toast">Logged out, editing disabled.</string>
+    <string name="site_settings_invalid_date_format">Invalid date format</string>
+    <string name="site_settings_invalid_time_format">Invalid time format</string>
 
     <!--               -->
     <!-- Site Settings -->
