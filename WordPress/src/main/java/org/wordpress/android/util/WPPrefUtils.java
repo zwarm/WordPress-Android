@@ -16,7 +16,9 @@ import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
 
 import java.text.Collator;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
@@ -54,8 +56,178 @@ public class WPPrefUtils {
         return pref;
     }
 
+    public static String getDayOfMonthSuffix(int dayOfMonth) {
+        switch (dayOfMonth % 10) {
+            case 1:
+                return "st";
+            case 2:
+                return "nd";
+            case 3:
+                return "rd";
+            default:
+                return "th";
+        }
+    }
+
+    public static String formatDateWithPhpCodes(final String wpFormat, @Nullable Calendar date) {
+        if (TextUtils.isEmpty(wpFormat)) {
+            return null;
+        }
+
+        if (date == null) {
+            date = Calendar.getInstance();
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < wpFormat.length(); ++i) {
+            final char character = wpFormat.charAt(i);
+            switch (character) {
+                case 'd':
+                    // day of month with leading zeroes
+                    SimpleDateFormat lzDay = new SimpleDateFormat("dd", Locale.getDefault());
+                    builder.append(lzDay.format(date.getTime()));
+                    break;
+                case 'j':
+                    // day of month without leading zeroes
+                    SimpleDateFormat nlzDay = new SimpleDateFormat("d", Locale.getDefault());
+                    builder.append(nlzDay.format(date.getTime()));
+                    break;
+                case 'S':
+                    // English suffix for day of month (ie "st" for 1st, "nd" for 2nd, etc...)
+                    SimpleDateFormat dayFormat = new SimpleDateFormat("d", Locale.getDefault());
+                    int day = Integer.valueOf(dayFormat.format(date.getTime()));
+                    builder.append(getDayOfMonthSuffix(day));
+                    break;
+                case 'l':
+                    // full name of day (Saturday, Sunday, etc...)
+                    SimpleDateFormat fullDay = new SimpleDateFormat("EEEE", Locale.getDefault());
+                    builder.append(fullDay.format(date.getTime()));
+                    break;
+                case 'D':
+                    // three letter name of day (Sat, Sun, etc...)
+                    SimpleDateFormat shortDay = new SimpleDateFormat("EEE", Locale.getDefault());
+                    builder.append(shortDay.format(date.getTime()));
+                    break;
+                case 'm':
+                    // numeric month with leading zeroes
+                    SimpleDateFormat lzMonth = new SimpleDateFormat("MM", Locale.getDefault());
+                    builder.append(lzMonth.format(date.getTime()));
+                    break;
+                case 'n':
+                    // numeric month without leading zeroes
+                    SimpleDateFormat nlzMonth = new SimpleDateFormat("M", Locale.getDefault());
+                    builder.append(nlzMonth.format(date.getTime()));
+                    break;
+                case 'F':
+                    // full text name of month (February, November, etc...)
+                    SimpleDateFormat fullMonth = new SimpleDateFormat("MMMM", Locale.getDefault());
+                    builder.append(fullMonth.format(date.getTime()));
+                    break;
+                case 'M':
+                    // three letter name of month
+                    SimpleDateFormat shortMonth = new SimpleDateFormat("MMM", Locale.getDefault());
+                    builder.append(shortMonth.format(date.getTime()));
+                    break;
+                case 'Y':
+                    // four digit year
+                    SimpleDateFormat longYear = new SimpleDateFormat("yyyy", Locale.getDefault());
+                    builder.append(longYear.format(date.getTime()));
+                    break;
+                case 'y':
+                    // two digit year
+                    SimpleDateFormat shortYear = new SimpleDateFormat("yy", Locale.getDefault());
+                    builder.append(shortYear.format(date.getTime()));
+                    break;
+                default:
+                    builder.append(character);
+                    break;
+            }
+        }
+
+        return builder.toString();
+    }
+
     /**
-     * Gets a preference and sets the {@link android.preference.Preference.OnPreferenceChangeListener}.
+     * @param wpFormat
+     *  WP sites recognize PHP time format options specified https://codex.wordpress.org/Formatting_Date_and_Time
+     * @param time
+     *  timestamp to format, if null the current time is used via {@link Calendar#getInstance()}
+     * @return
+     *  the given time formatted with the given format, null if format is malformed
+     */
+    public static String formatTimeWithPhpCodes(final String wpFormat, @Nullable Calendar time) {
+        if (TextUtils.isEmpty(wpFormat)) {
+            return null;
+        }
+
+        if (time == null) {
+            time = Calendar.getInstance();
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < wpFormat.length(); ++i) {
+            final char character = wpFormat.charAt(i);
+            switch (character) {
+                case 'a':
+                    // lower-case am/pm
+                    SimpleDateFormat lAmPm = new SimpleDateFormat("a", Locale.getDefault());
+                    builder.append(lAmPm.format(time.getTime()).toLowerCase());
+                    break;
+                case 'A':
+                    // upper-case AM/PM
+                    SimpleDateFormat uAmPm = new SimpleDateFormat("a", Locale.getDefault());
+                    builder.append(uAmPm.format(time.getTime()));
+                    break;
+                case 'g':
+                    // no leading zeroes 12 hour format
+                    SimpleDateFormat nlzTwelve = new SimpleDateFormat("h", Locale.getDefault());
+                    builder.append(nlzTwelve.format(time.getTime()));
+                    break;
+                case 'h':
+                    // leading zeroes 12 hour format
+                    SimpleDateFormat lzTwelve = new SimpleDateFormat("hh", Locale.getDefault());
+                    builder.append(lzTwelve.format(time.getTime()));
+                    break;
+                case 'G':
+                    // no leading zeroes 24 hour format
+                    SimpleDateFormat nlzTwoFour = new SimpleDateFormat("H", Locale.getDefault());
+                    builder.append(nlzTwoFour.format(time.getTime()));
+                    break;
+                case 'H':
+                    // leading zeroes 24 hour format
+                    SimpleDateFormat lzTwoFour = new SimpleDateFormat("HH", Locale.getDefault());
+                    builder.append(lzTwoFour.format(time.getTime()));
+                    break;
+                case 'i':
+                    // minutes with leading zeroes
+                    SimpleDateFormat lzMinutes = new SimpleDateFormat("mm", Locale.getDefault());
+                    builder.append(lzMinutes.format(time.getTime()));
+                    break;
+                case 's':
+                    // seconds with leading zeroes
+                    SimpleDateFormat lzSeconds = new SimpleDateFormat("ss", Locale.getDefault());
+                    builder.append(lzSeconds.format(time.getTime()));
+                    break;
+                case 'v':
+                    // milliseconds with leading zeroes
+                    SimpleDateFormat millis = new SimpleDateFormat("SSS", Locale.getDefault());
+                    builder.append(millis.format(time.getTime()));
+                    break;
+                case 'T':
+                    // timezone abbreviation
+                    builder.append(time.getTimeZone().getID());
+                    break;
+                default:
+                    builder.append(character);
+                    break;
+            }
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * * Gets a preference and sets the {@link android.preference.Preference.OnPreferenceChangeListener}.
      */
     public static Preference getPrefAndSetChangeListener(PreferenceFragment prefFrag,
                                                          int id,
