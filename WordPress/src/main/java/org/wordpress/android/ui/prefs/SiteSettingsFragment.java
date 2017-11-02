@@ -34,6 +34,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager.LayoutParams;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -523,92 +524,6 @@ public class SiteSettingsFragment extends PreferenceFragment
         }
 
         return true;
-    }
-
-    private String[] getDateFormatPreviews(String[] dateFormats) {
-        String[] dateFormatPreviews = new String[dateFormats.length];
-        for (int i = 0; i < dateFormats.length - 1; ++i) {
-            dateFormatPreviews[i] = WPPrefUtils.formatDateWithPhpCodes(dateFormats[i], null);
-        }
-        dateFormatPreviews[dateFormatPreviews.length - 1] = getString(R.string.custom);
-        return dateFormatPreviews;
-    }
-
-    private String[] getTimeFormatPreviews(String[] timeFormats) {
-        String[] timeFormatPreviews = new String[timeFormats.length];
-        for (int i = 0; i < timeFormats.length - 1; ++i) {
-            timeFormatPreviews[i] = WPPrefUtils.formatTimeWithPhpCodes(timeFormats[i], null);
-        }
-        timeFormatPreviews[timeFormatPreviews.length - 1] = getString(R.string.custom);
-        return timeFormatPreviews;
-    }
-
-    private void showDateFormatDialog(final String[] formats, final String[] previews, final Preference pref) {
-        final View dialogView = getActivity().getLayoutInflater().inflate(R.layout.datetime_format_dialog, null);
-        final ListView choices = (ListView) dialogView.findViewById(R.id.datetime_format_list);
-        final EditText customInput = (EditText) dialogView.findViewById(R.id.custom_format_input);
-
-        choices.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_single_choice, previews));
-        choices.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                // set EditText value to newly selected format
-                if (position < formats.length - 1) {
-                    customInput.setText(formats[position]);
-                }
-            }
-        });
-
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(getActivity());
-        dialogBuilder.setView(dialogView);
-        dialogBuilder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                String formatValue = customInput.getText().toString();
-                if (isValidDateFormat(formatValue)) {
-                    onPreferenceChange(pref, formatValue);
-                } else {
-                    ToastUtils.showToast(getActivity(), R.string.site_settings_invalid_date_format);
-                }
-            }
-        });
-        dialogBuilder.setNegativeButton(android.R.string.cancel, null);
-        dialogBuilder.create().show();
-    }
-
-    private boolean isValidDateFormat(String format) {
-        if (TextUtils.isEmpty(format)) {
-            return false;
-        }
-        return true;
-    }
-
-    private void disconnectFromJetpack() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setMessage(R.string.jetpack_disconnect_confirmation_message);
-        builder.setPositiveButton(R.string.jetpack_disconnect_confirm, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        String url = String.format(Locale.US, "jetpack-blogs/%d/mine/delete", mSite.getSiteId());
-                        WordPress.getRestClientUtilsV1_1().post(url, new RestRequest.Listener() {
-                            @Override
-                            public void onResponse(JSONObject response) {
-                                AppLog.v(AppLog.T.API, "Successfully disconnected Jetpack site");
-                                ToastUtils.showToast(getActivity(), R.string.jetpack_disconnect_success_toast);
-                                mDispatcher.dispatch(SiteActionBuilder.newRemoveSiteAction(mSite));
-                                mSite = null;
-                            }
-                        }, new RestRequest.ErrorListener() {
-                            @Override
-                            public void onErrorResponse(VolleyError error) {
-                                AppLog.e(AppLog.T.API, "Error disconnecting Jetpack site");
-                                ToastUtils.showToast(getActivity(), R.string.jetpack_disconnect_error_toast);
-                            }
-                        });
-                    }
-                });
-        builder.setNegativeButton(android.R.string.cancel, null);
-        builder.show();
     }
 
     @Override
@@ -1725,6 +1640,95 @@ public class SiteSettingsFragment extends PreferenceFragment
             );
             return true;
         }
+    }
+
+    private String[] getDateFormatPreviews(String[] dateFormats) {
+        String[] dateFormatPreviews = new String[dateFormats.length];
+        for (int i = 0; i < dateFormats.length - 1; ++i) {
+            dateFormatPreviews[i] = WPPrefUtils.formatDateWithPhpCodes(dateFormats[i], null);
+        }
+        dateFormatPreviews[dateFormatPreviews.length - 1] = getString(R.string.custom);
+        return dateFormatPreviews;
+    }
+
+    private String[] getTimeFormatPreviews(String[] timeFormats) {
+        String[] timeFormatPreviews = new String[timeFormats.length];
+        for (int i = 0; i < timeFormats.length - 1; ++i) {
+            timeFormatPreviews[i] = WPPrefUtils.formatTimeWithPhpCodes(timeFormats[i], null);
+        }
+        timeFormatPreviews[timeFormatPreviews.length - 1] = getString(R.string.custom);
+        return timeFormatPreviews;
+    }
+
+    private void showDateFormatDialog(final String[] formats, final String[] previews, final Preference pref) {
+        final View dialogView = getActivity().getLayoutInflater().inflate(R.layout.datetime_format_dialog, null);
+        final ListView choices = (ListView) dialogView.findViewById(R.id.datetime_format_list);
+        final EditText customInput = (EditText) dialogView.findViewById(R.id.custom_format_input);
+
+        choices.setChoiceMode(AbsListView.CHOICE_MODE_SINGLE);
+        choices.setAdapter(new ArrayAdapter<>(getActivity(), R.layout.single_select_list_item, previews));
+        choices.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // set EditText value to newly selected format
+                if (position < formats.length - 1) {
+                    customInput.setText(formats[position]);
+                }
+            }
+        });
+
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(getActivity(), R.style.Calypso_AlertDialog);
+        dialogBuilder.setView(dialogView);
+        dialogBuilder.setTitle(R.string.site_settings_date_format_title);
+        dialogBuilder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String formatValue = customInput.getText().toString();
+                if (isValidDateFormat(formatValue)) {
+                    onPreferenceChange(pref, formatValue);
+                } else {
+                    ToastUtils.showToast(getActivity(), R.string.site_settings_invalid_date_format);
+                }
+            }
+        });
+        dialogBuilder.setNegativeButton(android.R.string.cancel, null);
+        dialogBuilder.create().show();
+    }
+
+    private boolean isValidDateFormat(String format) {
+        if (TextUtils.isEmpty(format)) {
+            return false;
+        }
+        // TODO
+        return true;
+    }
+
+    private void disconnectFromJetpack() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setMessage(R.string.jetpack_disconnect_confirmation_message);
+        builder.setPositiveButton(R.string.jetpack_disconnect_confirm, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String url = String.format(Locale.US, "jetpack-blogs/%d/mine/delete", mSite.getSiteId());
+                WordPress.getRestClientUtilsV1_1().post(url, new RestRequest.Listener() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        AppLog.v(AppLog.T.API, "Successfully disconnected Jetpack site");
+                        ToastUtils.showToast(getActivity(), R.string.jetpack_disconnect_success_toast);
+                        mDispatcher.dispatch(SiteActionBuilder.newRemoveSiteAction(mSite));
+                        mSite = null;
+                    }
+                }, new RestRequest.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        AppLog.e(AppLog.T.API, "Error disconnecting Jetpack site");
+                        ToastUtils.showToast(getActivity(), R.string.jetpack_disconnect_error_toast);
+                    }
+                });
+            }
+        });
+        builder.setNegativeButton(android.R.string.cancel, null);
+        builder.show();
     }
 
     /** Show Disconnect button for development purposes. Only available in debug builds on Jetpack sites. */
