@@ -307,9 +307,9 @@ public class NotificationsSettingsFragment extends PreferenceFragment implements
         String trimmedQuery = "";
         if (mSearchView != null && !TextUtils.isEmpty(mSearchView.getQuery())) {
             trimmedQuery = mSearchView.getQuery().toString().trim();
-            sites = mSiteStore.getWPComAndJetpackSitesByNameOrUrlMatching(trimmedQuery);
+            sites = mSiteStore.getSitesAccessedViaWPComRestByNameOrUrlMatching(trimmedQuery);
         } else {
-            sites = mSiteStore.getWPComAndJetpackSites();
+            sites = mSiteStore.getSitesAccessedViaWPComRest();
         }
         mSiteCount = sites.size();
 
@@ -353,7 +353,7 @@ public class NotificationsSettingsFragment extends PreferenceFragment implements
                 getString(R.string.pref_notification_blogs));
 
         PreferenceScreen prefScreen = getPreferenceManager().createPreferenceScreen(context);
-        prefScreen.setTitle(R.string.all_your_sites);
+        prefScreen.setTitle(R.string.notification_settings_item_your_sites_all_your_sites);
         addSitesForViewAllSitesScreen(prefScreen);
         blogsCategory.addPreference(prefScreen);
 
@@ -378,9 +378,9 @@ public class NotificationsSettingsFragment extends PreferenceFragment implements
         NotificationsSettingsDialogPreference devicePreference = new NotificationsSettingsDialogPreference(
                 getActivity(), null, Channel.DOTCOM, NotificationsSettings.Type.DEVICE, 0, mNotificationsSettings, mOnSettingsChangedListener
         );
-        devicePreference.setTitle(R.string.notifications_account_emails);
-        devicePreference.setDialogTitle(R.string.notifications_account_emails);
-        devicePreference.setSummary(R.string.notifications_account_emails_summary);
+        devicePreference.setTitle(R.string.notification_settings_item_other_account_emails);
+        devicePreference.setDialogTitle(R.string.notification_settings_item_other_account_emails);
+        devicePreference.setSummary(R.string.notification_settings_item_other_account_emails_summary);
         otherPreferenceCategory.addPreference(devicePreference);
     }
 
@@ -395,7 +395,7 @@ public class NotificationsSettingsFragment extends PreferenceFragment implements
         NotificationsSettingsDialogPreference timelinePreference = new NotificationsSettingsDialogPreference(
                 context, null, channel, NotificationsSettings.Type.TIMELINE, blogId, mNotificationsSettings, mOnSettingsChangedListener
         );
-        timelinePreference.setIcon(R.drawable.ic_bell_grey);
+        timelinePreference.setIcon(R.drawable.ic_bell_grey_24dp);
         timelinePreference.setTitle(R.string.notifications_tab);
         timelinePreference.setDialogTitle(R.string.notifications_tab);
         timelinePreference.setSummary(R.string.notifications_tab_summary);
@@ -404,7 +404,7 @@ public class NotificationsSettingsFragment extends PreferenceFragment implements
         NotificationsSettingsDialogPreference emailPreference = new NotificationsSettingsDialogPreference(
                 context, null, channel, NotificationsSettings.Type.EMAIL, blogId, mNotificationsSettings, mOnSettingsChangedListener
         );
-        emailPreference.setIcon(R.drawable.ic_email_grey);
+        emailPreference.setIcon(R.drawable.ic_mail_grey_24dp);
         emailPreference.setTitle(R.string.email);
         emailPreference.setDialogTitle(R.string.email);
         emailPreference.setSummary(R.string.notifications_email_summary);
@@ -416,7 +416,7 @@ public class NotificationsSettingsFragment extends PreferenceFragment implements
             NotificationsSettingsDialogPreference devicePreference = new NotificationsSettingsDialogPreference(
                     context, null, channel, NotificationsSettings.Type.DEVICE, blogId, mNotificationsSettings, mOnSettingsChangedListener
             );
-            devicePreference.setIcon(R.drawable.ic_phone_grey);
+            devicePreference.setIcon(R.drawable.ic_phone_grey_24dp);
             devicePreference.setTitle(R.string.app_notifications);
             devicePreference.setDialogTitle(R.string.app_notifications);
             devicePreference.setSummary(R.string.notifications_push_summary);
@@ -432,7 +432,7 @@ public class NotificationsSettingsFragment extends PreferenceFragment implements
         if (context == null) return;
 
         PreferenceCategory rootCategory = new PreferenceCategory(context);
-        rootCategory.setTitle(R.string.your_sites);
+        rootCategory.setTitle(R.string.notification_settings_category_your_sites);
         preferenceScreen.addPreference(rootCategory);
 
         configureBlogsSettings(rootCategory, true);

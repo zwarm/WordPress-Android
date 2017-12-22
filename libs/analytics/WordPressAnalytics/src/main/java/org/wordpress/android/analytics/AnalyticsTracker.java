@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -70,12 +71,22 @@ public final class AnalyticsTracker {
         STATS_WIDGET_REMOVED,
         STATS_WIDGET_TAPPED,
         EDITOR_CREATED_POST,
-        EDITOR_ADDED_PHOTO_VIA_LOCAL_LIBRARY,
-        EDITOR_ADDED_VIDEO_VIA_LOCAL_LIBRARY,
+        EDITOR_ADDED_PHOTO_VIA_DEVICE_LIBRARY,
+        EDITOR_ADDED_VIDEO_VIA_DEVICE_LIBRARY,
+        EDITOR_ADDED_PHOTO_NEW,
+        EDITOR_ADDED_VIDEO_NEW,
         EDITOR_ADDED_PHOTO_VIA_WP_MEDIA_LIBRARY,
         EDITOR_ADDED_VIDEO_VIA_WP_MEDIA_LIBRARY,
-        EDITOR_RESIZED_PHOTO,
-        EDITOR_RESIZED_PHOTO_ERROR,
+        MEDIA_PHOTO_OPTIMIZED,
+        MEDIA_PHOTO_OPTIMIZE_ERROR,
+        MEDIA_VIDEO_OPTIMIZED,
+        MEDIA_VIDEO_CANT_OPTIMIZE,
+        MEDIA_VIDEO_OPTIMIZE_ERROR,
+        MEDIA_PICKER_OPEN_CAPTURE_MEDIA,
+        MEDIA_PICKER_OPEN_DEVICE_LIBRARY,
+        MEDIA_PICKER_OPEN_WP_MEDIA,
+        MEDIA_PICKER_RECENT_MEDIA_SELECTED,
+        MEDIA_PICKER_PREVIEW_OPENED,
         EDITOR_UPDATED_POST,
         EDITOR_SCHEDULED_POST,
         EDITOR_CLOSED,
@@ -83,32 +94,47 @@ public final class AnalyticsTracker {
         EDITOR_SAVED_DRAFT,
         EDITOR_DISCARDED_CHANGES,
         EDITOR_EDITED_IMAGE, // Visual editor only
-        EDITOR_ENABLED_NEW_VERSION, // Visual editor only
-        EDITOR_TOGGLED_OFF, // Visual editor only
-        EDITOR_TOGGLED_ON, // Visual editor only
+        EDITOR_HYBRID_ENABLED, // Visual editor only
+        EDITOR_HYBRID_TOGGLED_OFF, // Visual editor only
+        EDITOR_HYBRID_TOGGLED_ON, // Visual editor only
         EDITOR_UPLOAD_MEDIA_FAILED, // Visual editor only
         EDITOR_UPLOAD_MEDIA_RETRIED, // Visual editor only
         EDITOR_TAPPED_BLOCKQUOTE,
         EDITOR_TAPPED_BOLD,
+        EDITOR_TAPPED_ELLIPSIS_COLLAPSE,
+        EDITOR_TAPPED_ELLIPSIS_EXPAND,
+        EDITOR_TAPPED_HEADING,
+        EDITOR_TAPPED_HEADING_1,
+        EDITOR_TAPPED_HEADING_2,
+        EDITOR_TAPPED_HEADING_3,
+        EDITOR_TAPPED_HEADING_4,
+        EDITOR_TAPPED_HEADING_5,
+        EDITOR_TAPPED_HEADING_6,
         EDITOR_TAPPED_HTML, // Visual editor only
+        EDITOR_TAPPED_HORIZONTAL_RULE,
         EDITOR_TAPPED_IMAGE,
         EDITOR_TAPPED_ITALIC,
-        EDITOR_TAPPED_LINK,
-        EDITOR_TAPPED_MORE,
+        EDITOR_TAPPED_LINK_ADDED,
+        EDITOR_TAPPED_LINK_REMOVED, // Visual editor only
+        EDITOR_TAPPED_LIST,
+        EDITOR_TAPPED_LIST_ORDERED, // Visual editor only
+        EDITOR_TAPPED_LIST_UNORDERED, // Visual editor only
+        EDITOR_TAPPED_NEXT_PAGE,
+        EDITOR_TAPPED_PARAGRAPH,
+        EDITOR_TAPPED_PREFORMAT,
+        EDITOR_TAPPED_READ_MORE,
         EDITOR_TAPPED_STRIKETHROUGH,
         EDITOR_TAPPED_UNDERLINE,
-        EDITOR_TAPPED_ORDERED_LIST, // Visual editor only
-        EDITOR_TAPPED_UNLINK, // Visual editor only
-        EDITOR_TAPPED_UNORDERED_LIST, // Visual editor only
         EDITOR_AZTEC_TOGGLED_OFF, // Aztec editor only
         EDITOR_AZTEC_TOGGLED_ON, // Aztec editor only
         EDITOR_AZTEC_ENABLED, // Aztec editor only
+        EDITOR_AZTEC_BETA_LABEL, // Aztec editor only
+        EDITOR_AZTEC_BETA_LINK, // Aztec editor only
+        EDITOR_AZTEC_PROMO_LINK, // Aztec editor only
+        EDITOR_AZTEC_PROMO_NEGATIVE, // Aztec editor only
+        EDITOR_AZTEC_PROMO_POSITIVE, // Aztec editor only
         ME_ACCESSED,
         ME_GRAVATAR_TAPPED,
-        ME_GRAVATAR_TOOLTIP_TAPPED,
-        ME_GRAVATAR_PERMISSIONS_INTERRUPTED,
-        ME_GRAVATAR_PERMISSIONS_DENIED,
-        ME_GRAVATAR_PERMISSIONS_ACCEPTED,
         ME_GRAVATAR_SHOT_NEW,
         ME_GRAVATAR_GALLERY_PICKED,
         ME_GRAVATAR_CROPPED,
@@ -135,10 +161,14 @@ public final class AnalyticsTracker {
         NOTIFICATION_PENDING_DRAFTS_DISMISSED,
         NOTIFICATION_PENDING_DRAFTS_SETTINGS_ENABLED,
         NOTIFICATION_PENDING_DRAFTS_SETTINGS_DISABLED,
+        NOTIFICATION_UPLOAD_MEDIA_SUCCESS_WRITE_POST,
+        NOTIFICATION_UPLOAD_POST_ERROR_RETRY,
+        NOTIFICATION_UPLOAD_MEDIA_ERROR_RETRY,
         OPENED_POSTS,
         OPENED_PAGES,
         OPENED_COMMENTS,
         OPENED_VIEW_SITE,
+        OPENED_VIEW_SITE_FROM_HEADER,
         OPENED_VIEW_ADMIN,
         OPENED_MEDIA_LIBRARY,
         OPENED_BLOG_SETTINGS,
@@ -147,6 +177,7 @@ public final class AnalyticsTracker {
         OPENED_MY_PROFILE,
         OPENED_PEOPLE_MANAGEMENT,
         OPENED_PERSON,
+        OPENED_PLUGINS,
         CREATE_ACCOUNT_INITIATED,
         CREATE_ACCOUNT_EMAIL_EXISTS,
         CREATE_ACCOUNT_USERNAME_EXISTS,
@@ -169,6 +200,7 @@ public final class AnalyticsTracker {
         SUPPORT_USER_SENT_SCREENSHOT,
         SUPPORT_USER_REVIEWED_THE_APP,
         SUPPORT_USER_REPLIED_TO_HELPSHIFT,
+        LOGIN_WIZARD_STYLE_ACTIVATED,
         LOGIN_ACCESSED,
         LOGIN_MAGIC_LINK_EXITED,
         LOGIN_MAGIC_LINK_FAILED,
@@ -180,6 +212,36 @@ public final class AnalyticsTracker {
         LOGIN_INSERTED_INVALID_URL,
         LOGIN_AUTOFILL_CREDENTIALS_FILLED,
         LOGIN_AUTOFILL_CREDENTIALS_UPDATED,
+        LOGIN_PROLOGUE_PAGED,
+        LOGIN_PROLOGUE_PAGED_JETPACK,
+        LOGIN_PROLOGUE_PAGED_NOTIFICATIONS,
+        LOGIN_PROLOGUE_PAGED_POST,
+        LOGIN_PROLOGUE_PAGED_READER,
+        LOGIN_PROLOGUE_PAGED_STATS,
+        LOGIN_PROLOGUE_VIEWED,
+        LOGIN_EMAIL_FORM_VIEWED,
+        LOGIN_MAGIC_LINK_OPEN_EMAIL_CLIENT_VIEWED,
+        LOGIN_MAGIC_LINK_OPEN_EMAIL_CLIENT_CLICKED,
+        LOGIN_MAGIC_LINK_REQUEST_FORM_VIEWED,
+        LOGIN_PASSWORD_FORM_VIEWED,
+        LOGIN_URL_FORM_VIEWED,
+        LOGIN_URL_HELP_SCREEN_VIEWED,
+        LOGIN_USERNAME_PASSWORD_FORM_VIEWED,
+        LOGIN_TWO_FACTOR_FORM_VIEWED,
+        LOGIN_EPILOGUE_VIEWED,
+        LOGIN_FORGOT_PASSWORD_CLICKED,
+        LOGIN_SOCIAL_BUTTON_CLICK,
+        LOGIN_SOCIAL_BUTTON_FAILURE,
+        LOGIN_SOCIAL_CONNECT_SUCCESS,
+        LOGIN_SOCIAL_CONNECT_FAILURE,
+        LOGIN_SOCIAL_SUCCESS,
+        LOGIN_SOCIAL_FAILURE,
+        LOGIN_SOCIAL_2FA_NEEDED,
+        LOGIN_SOCIAL_ACCOUNTS_NEED_CONNECTING,
+        LOGIN_SOCIAL_ERROR_UNKNOWN_USER,
+        LOGIN_WPCOM_BACKGROUND_SERVICE_UPDATE,
+        MEDIA_LIBRARY_ADDED_PHOTO,
+        MEDIA_LIBRARY_ADDED_VIDEO,
         PERSON_REMOVED,
         PERSON_UPDATED,
         PUSH_AUTHENTICATION_APPROVED,
@@ -189,6 +251,8 @@ public final class AnalyticsTracker {
         NOTIFICATION_SETTINGS_LIST_OPENED,
         NOTIFICATION_SETTINGS_STREAMS_OPENED,
         NOTIFICATION_SETTINGS_DETAILS_OPENED,
+        NOTIFICATION_SETTINGS_APP_NOTIFICATIONS_DISABLED,
+        NOTIFICATION_SETTINGS_APP_NOTIFICATIONS_ENABLED,
         THEMES_ACCESSED_THEMES_BROWSER,
         THEMES_ACCESSED_SEARCH,
         THEMES_CHANGED_THEME,
@@ -219,12 +283,22 @@ public final class AnalyticsTracker {
         SITE_SETTINGS_DELETE_SITE_REQUESTED,
         SITE_SETTINGS_DELETE_SITE_RESPONSE_OK,
         SITE_SETTINGS_DELETE_SITE_RESPONSE_ERROR,
+        SITE_SETTINGS_OPTIMIZE_IMAGES_CHANGED,
         ABTEST_START,
         TRAIN_TRACKS_RENDER,
         TRAIN_TRACKS_INTERACT,
         DEEP_LINKED,
         DEEP_LINKED_FALLBACK,
         DEEP_LINK_NOT_DEFAULT_HANDLER,
+        MEDIA_UPLOAD_STARTED,
+        MEDIA_UPLOAD_ERROR,
+        MEDIA_UPLOAD_SUCCESS,
+        MEDIA_UPLOAD_CANCELED,
+        APP_PERMISSION_GRANTED,
+        APP_PERMISSION_DENIED,
+        SHARE_TO_WP_SUCCEEDED,
+        PLUGIN_REMOVED,
+        PLUGIN_UPDATED
     }
 
     private static final List<Tracker> TRACKERS = new ArrayList<>();
@@ -268,6 +342,20 @@ public final class AnalyticsTracker {
         }
     }
 
+    /**
+     * A convenience method for logging an error event with some additional meta data.
+     * @param stat The stat to track.
+     * @param errorContext A string providing additional context (if any) about the error.
+     * @param errorType The type of error.
+     * @param errorDescription The error text or other description.
+     */
+    public static void track(Stat stat, String errorContext, String errorType, String errorDescription) {
+        Map<String, String> props = new HashMap<>();
+        props.put("error_context", errorContext);
+        props.put("error_type", errorType);
+        props.put("error_description", errorDescription);
+        track(stat, props);
+    }
 
     public static void flush() {
         if (mHasUserOptedOut) {

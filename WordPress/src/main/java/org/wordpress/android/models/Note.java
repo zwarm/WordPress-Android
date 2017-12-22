@@ -7,7 +7,7 @@ import android.text.Spannable;
 import android.text.TextUtils;
 import android.util.Base64;
 
-import org.apache.commons.lang.time.DateUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -480,6 +480,21 @@ public class Note {
         synchronized (mSyncLock) {
             return mNoteJSON.optJSONArray("header");
         }
+    }
+
+    // this method is used to compare two Notes: as it's potentially a very processing intensive operation,
+    // we're only comparing the note id, timestamp, and raw JSON length, which is accurate enough for
+    // the purpose of checking if the local Note is any different from a remote note.
+    public boolean equalsTimeAndLength(Note note) {
+        if (note == null) {
+            return false;
+        }
+
+        if (this.getTimestampString().equalsIgnoreCase(note.getTimestampString())
+                && this.getJSON().length() == note.getJSON().length()) {
+            return true;
+        }
+        return false;
     }
 
     public static synchronized Note buildFromBase64EncodedData(String noteId, String base64FullNoteData) {

@@ -24,6 +24,7 @@ import org.wordpress.android.analytics.AnalyticsTracker.Stat;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.store.SiteStore;
 import org.wordpress.android.ui.ActivityId;
+import org.wordpress.android.ui.RequestCodes;
 import org.wordpress.android.ui.accounts.SmartLockHelper.Callback;
 import org.wordpress.android.ui.accounts.login.MagicLinkRequestFragment;
 import org.wordpress.android.ui.accounts.login.MagicLinkSentFragment;
@@ -38,8 +39,6 @@ public class SignInActivity extends AppCompatActivity implements ConnectionCallb
     public static final int SIGN_IN_REQUEST = 1;
     public static final int REQUEST_CODE = 5000;
     public static final int ADD_SELF_HOSTED_BLOG = 2;
-    public static final int SMART_LOCK_SAVE = 5;
-    public static final int SMART_LOCK_READ = 6;
 
     public static final String EXTRA_START_FRAGMENT = "start-fragment";
     public static final String EXTRA_JETPACK_SITE_AUTH = "EXTRA_JETPACK_SITE_AUTH";
@@ -54,12 +53,16 @@ public class SignInActivity extends AppCompatActivity implements ConnectionCallb
     private ProgressDialog mProgressDialog;
     private SiteModel mJetpackSite;
 
+    private boolean isStopped;
+
     @Inject SiteStore mSiteStore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ((WordPress) getApplication()).component().inject(this);
+
+        this.isStopped = true;
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.welcome_activity);
@@ -87,6 +90,20 @@ public class SignInActivity extends AppCompatActivity implements ConnectionCallb
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+
+        isStopped = false;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        isStopped = true;
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         actionMode(getIntent().getExtras());
@@ -106,14 +123,14 @@ public class SignInActivity extends AppCompatActivity implements ConnectionCallb
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == SMART_LOCK_SAVE) {
+        if (requestCode == RequestCodes.SMART_LOCK_SAVE) {
             if (resultCode == RESULT_OK) {
                 AnalyticsTracker.track(Stat.LOGIN_AUTOFILL_CREDENTIALS_UPDATED);
                 AppLog.d(T.NUX, "Credentials saved");
             } else {
                 AppLog.d(T.NUX, "Credentials save cancelled");
             }
-        } else if (requestCode == SMART_LOCK_READ) {
+        } else if (requestCode == RequestCodes.SMART_LOCK_READ) {
             if (resultCode == RESULT_OK) {
                 AppLog.d(T.NUX, "Credentials retrieved");
                 Credential credential = data.getParcelableExtra(Credential.EXTRA_KEY);
@@ -195,12 +212,16 @@ public class SignInActivity extends AppCompatActivity implements ConnectionCallb
     }
 
     private void popBackStackToSignInFragment() {
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        while (fragmentManager.getBackStackEntryCount() > 1) {
-            fragmentManager.popBackStackImmediate();
-        }
 
-        getSupportFragmentManager().popBackStack();
+        // this can bee called asynchronously from Volley onError handler so we must check if state is OK
+        if (!this.isStopped) {
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            while (fragmentManager.getBackStackEntryCount() > 1) {
+                fragmentManager.popBackStackImmediate();
+            }
+
+            fragmentManager.popBackStack();
+        }
     }
 
     protected void addSignInFragment() {
@@ -247,6 +268,9 @@ public class SignInActivity extends AppCompatActivity implements ConnectionCallb
                         signInFragment.onCredentialRetrieved(credential);
                     }
                 }
+
+                @Override
+                public void onCredentialsUnavailable() {}
             });
         }
     }

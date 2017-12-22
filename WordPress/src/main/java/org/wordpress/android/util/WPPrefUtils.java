@@ -2,7 +2,6 @@ package org.wordpress.android.util;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Typeface;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
@@ -16,7 +15,6 @@ import android.widget.TextView;
 
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
-import org.wordpress.android.widgets.TypefaceCache;
 
 import java.text.Collator;
 import java.util.ArrayList;
@@ -83,31 +81,11 @@ public class WPPrefUtils {
     }
 
     /**
-     * Font      : Default
-     * Style     : Normal
-     * Variation : Normal
-     */
-    public static Typeface getNormalTypeface(Context context) {
-        return TypefaceCache.getTypeface(context,
-                TypefaceCache.FAMILY_DEFAULT, Typeface.NORMAL);
-    }
-
-    /**
-     * Font      : Default
-     * Style     : Bold
-     * Variation : Light
-     */
-    public static Typeface getSemiboldTypeface(Context context) {
-        return TypefaceCache.getTypeface(context,
-                TypefaceCache.FAMILY_DEFAULT_LIGHT, Typeface.BOLD);
-    }
-
-    /**
      * Styles a {@link TextView} to display a large title against a dark background.
      */
     public static void layoutAsLightTitle(TextView view) {
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_extra_large);
-        setTextViewAttributes(view, size, R.color.white, getSemiboldTypeface(view.getContext()));
+        setTextViewAttributes(view, size, R.color.white);
     }
 
     /**
@@ -115,7 +93,7 @@ public class WPPrefUtils {
      */
     public static void layoutAsDarkTitle(TextView view) {
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_extra_large);
-        setTextViewAttributes(view, size, R.color.grey_dark, getSemiboldTypeface(view.getContext()));
+        setTextViewAttributes(view, size, R.color.grey_dark);
     }
 
     /**
@@ -124,7 +102,7 @@ public class WPPrefUtils {
     public static void layoutAsSubhead(TextView view) {
         int color = view.isEnabled() ? R.color.grey_dark : R.color.grey_lighten_10;
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_large);
-        setTextViewAttributes(view, size, color, getNormalTypeface(view.getContext()));
+        setTextViewAttributes(view, size, color);
     }
 
     /**
@@ -133,7 +111,7 @@ public class WPPrefUtils {
     public static void layoutAsBody1(TextView view) {
         int color = view.isEnabled() ? R.color.grey_darken_10 : R.color.grey_lighten_10;
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_medium);
-        setTextViewAttributes(view, size, color, getNormalTypeface(view.getContext()));
+        setTextViewAttributes(view, size, color);
     }
 
     /**
@@ -141,7 +119,7 @@ public class WPPrefUtils {
      */
     public static void layoutAsBody2(TextView view) {
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_medium);
-        setTextViewAttributes(view, size, R.color.grey_darken_10, getSemiboldTypeface(view.getContext()));
+        setTextViewAttributes(view, size, R.color.grey_darken_10);
     }
 
     /**
@@ -149,7 +127,7 @@ public class WPPrefUtils {
      */
     public static void layoutAsCaption(TextView view) {
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_small);
-        setTextViewAttributes(view, size, R.color.grey_darken_10, getNormalTypeface(view.getContext()));
+        setTextViewAttributes(view, size, R.color.grey_darken_10);
     }
 
     /**
@@ -157,7 +135,7 @@ public class WPPrefUtils {
      */
     public static void layoutAsFlatButton(TextView view) {
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_medium);
-        setTextViewAttributes(view, size, R.color.blue_medium, getSemiboldTypeface(view.getContext()));
+        setTextViewAttributes(view, size, R.color.blue_medium);
     }
 
     /**
@@ -165,7 +143,7 @@ public class WPPrefUtils {
      */
     public static void layoutAsRaisedButton(TextView view) {
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_medium);
-        setTextViewAttributes(view, size, R.color.white, getSemiboldTypeface(view.getContext()));
+        setTextViewAttributes(view, size, R.color.white);
     }
 
     /**
@@ -173,7 +151,7 @@ public class WPPrefUtils {
      */
     public static void layoutAsInput(EditText view) {
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_large);
-        setTextViewAttributes(view, size, R.color.grey_dark, getNormalTypeface(view.getContext()));
+        setTextViewAttributes(view, size, R.color.grey_dark);
         view.setHintTextColor(view.getResources().getColor(R.color.grey_lighten_10));
         view.setTextColor(view.getResources().getColor(R.color.grey_dark));
         view.setSingleLine(true);
@@ -184,7 +162,7 @@ public class WPPrefUtils {
      */
     public static void layoutAsNumberPickerSelected(TextView view) {
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_triple_extra_large);
-        setTextViewAttributes(view, size, R.color.blue_medium, getSemiboldTypeface(view.getContext()));
+        setTextViewAttributes(view, size, R.color.blue_medium);
     }
 
     /**
@@ -192,7 +170,7 @@ public class WPPrefUtils {
      */
     public static void layoutAsNumberPickerPeek(TextView view) {
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_large);
-        setTextViewAttributes(view, size, R.color.grey_dark, getNormalTypeface(view.getContext()));
+        setTextViewAttributes(view, size, R.color.grey_dark);
     }
 
     /**
@@ -200,11 +178,10 @@ public class WPPrefUtils {
      */
     public static void layoutAsDialogMessage(TextView view) {
         int size = view.getResources().getDimensionPixelSize(R.dimen.text_sz_small);
-        setTextViewAttributes(view, size, R.color.grey_darken_10, getNormalTypeface(view.getContext()));
+        setTextViewAttributes(view, size, R.color.grey_darken_10);
     }
 
-    public static void setTextViewAttributes(TextView textView, int size, int colorRes, Typeface typeface) {
-        textView.setTypeface(typeface);
+    public static void setTextViewAttributes(TextView textView, int size, int colorRes) {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, size);
         textView.setTextColor(textView.getResources().getColor(colorRes));
     }
@@ -226,9 +203,9 @@ public class WPPrefUtils {
     /**
      * Creates a map from language codes to WordPress language IDs.
      */
-    public static Map<String, String> generateLanguageMap(Activity activity) {
-        String[] languageIds = activity.getResources().getStringArray(R.array.lang_ids);
-        String[] languageCodes = activity.getResources().getStringArray(R.array.language_codes);
+    public static Map<String, String> generateLanguageMap(Context context) {
+        String[] languageIds = context.getResources().getStringArray(R.array.lang_ids);
+        String[] languageCodes = context.getResources().getStringArray(R.array.language_codes);
 
         Map<String, String> languageMap = new HashMap<>();
         for (int i = 0; i < languageIds.length && i < languageCodes.length; ++i) {

@@ -2,6 +2,9 @@ package org.wordpress.android.widgets;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.support.annotation.ColorRes;
+import android.support.annotation.DrawableRes;
+import android.support.annotation.StringRes;
 import android.util.AttributeSet;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -27,8 +30,11 @@ public class PostListButton extends LinearLayout {
     public static final int BUTTON_TRASH    = 5;
     public static final int BUTTON_DELETE   = 6;
     public static final int BUTTON_PUBLISH  = 7;
-    public static final int BUTTON_MORE     = 8;
-    public static final int BUTTON_BACK     = 9;
+    public static final int BUTTON_SYNC     = 8;
+    public static final int BUTTON_MORE     = 9;
+    public static final int BUTTON_BACK     = 10;
+    public static final int BUTTON_SUBMIT   = 11;
+    public static final int BUTTON_RETRY    = 12;
 
     public PostListButton(Context context){
         super(context);
@@ -80,9 +86,10 @@ public class PostListButton extends LinearLayout {
         mButtonType = buttonType;
         mTextView.setText(getButtonTextResId(buttonType));
         mImageView.setImageResource(getButtonIconResId(buttonType));
+        mTextView.setTextColor(getContext().getResources().getColor(getTextColorResId(buttonType)));
     }
 
-    public static int getButtonTextResId(int buttonType) {
+    public static @StringRes int getButtonTextResId(int buttonType) {
         switch (buttonType) {
             case BUTTON_EDIT:
                 return R.string.button_edit;
@@ -98,37 +105,56 @@ public class PostListButton extends LinearLayout {
                 return R.string.button_delete;
             case BUTTON_PUBLISH:
                 return R.string.button_publish;
+            case BUTTON_SYNC:
+                return R.string.button_sync;
             case BUTTON_MORE:
                 return R.string.button_more;
             case BUTTON_BACK:
                 return R.string.button_back;
+            case BUTTON_SUBMIT:
+                return R.string.submit_for_review;
+            case BUTTON_RETRY:
+                return R.string.button_retry;
             default:
                 return 0;
         }
     }
 
-    public static int getButtonIconResId(int buttonType) {
+    public static @DrawableRes int getButtonIconResId(int buttonType) {
         switch (buttonType) {
             case BUTTON_EDIT:
-                return R.drawable.noticon_edit;
+                return R.drawable.ic_pencil_blue_wordpress_18dp;
             case BUTTON_VIEW:
-                return R.drawable.noticon_view;
+                return R.drawable.ic_external_blue_wordpress_18dp;
             case BUTTON_PREVIEW:
-                return R.drawable.noticon_view;
+                return R.drawable.ic_external_blue_wordpress_18dp;
             case BUTTON_STATS:
-                return R.drawable.noticon_stats;
+                return R.drawable.ic_stats_alt_blue_wordpress_18dp;
             case BUTTON_TRASH:
-                return R.drawable.noticon_trash;
+                return R.drawable.ic_trash_blue_wordpress_18dp;
             case BUTTON_DELETE:
-                return R.drawable.noticon_trash;
+                return R.drawable.ic_trash_blue_wordpress_18dp;
             case BUTTON_PUBLISH:
-                return R.drawable.noticon_publish;
+            case BUTTON_SYNC:
+            case BUTTON_SUBMIT:
+                return R.drawable.ic_reader_blue_wordpress_18dp;
             case BUTTON_MORE:
-                return R.drawable.noticon_more;
+                return R.drawable.ic_ellipsis_blue_wordpress_18dp;
             case BUTTON_BACK:
-                return R.drawable.noticon_back;
+                return R.drawable.ic_chevron_left_blue_wordpress_18dp;
+            case BUTTON_RETRY:
+                return R.drawable.ic_refresh_red_18dp;
             default:
                 return 0;
+        }
+    }
+
+    public static @ColorRes int getTextColorResId(int buttonType) {
+        switch (buttonType) {
+            case BUTTON_RETRY:
+                return R.color.alert_red;
+            default:
+                return R.color.blue_wordpress;
         }
     }
 }

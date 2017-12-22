@@ -81,7 +81,6 @@ public class LegacyEditorFragment extends EditorFragmentAbstract implements Text
     private static final String KEY_IMAGE_SPANS = "image-spans";
     private static final String KEY_START = "start";
     private static final String KEY_END = "end";
-    private static final String KEY_CONTENT = "content";
     private static final String TAG_FORMAT_BAR_BUTTON_STRONG = "strong";
     private static final String TAG_FORMAT_BAR_BUTTON_EM = "em";
     private static final String TAG_FORMAT_BAR_BUTTON_UNDERLINE = "u";
@@ -202,7 +201,6 @@ public class LegacyEditorFragment extends EditorFragmentAbstract implements Text
         Button linkButton = (Button) rootView.findViewById(R.id.link);
         Button moreButton = (Button) rootView.findViewById(R.id.more);
 
-        registerForContextMenu(mAddPictureButton);
         mContentEditText = (WPEditText) rootView.findViewById(R.id.post_content);
         mContentEditText.setOnSelectionChangedListener(this);
         mContentEditText.setOnTouchListener(this);
@@ -231,7 +229,7 @@ public class LegacyEditorFragment extends EditorFragmentAbstract implements Text
         if (savedInstanceState != null) {
             Parcelable[] spans = savedInstanceState.getParcelableArray(KEY_IMAGE_SPANS);
 
-            mContent = savedInstanceState.getString(KEY_CONTENT, "");
+            mContent = savedInstanceState.getString(ATTR_CONTENT, "");
             mContentEditText.setText(mContent);
             mContentEditText.setSelection(savedInstanceState.getInt(KEY_START, 0),
                                           savedInstanceState.getInt(KEY_END, 0));
@@ -426,7 +424,7 @@ public class LegacyEditorFragment extends EditorFragmentAbstract implements Text
                 mEditorFragmentListener.onTrackableEvent(TrackableEvent.BLOCKQUOTE_BUTTON_TAPPED);
                 onFormatButtonClick(mBquoteToggleButton, TAG_FORMAT_BAR_BUTTON_QUOTE);
             } else if (id == R.id.more) {
-                mEditorFragmentListener.onTrackableEvent(TrackableEvent.MORE_BUTTON_TAPPED);
+                mEditorFragmentListener.onTrackableEvent(TrackableEvent.READ_MORE_BUTTON_TAPPED);
                 mSelectionEnd = mContentEditText.getSelectionEnd();
                 Editable str = mContentEditText.getText();
                 if (str != null) {
@@ -435,7 +433,7 @@ public class LegacyEditorFragment extends EditorFragmentAbstract implements Text
                     str.insert(mSelectionEnd, "\n<!--more-->\n");
                 }
             } else if (id == R.id.link) {
-                mEditorFragmentListener.onTrackableEvent(TrackableEvent.LINK_BUTTON_TAPPED);
+                mEditorFragmentListener.onTrackableEvent(TrackableEvent.LINK_ADDED_BUTTON_TAPPED);
                 mSelectionStart = mContentEditText.getSelectionStart();
                 mStyleStart = mSelectionStart;
                 mSelectionEnd = mContentEditText.getSelectionEnd();
@@ -455,9 +453,6 @@ public class LegacyEditorFragment extends EditorFragmentAbstract implements Text
             } else if (id == R.id.addPictureButton) {
                 mEditorFragmentListener.onTrackableEvent(TrackableEvent.MEDIA_BUTTON_TAPPED);
                 mEditorFragmentListener.onAddMediaClicked();
-                if (isAdded()) {
-                    getActivity().openContextMenu(mAddPictureButton);
-                }
             }
         }
     };
@@ -480,7 +475,7 @@ public class LegacyEditorFragment extends EditorFragmentAbstract implements Text
             }
         }
         WPEditImageSpan imageSpan = new WPEditImageSpan(context, thumbnailBitmap, imageUri);
-        mediaFile.setWidth(MediaUtils.getMaximumImageWidth(context, imageUri, mBlogSettingMaxImageWidth));
+        mediaFile.setWidth(MediaUtils.getMaximumImageSize(context, imageUri, mBlogSettingMaxImageWidth));
         imageSpan.setMediaFile(mediaFile);
         return imageSpan;
     }
@@ -754,7 +749,7 @@ public class LegacyEditorFragment extends EditorFragmentAbstract implements Text
 
                         alignmentSpinner.setSelection(mediaFile.getHorizontalAlignment(), true);
 
-                        final int maxWidth = MediaUtils.getMaximumImageWidth(getActivity(),
+                        final int maxWidth = MediaUtils.getMaximumImageSize(getActivity(),
                                 imageSpan.getImageSource(), mBlogSettingMaxImageWidth);
                         seekBar.setMax(maxWidth / 10);
                         imageWidthText.setText(String.format(Locale.US, "%dpx", maxWidth));
@@ -1025,7 +1020,7 @@ public class LegacyEditorFragment extends EditorFragmentAbstract implements Text
 
         outState.putInt(KEY_START, mContentEditText.getSelectionStart());
         outState.putInt(KEY_END, mContentEditText.getSelectionEnd());
-        outState.putString(KEY_CONTENT, mContentEditText.getText().toString());
+        outState.putString(ATTR_CONTENT, mContentEditText.getText().toString());
     }
 
     private class AddMediaFileTask extends AsyncTask<Void, Void, WPEditImageSpan> {
@@ -1172,6 +1167,9 @@ public class LegacyEditorFragment extends EditorFragmentAbstract implements Text
 
     @Override
     public void removeAllFailedMediaUploads() {}
+
+    @Override
+    public void removeMedia(String mediaId) {}
 
     @Override
     public void setTitlePlaceholder(CharSequence text) {

@@ -1,33 +1,29 @@
 package org.wordpress.android.ui.posts;
 
-import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
+import android.app.ProgressDialog;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
-import android.database.Cursor;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.media.ThumbnailUtils;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v13.app.FragmentPagerAdapter;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.CursorLoader;
+import android.support.v4.app.ActivityCompat.OnRequestPermissionsResultCallback;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -37,7 +33,6 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.SuggestionSpan;
-import android.view.ContextMenu;
 import android.view.DragEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -45,8 +40,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.MimeTypeMap;
-import android.widget.Toast;
 
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -57,53 +50,70 @@ import org.wordpress.android.WordPress;
 import org.wordpress.android.analytics.AnalyticsTracker;
 import org.wordpress.android.analytics.AnalyticsTracker.Stat;
 import org.wordpress.android.editor.AztecEditorFragment;
+import org.wordpress.android.editor.EditorBetaClickListener;
 import org.wordpress.android.editor.EditorFragment;
 import org.wordpress.android.editor.EditorFragment.IllegalEditorStateException;
 import org.wordpress.android.editor.EditorFragmentAbstract;
 import org.wordpress.android.editor.EditorFragmentAbstract.EditorDragAndDropListener;
 import org.wordpress.android.editor.EditorFragmentAbstract.EditorFragmentListener;
 import org.wordpress.android.editor.EditorFragmentAbstract.TrackableEvent;
+import org.wordpress.android.editor.EditorFragmentActivity;
+import org.wordpress.android.editor.EditorImageMetaData;
 import org.wordpress.android.editor.EditorMediaUploadListener;
 import org.wordpress.android.editor.EditorWebViewAbstract.ErrorListener;
 import org.wordpress.android.editor.EditorWebViewCompatibility;
 import org.wordpress.android.editor.EditorWebViewCompatibility.ReflectionException;
 import org.wordpress.android.editor.ImageSettingsDialogFragment;
 import org.wordpress.android.editor.LegacyEditorFragment;
+import org.wordpress.android.editor.legacy.EditorImageSettingsListener;
 import org.wordpress.android.fluxc.Dispatcher;
+import org.wordpress.android.fluxc.action.AccountAction;
+import org.wordpress.android.fluxc.generated.AccountActionBuilder;
 import org.wordpress.android.fluxc.generated.MediaActionBuilder;
 import org.wordpress.android.fluxc.generated.PostActionBuilder;
+import org.wordpress.android.fluxc.model.AccountModel;
 import org.wordpress.android.fluxc.model.MediaModel;
-import org.wordpress.android.fluxc.model.MediaModel.UploadState;
+import org.wordpress.android.fluxc.model.MediaModel.MediaUploadState;
 import org.wordpress.android.fluxc.model.PostModel;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.model.post.PostStatus;
 import org.wordpress.android.fluxc.store.AccountStore;
+import org.wordpress.android.fluxc.store.AccountStore.OnAccountChanged;
 import org.wordpress.android.fluxc.store.MediaStore;
+import org.wordpress.android.fluxc.store.MediaStore.CancelMediaPayload;
 import org.wordpress.android.fluxc.store.MediaStore.FetchMediaListPayload;
+import org.wordpress.android.fluxc.store.MediaStore.MediaErrorType;
 import org.wordpress.android.fluxc.store.MediaStore.MediaPayload;
 import org.wordpress.android.fluxc.store.MediaStore.OnMediaChanged;
 import org.wordpress.android.fluxc.store.PostStore;
 import org.wordpress.android.fluxc.store.SiteStore;
+import org.wordpress.android.fluxc.tools.FluxCImageLoader;
 import org.wordpress.android.ui.ActivityId;
 import org.wordpress.android.ui.ActivityLauncher;
 import org.wordpress.android.ui.RequestCodes;
-import org.wordpress.android.ui.media.MediaGalleryActivity;
-import org.wordpress.android.ui.media.MediaGalleryPickerActivity;
-import org.wordpress.android.ui.media.WordPressMediaUtils;
-import org.wordpress.android.ui.media.services.MediaUploadService;
+import org.wordpress.android.ui.media.MediaBrowserActivity;
+import org.wordpress.android.ui.media.MediaBrowserType;
+import org.wordpress.android.ui.media.MediaSettingsActivity;
 import org.wordpress.android.ui.notifications.utils.PendingDraftsNotificationsUtils;
+import org.wordpress.android.ui.photopicker.PhotoPickerFragment;
+import org.wordpress.android.ui.photopicker.PhotoPickerFragment.PhotoPickerIcon;
+import org.wordpress.android.ui.posts.InsertMediaDialog.InsertMediaCallback;
 import org.wordpress.android.ui.posts.services.AztecImageLoader;
-import org.wordpress.android.ui.posts.services.PostUploadService;
+import org.wordpress.android.ui.posts.services.AztecVideoLoader;
 import org.wordpress.android.ui.prefs.AppPrefs;
+import org.wordpress.android.ui.prefs.ReleaseNotesActivity;
 import org.wordpress.android.ui.prefs.SiteSettingsInterface;
+import org.wordpress.android.ui.uploads.PostEvents;
+import org.wordpress.android.ui.uploads.UploadService;
+import org.wordpress.android.ui.uploads.VideoOptimizer;
 import org.wordpress.android.util.AnalyticsUtils;
+import org.wordpress.android.util.AniUtils;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.AppLog.T;
 import org.wordpress.android.util.AutolinkUtils;
 import org.wordpress.android.util.CrashlyticsUtils;
-import org.wordpress.android.util.CrashlyticsUtils.ExceptionType;
 import org.wordpress.android.util.DateTimeUtils;
-import org.wordpress.android.util.DeviceUtils;
+import org.wordpress.android.util.DisplayUtils;
 import org.wordpress.android.util.FluxCUtils;
 import org.wordpress.android.util.ImageUtils;
 import org.wordpress.android.util.ListUtils;
@@ -111,11 +121,12 @@ import org.wordpress.android.util.MediaUtils;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.PermissionUtils;
 import org.wordpress.android.util.SiteUtils;
-import org.wordpress.android.util.SqlUtils;
 import org.wordpress.android.util.StringUtils;
 import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.util.ToastUtils.Duration;
 import org.wordpress.android.util.WPHtml;
+import org.wordpress.android.util.WPMediaUtils;
+import org.wordpress.android.util.WPPermissionUtils;
 import org.wordpress.android.util.WPUrlUtils;
 import org.wordpress.android.util.helpers.MediaFile;
 import org.wordpress.android.util.helpers.MediaGallery;
@@ -128,40 +139,44 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.inject.Inject;
 
-public class EditPostActivity extends AppCompatActivity implements EditorFragmentListener, EditorDragAndDropListener,
-        ActivityCompat.OnRequestPermissionsResultCallback, EditorWebViewCompatibility.ReflectionFailureListener,
-        MediaUploadService.MediaUploadListener {
-    public static final String EXTRA_POST = "postModel";
+import de.greenrobot.event.EventBus;
+
+public class EditPostActivity extends AppCompatActivity implements
+        EditorFragmentActivity,
+        EditorBetaClickListener,
+        EditorImageSettingsListener,
+        EditorDragAndDropListener,
+        EditorFragmentListener,
+        EditorWebViewCompatibility.ReflectionFailureListener,
+        OnRequestPermissionsResultCallback,
+        PhotoPickerFragment.PhotoPickerListener,
+        EditPostSettingsFragment.EditPostActivityHook {
+
+    public static final String EXTRA_POST_LOCAL_ID = "postModelLocalId";
     public static final String EXTRA_IS_PAGE = "isPage";
+    public static final String EXTRA_IS_PROMO = "isPromo";
     public static final String EXTRA_IS_QUICKPRESS = "isQuickPress";
     public static final String EXTRA_QUICKPRESS_BLOG_ID = "quickPressBlogId";
     public static final String EXTRA_SAVED_AS_LOCAL_DRAFT = "savedAsLocalDraft";
-    public static final String STATE_KEY_CURRENT_POST = "stateKeyCurrentPost";
-    public static final String STATE_KEY_ORIGINAL_POST = "stateKeyOriginalPost";
-    public static final String STATE_KEY_EDITOR_FRAGMENT = "editorFragment";
-    public static final String STATE_KEY_DROPPED_MEDIA_URIS = "stateKeyDroppedMediaUri";
-
-    // Context menu positioning
-    private static final int SELECT_PHOTO_MENU_POSITION = 0;
-    private static final int CAPTURE_PHOTO_MENU_POSITION = 1;
-    private static final int SELECT_VIDEO_MENU_POSITION = 2;
-    private static final int CAPTURE_VIDEO_MENU_POSITION = 3;
-    private static final int ADD_GALLERY_MENU_POSITION = 4;
-    private static final int SELECT_LIBRARY_MENU_POSITION = 5;
-
-    public static final int MEDIA_PERMISSION_REQUEST_CODE = 1;
-    public static final int LOCATION_PERMISSION_REQUEST_CODE = 2;
-    public static final int DRAG_AND_DROP_MEDIA_PERMISSION_REQUEST_CODE = 3;
+    public static final String EXTRA_HAS_FAILED_MEDIA = "hasFailedMedia";
+    public static final String EXTRA_HAS_CHANGES = "hasChanges";
+    public static final String EXTRA_INSERT_MEDIA = "insertMedia";
+    private static final String STATE_KEY_EDITOR_FRAGMENT = "editorFragment";
+    private static final String STATE_KEY_DROPPED_MEDIA_URIS = "stateKeyDroppedMediaUri";
+    private static final String STATE_KEY_POST_LOCAL_ID = "stateKeyPostModelLocalId";
+    private static final String STATE_KEY_POST_REMOTE_ID = "stateKeyPostModelRemoteId";
+    private static final String STATE_KEY_IS_NEW_POST = "stateKeyIsNewPost";
 
     private static int PAGE_CONTENT = 0;
     private static int PAGE_SETTINGS = 1;
@@ -169,11 +184,17 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
 
     private static final int AUTOSAVE_INTERVAL_MILLIS = 60000;
 
+    private static final String PHOTO_PICKER_TAG = "photo_picker";
+    private static final String ASYNC_PROMO_DIALOG_TAG = "async_promo";
+
     private Handler mHandler;
     private boolean mShowAztecEditor;
     private boolean mShowNewEditor;
+    private boolean mMediaInsertedOnCreation;
 
     private List<String> mPendingVideoPressInfoRequests;
+    private List<String> mAztecBackspaceDeletedMediaItemIds = new ArrayList<>();
+    private List<String> mMediaMarkedUploadingOnStartIds = new ArrayList<>();
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -193,7 +214,6 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
     private PostModel mPost;
     private PostModel mOriginalPost;
 
-    private AztecEditorFragment mAztecEditorFragment;
     private EditorFragmentAbstract mEditorFragment;
     private EditPostSettingsFragment mEditPostSettingsFragment;
     private EditPostPreviewFragment mEditPostPreviewFragment;
@@ -202,7 +222,12 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
 
     private boolean mIsNewPost;
     private boolean mIsPage;
+    private boolean mIsPromo;
     private boolean mHasSetPostContent;
+
+    private View mPhotoPickerContainer;
+    private PhotoPickerFragment mPhotoPickerFragment;
+    private int mPhotoPickerOrientation = Configuration.ORIENTATION_UNDEFINED;
 
     // For opening the context menu after permissions have been granted
     private View mMenuView = null;
@@ -212,10 +237,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
     @Inject SiteStore mSiteStore;
     @Inject PostStore mPostStore;
     @Inject MediaStore mMediaStore;
-
-    // Upload service
-    private MediaUploadService.MediaUploadBinder mMediaUploadService;
-    private boolean mMediaUploadServiceBound;
+    @Inject FluxCImageLoader mImageLoader;
 
     private SiteModel mSite;
 
@@ -228,7 +250,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
             if (mDroppedMediaUris != null) {
                 final List<Uri> mediaUris = mDroppedMediaUris;
                 mDroppedMediaUris = null;
-                EditPostActivity.this.fetchMedia(mediaUris);
+                addMediaList(mediaUris, false);
             }
         }
     };
@@ -248,6 +270,8 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
 
         // Check whether to show the visual editor
         PreferenceManager.setDefaultValues(this, R.xml.account_settings, false);
+        //AppPrefs.setAztecEditorAvailable(true);
+        //AppPrefs.setAztecEditorEnabled(true);
         mShowAztecEditor = AppPrefs.isAztecEditorEnabled();
         mShowNewEditor = AppPrefs.isVisualEditorEnabled();
 
@@ -261,58 +285,66 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         Bundle extras = getIntent().getExtras();
         String action = getIntent().getAction();
         if (savedInstanceState == null) {
-            if (!getIntent().hasExtra(EXTRA_POST)
-                    ||Intent.ACTION_SEND.equals(action) || Intent.ACTION_SEND_MULTIPLE.equals(action)
-                    || NEW_MEDIA_GALLERY.equals(action)
+            if (!getIntent().hasExtra(EXTRA_POST_LOCAL_ID)
+                    || Intent.ACTION_SEND.equals(action)
+                    || Intent.ACTION_SEND_MULTIPLE.equals(action)
                     || NEW_MEDIA_POST.equals(action)
-                    || getIntent().hasExtra(EXTRA_IS_QUICKPRESS)
-                    || (extras != null && extras.getInt("quick-media", -1) > -1)) {
+                    || getIntent().hasExtra(EXTRA_IS_QUICKPRESS)) {
                 if (getIntent().hasExtra(EXTRA_QUICKPRESS_BLOG_ID)) {
                     // QuickPress might want to use a different blog than the current blog
                     int localSiteId = getIntent().getIntExtra(EXTRA_QUICKPRESS_BLOG_ID, -1);
-                    SiteModel site = mSiteStore.getSiteByLocalId(localSiteId);
-                    if (site == null) {
-                        showErrorAndFinish(R.string.blog_not_found);
-                        return;
-                    }
-                    if (!site.isVisible()) {
-                        showErrorAndFinish(R.string.error_blog_hidden);
-                        return;
-                    }
-                    mSite = site;
+                    mSite = mSiteStore.getSiteByLocalId(localSiteId);
                 }
 
-                mIsPage = extras.getBoolean(EXTRA_IS_PAGE);
+                if (extras != null) {
+                    mIsPage = extras.getBoolean(EXTRA_IS_PAGE);
+                    mIsPromo = extras.getBoolean(EXTRA_IS_PROMO);
+                }
                 mIsNewPost = true;
+
+                if (mSite == null) {
+                    showErrorAndFinish(R.string.blog_not_found);
+                    return;
+                }
+                if (!mSite.isVisible()) {
+                    showErrorAndFinish(R.string.error_blog_hidden);
+                    return;
+                }
 
                 // Create a new post
                 List<Long> categories = new ArrayList<>();
-                categories.add((long) SiteSettingsInterface.getDefaultCategory(WordPress.getContext()));
-                String postFormat = SiteSettingsInterface.getDefaultFormat(WordPress.getContext());
+                String postFormat = "";
+                if (mSite.isUsingWpComRestApi()) {
+                    // TODO: replace SiteSettingsInterface.getX by calls to mSite.getDefaultCategory
+                    // and mSite.getDefaultFormat. We can get these from /me/sites endpoint for .com/jetpack sites.
+                    // There might be a way to get that information from a XMLRPC request as well.
+                    categories.add((long) SiteSettingsInterface.getDefaultCategory(WordPress.getContext()));
+                    postFormat = SiteSettingsInterface.getDefaultFormat(WordPress.getContext());
+                }
                 mPost = mPostStore.instantiatePostModel(mSite, mIsPage, categories, postFormat);
+                mPost.setStatus(PostStatus.PUBLISHED.toString());
             } else if (extras != null) {
                 // Load post passed in extras
-                mPost = (PostModel) extras.getSerializable(EXTRA_POST);
+                mPost = mPostStore.getPostByLocalPostId(extras.getInt(EXTRA_POST_LOCAL_ID));
                 if (mPost != null) {
-                    mOriginalPost = mPost.clone();
-                    mIsPage = mPost.isPage();
+                    initializePostObject();
                 }
-            } else {
-                // A postId extra must be passed to this activity
-                showErrorAndFinish(R.string.post_not_found);
-                return;
             }
+
         } else {
             mDroppedMediaUris = savedInstanceState.getParcelable(STATE_KEY_DROPPED_MEDIA_URIS);
+            mIsNewPost = savedInstanceState.getBoolean(STATE_KEY_IS_NEW_POST, false);
 
-            if (savedInstanceState.containsKey(STATE_KEY_ORIGINAL_POST)) {
-                try {
-                    mPost = (PostModel) savedInstanceState.getSerializable(STATE_KEY_CURRENT_POST);
-                    mOriginalPost = (PostModel) savedInstanceState.getSerializable(STATE_KEY_ORIGINAL_POST);
-                } catch (ClassCastException e) {
-                    mPost = null;
-                }
+            // if we have a remote id saved, let's first try with that, as the local Id might have changed
+            // after FETCH_POSTS
+            if (savedInstanceState.containsKey(STATE_KEY_POST_REMOTE_ID)) {
+                mPost = mPostStore.getPostByRemotePostId(savedInstanceState.getLong(STATE_KEY_POST_REMOTE_ID), mSite);
+                initializePostObject();
+            } else if (savedInstanceState.containsKey(STATE_KEY_POST_LOCAL_ID)) {
+                mPost = mPostStore.getPostByLocalPostId(savedInstanceState.getInt(STATE_KEY_POST_LOCAL_ID));
+                initializePostObject();
             }
+
             mEditorFragment = (EditorFragmentAbstract) fragmentManager.getFragment(savedInstanceState, STATE_KEY_EDITOR_FRAGMENT);
 
             if (mEditorFragment instanceof EditorMediaUploadListener) {
@@ -327,7 +359,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         }
 
         if (mHasSetPostContent = mEditorFragment != null) {
-            mEditorFragment.setImageLoader(WordPress.sImageLoader);
+            mEditorFragment.setImageLoader(mImageLoader);
         }
 
         // Ensure we have a valid post
@@ -338,9 +370,15 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
 
         if (mIsNewPost) {
             trackEditorCreatedPost(action, getIntent());
+        } else {
+            // if we are opening a Post for which an error notification exists, we need to remove
+            // it from the dashboard to prevent the user from tapping RETRY on a Post that is
+            // being currently edited
+            UploadService.cancelFinalNotification(this, mPost);
+            resetUploadingMediaToFailedIfPostHasNotMediaInProgressOrQueued();
         }
 
-        setTitle(StringUtils.unescapeHTML(SiteUtils.getSiteNameOrHomeURL(mSite)));
+        setTitle(SiteUtils.getSiteNameOrHomeURL(mSite));
         mSectionsPagerAdapter = new SectionsPagerAdapter(fragmentManager);
 
         // Set up the ViewPager with the sections adapter.
@@ -357,11 +395,13 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
             public void onPageSelected(int position) {
                 invalidateOptionsMenu();
                 if (position == PAGE_CONTENT) {
-                    setTitle(StringUtils.unescapeHTML(SiteUtils.getSiteNameOrHomeURL(mSite)));
+                    setTitle(SiteUtils.getSiteNameOrHomeURL(mSite));
                 } else if (position == PAGE_SETTINGS) {
                     setTitle(mPost.isPage() ? R.string.page_settings : R.string.post_settings);
+                    hidePhotoPicker();
                 } else if (position == PAGE_PREVIEW) {
                     setTitle(mPost.isPage() ? R.string.preview_page : R.string.preview_post);
+                    hidePhotoPicker();
                     savePostAsync(new AfterSavePostListener() {
                         @Override
                         public void onPostSave() {
@@ -370,7 +410,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
                                     @Override
                                     public void run() {
                                         if (mEditPostPreviewFragment != null) {
-                                            mEditPostPreviewFragment.loadPost();
+                                            mEditPostPreviewFragment.loadPost(mPost);
                                         }
                                     }
                                 });
@@ -382,6 +422,45 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         });
 
         ActivityId.trackLastActivity(ActivityId.POST_EDITOR);
+    }
+
+    private void initializePostObject() {
+        if (mPost != null) {
+            mOriginalPost = mPost.clone();
+            mPost = UploadService.updatePostWithCurrentlyCompletedUploads(mPost);
+            mMediaMarkedUploadingOnStartIds =
+                    AztecEditorFragment.getMediaMarkedUploadingInPostContent(this, mPost.getContent());
+            Collections.sort(mMediaMarkedUploadingOnStartIds);
+            mIsPage = mPost.isPage();
+        }
+    }
+
+    // this method aims at recovering the current state of media items if they're inconsistent within the PostModel.
+    private void resetUploadingMediaToFailedIfPostHasNotMediaInProgressOrQueued() {
+        boolean useAztec = AppPrefs.isAztecEditorEnabled();
+
+        if (!useAztec || UploadService.hasPendingOrInProgressMediaUploadsForPost(mPost)) {
+            return;
+        }
+
+        String oldContent = mPost.getContent();
+        if (!AztecEditorFragment.hasMediaItemsMarkedUploading(this, oldContent)
+                // we need to make sure items marked failed are still failed or not as well
+                        && !AztecEditorFragment.hasMediaItemsMarkedFailed(this, oldContent)) {
+            return;
+        }
+
+        String newContent = AztecEditorFragment.resetUploadingMediaToFailed(this, oldContent);
+
+        if (!TextUtils.isEmpty(oldContent) && newContent != null && oldContent.compareTo(newContent) != 0) {
+            mPost.setContent(newContent);
+
+            // we changed the post, so let’s mark this down
+            if (!mPost.isLocalDraft()) {
+                mPost.setIsLocallyChanged(true);
+            }
+            mPost.setDateLocallyChanged(DateTimeUtils.iso8601FromTimestamp(System.currentTimeMillis() / 1000));
+        }
     }
 
     private Runnable mAutoSave = new Runnable() {
@@ -410,27 +489,63 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         super.onResume();
         mHandler = new Handler();
         mHandler.postDelayed(mAutoSave, AUTOSAVE_INTERVAL_MILLIS);
+
+        EventBus.getDefault().register(this);
+
+        reattachUploadingMedia();
+    }
+
+    private void reattachUploadingMedia() {
+        if (mEditorMediaUploadListener != null) {
+            // UploadService.getPendingMediaForPost will be populated only when the user exits the editor
+            // But if the user doesn't exit the editor and sends the app to the background, a reattachment
+            // for the media within this Post is needed as soon as the app comes back to foreground,
+            // so we get the list of progressing media for this Post from the UploadService
+            List<MediaModel> allUploadingMediaInPost = new ArrayList<>();
+            Set<MediaModel> uploadingMediaInPost = UploadService.getPendingMediaForPost(mPost);
+            allUploadingMediaInPost.addAll(uploadingMediaInPost);
+            // add them to the array only if they are not in there yet
+            for (MediaModel media1 : UploadService.getPendingOrInProgressMediaUploadsForPost(mPost)) {
+                boolean found = false;
+                for (MediaModel media2 : uploadingMediaInPost) {
+                    if (media1.getId() == media2.getId()) {
+                        // if it exists, just break the loop and check for the next one
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    // we haven't found it before, so let's add it to the list.
+                    allUploadingMediaInPost.add(media1);
+                }
+            }
+
+            // now do proper re-attachment of upload progress on each media item
+            for (MediaModel media : allUploadingMediaInPost) {
+                if (media != null) {
+                    mEditorMediaUploadListener.onMediaUploadReattached(String.valueOf(media.getId()),
+                            UploadService.getUploadProgressForMedia(media));
+                }
+            }
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
 
-        try {
-            unregisterReceiver(mGalleryReceiver);
-        } catch (IllegalArgumentException e) {
-            AppLog.d(T.EDITOR, "Illegal state! Can't unregister receiver that was no registered");
-        }
-
         mHandler.removeCallbacks(mAutoSave);
         mHandler = null;
+
+        EventBus.getDefault().unregister(this);
     }
 
     @Override
     protected void onDestroy() {
         AnalyticsTracker.track(AnalyticsTracker.Stat.EDITOR_CLOSED);
         mDispatcher.unregister(this);
-        doUnbindUploadService();
+        cancelAddMediaListThread();
         super.onDestroy();
     }
 
@@ -439,14 +554,228 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         super.onSaveInstanceState(outState);
         // Saves both post objects so we can restore them in onCreate()
         savePostAsync(null);
-        outState.putSerializable(STATE_KEY_CURRENT_POST, mPost);
-        outState.putSerializable(STATE_KEY_ORIGINAL_POST, mOriginalPost);
+        outState.putInt(STATE_KEY_POST_LOCAL_ID, mPost.getId());
+        if (!mPost.isLocalDraft()) {
+            outState.putLong(STATE_KEY_POST_REMOTE_ID, mPost.getRemotePostId());
+        }
+        outState.putBoolean(STATE_KEY_IS_NEW_POST, mIsNewPost);
         outState.putSerializable(WordPress.SITE, mSite);
 
         outState.putParcelableArrayList(STATE_KEY_DROPPED_MEDIA_URIS, mDroppedMediaUris);
 
         if (mEditorFragment != null) {
             getFragmentManager().putFragment(outState, STATE_KEY_EDITOR_FRAGMENT, mEditorFragment);
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        // resize the photo picker if the user rotated the device
+        int orientation = newConfig.orientation;
+        if (orientation != mPhotoPickerOrientation) {
+            resizePhotoPicker();
+        }
+
+        // If we're showing the Async promo dialog, we need to notify it to take the new orientation into account
+        PromoDialog fragment = (PromoDialog) getSupportFragmentManager().findFragmentByTag(ASYNC_PROMO_DIALOG_TAG);
+        if (fragment != null) {
+            fragment.redrawForOrientationChange();
+        }
+    }
+
+    @Override
+    public void onBetaClicked() {
+        ActivityLauncher.showAztecEditorReleaseNotes(this);
+        AnalyticsTracker.track(Stat.EDITOR_AZTEC_BETA_LABEL);
+    }
+
+    private String getSaveButtonText() {
+        if (!userCanPublishPosts()) {
+            return getString(R.string.submit_for_review);
+        }
+
+        switch (PostStatus.fromPost(mPost)) {
+            case SCHEDULED:
+                return getString(R.string.schedule_verb);
+            case PUBLISHED:
+            case UNKNOWN:
+                if (mPost.isLocalDraft()) {
+                    return getString(R.string.post_status_publish_post);
+                } else {
+                    return getString(R.string.update_verb);
+                }
+            default:
+                if (mPost.isLocalDraft()) {
+                    return getString(R.string.save);
+                } else {
+                    return getString(R.string.update_verb);
+                }
+        }
+    }
+
+    private boolean isPhotoPickerShowing() {
+        return mPhotoPickerContainer != null
+                && mPhotoPickerContainer.getVisibility() == View.VISIBLE;
+    }
+
+    /*
+     * resizes the photo picker based on device orientation - full height in landscape, half
+     * height in portrait
+     */
+    private void resizePhotoPicker() {
+        if (mPhotoPickerContainer == null) return;
+
+        if (DisplayUtils.isLandscape(this)) {
+            mPhotoPickerOrientation = Configuration.ORIENTATION_LANDSCAPE;
+            mPhotoPickerContainer.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
+        } else {
+            mPhotoPickerOrientation = Configuration.ORIENTATION_PORTRAIT;
+            int displayHeight = DisplayUtils.getDisplayPixelHeight(this);
+            int containerHeight = (int) (displayHeight * 0.5f);
+            mPhotoPickerContainer.getLayoutParams().height = containerHeight;
+        }
+
+        if (mPhotoPickerFragment != null) {
+            mPhotoPickerFragment.reload();
+        }
+    }
+
+    /*
+     * loads the photo picker fragment, which is hidden until the user taps the media icon
+     */
+    private void initPhotoPicker() {
+        mPhotoPickerContainer = findViewById(R.id.photo_fragment_container);
+
+        // size the picker before creating the fragment to avoid having it load media now
+        resizePhotoPicker();
+
+        mPhotoPickerFragment = PhotoPickerFragment.newInstance(this, MediaBrowserType.EDITOR_PICKER, getSite());
+
+        getFragmentManager()
+                .beginTransaction()
+                .add(R.id.photo_fragment_container, mPhotoPickerFragment, PHOTO_PICKER_TAG)
+                .commit();
+    }
+
+    /*
+     * shows/hides the overlay which appears atop the editor, which effectively disables it
+     */
+    private void showOverlay(boolean animate) {
+        View overlay = findViewById(R.id.view_overlay);
+        if (animate) {
+            AniUtils.fadeIn(overlay, AniUtils.Duration.MEDIUM);
+        } else {
+            overlay.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void hideOverlay() {
+        View overlay = findViewById(R.id.view_overlay);
+        overlay.setVisibility(View.GONE);
+    }
+
+    /*
+     * user has requested to show the photo picker
+     */
+    private void showPhotoPicker() {
+        boolean isAlreadyShowing = isPhotoPickerShowing();
+
+        // make sure we initialized the photo picker
+        if (mPhotoPickerFragment == null) {
+            initPhotoPicker();
+        }
+
+        // hide soft keyboard
+        View view = getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+
+        // slide in the photo picker
+        if (!isAlreadyShowing) {
+            AniUtils.animateBottomBar(mPhotoPickerContainer, true, AniUtils.Duration.MEDIUM);
+            mPhotoPickerFragment.refresh();
+            mPhotoPickerFragment.setPhotoPickerListener(this);
+        }
+
+        // animate in the editor overlay
+        showOverlay(true);
+
+        if (mEditorFragment instanceof AztecEditorFragment) {
+            ((AztecEditorFragment)mEditorFragment).enableMediaMode(true);
+        }
+    }
+
+    private void hidePhotoPicker() {
+        if (isPhotoPickerShowing()) {
+            mPhotoPickerFragment.finishActionMode();
+            mPhotoPickerFragment.setPhotoPickerListener(null);
+            AniUtils.animateBottomBar(mPhotoPickerContainer, false);
+        }
+
+        hideOverlay();
+
+        if (mEditorFragment instanceof AztecEditorFragment) {
+            ((AztecEditorFragment)mEditorFragment).enableMediaMode(false);
+        }
+    }
+
+    /*
+     * called by PhotoPickerFragment when media is selected - may be a single item or a list of items
+     */
+    @Override
+    public void onPhotoPickerMediaChosen(@NonNull final List<Uri> uriList) {
+        hidePhotoPicker();
+
+        if (WPMediaUtils.shouldAdvertiseImageOptimization(this)) {
+            boolean hasSelectedPicture = false;
+            for (Uri uri : uriList) {
+                if (!MediaUtils.isVideo(uri.toString())) {
+                    hasSelectedPicture = true;
+                    break;
+                }
+            }
+            if (hasSelectedPicture) {
+                WPMediaUtils.advertiseImageOptimization(this,
+                        new WPMediaUtils.OnAdvertiseImageOptimizationListener() {
+                            @Override
+                            public void done() {
+                                addMediaList(uriList, false);
+                            }
+                        });
+                return;
+            }
+        }
+
+        addMediaList(uriList, false);
+    }
+
+    /*
+     * called by PhotoPickerFragment when user clicks an icon to launch the camera, native
+     * picker, or WP media picker
+     */
+    @Override
+    public void onPhotoPickerIconClicked(@NonNull PhotoPickerIcon icon) {
+        hidePhotoPicker();
+        switch (icon) {
+            case ANDROID_CAPTURE_PHOTO:
+                launchCamera();
+                break;
+            case ANDROID_CAPTURE_VIDEO:
+                launchVideoCamera();
+                break;
+            case ANDROID_CHOOSE_PHOTO:
+                launchPictureLibrary();
+                break;
+            case ANDROID_CHOOSE_VIDEO:
+                launchVideoLibrary();
+                break;
+            case WP_MEDIA:
+                ActivityLauncher.viewMediaPickerForResult(this, mSite, MediaBrowserType.EDITOR_PICKER);
+                break;
         }
     }
 
@@ -485,25 +814,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         if (mPost != null) {
             MenuItem saveMenuItem = menu.findItem(R.id.menu_save_post);
             if (saveMenuItem != null) {
-                switch (PostStatus.fromPost(mPost)) {
-                    case SCHEDULED:
-                        saveMenuItem.setTitle(getString(R.string.schedule_verb));
-                        break;
-                    case PUBLISHED:
-                    case UNKNOWN:
-                        if (mPost.isLocalDraft()) {
-                            saveMenuItem.setTitle(R.string.publish_post);
-                        } else {
-                            saveMenuItem.setTitle(R.string.update_verb);
-                        }
-                        break;
-                    default:
-                        if (mPost.isLocalDraft()) {
-                            saveMenuItem.setTitle(R.string.save);
-                        } else {
-                            saveMenuItem.setTitle(R.string.update_verb);
-                        }
-                }
+                saveMenuItem.setTitle(getSaveButtonText());
             }
         }
 
@@ -514,263 +825,97 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String permissions[],
                                            @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case LOCATION_PERMISSION_REQUEST_CODE:
-                boolean shouldShowLocation = false;
-                // Check if at least one of the location permission (coarse or fine) is granted
-                for (int grantResult : grantResults) {
-                    if (grantResult == PackageManager.PERMISSION_GRANTED) {
-                        shouldShowLocation = true;
-                    }
-                }
-                if (shouldShowLocation) {
-                    // Permission request was granted, show Location buttons in Settings
-                    mEditPostSettingsFragment.showLocationSearch();
+        boolean allGranted = WPPermissionUtils.setPermissionListAsked(
+                this, requestCode, permissions, grantResults, true);
 
-                    // After permission request was granted add GeoTag to the new post (if GeoTagging is enabled)
-                    if (SiteSettingsInterface.getInterface(this, mSite, null).init(false).getLocation() && isNewPost()) {
-                        mEditPostSettingsFragment.searchLocation();
-                    }
-
-                    return;
-                }
-                // Location permission denied
-                ToastUtils.showToast(this, getString(R.string.add_location_permission_required));
-                break;
-            case MEDIA_PERMISSION_REQUEST_CODE:
-                boolean shouldShowContextMenu = true;
-                for (int i = 0; i < grantResults.length; ++i) {
-                    switch (permissions[i]) {
-                        case Manifest.permission.CAMERA:
-                            if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
-                                shouldShowContextMenu = false;
-                            }
-                            break;
-                        case Manifest.permission.WRITE_EXTERNAL_STORAGE:
-                            if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
-                                shouldShowContextMenu = false;
-                            } else {
-                                registerReceiver(mGalleryReceiver,
-                                        new IntentFilter(LegacyEditorFragment.ACTION_MEDIA_GALLERY_TOUCHED));
-                                refreshBlogMedia();
-                            }
-                            break;
-                    }
-                }
-                if (shouldShowContextMenu) {
+        if (allGranted) {
+            switch (requestCode) {
+                case WPPermissionUtils.EDITOR_MEDIA_PERMISSION_REQUEST_CODE:
                     if (mMenuView != null) {
                         super.openContextMenu(mMenuView);
                         mMenuView = null;
                     }
-                } else {
-                    ToastUtils.showToast(this, getString(R.string.access_media_permission_required));
-                }
-                break;
-            case DRAG_AND_DROP_MEDIA_PERMISSION_REQUEST_CODE:
-                boolean mediaAccessGranted = false;
-                for (int i = 0; i < grantResults.length; ++i) {
-                    switch (permissions[i]) {
-                        case Manifest.permission.WRITE_EXTERNAL_STORAGE:
-                            if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
-                                mediaAccessGranted = true;
-                            }
-                            break;
-                    }
-                }
-                if (mediaAccessGranted) {
+                    break;
+                case WPPermissionUtils.EDITOR_DRAG_DROP_PERMISSION_REQUEST_CODE:
                     runOnUiThread(mFetchMediaRunnable);
-                } else {
-                    ToastUtils.showToast(this, getString(R.string.access_media_permission_required));
-                }
-            default:
-                break;
+                    break;
+            }
         }
+    }
+
+    private boolean handleBackPressed() {
+        Fragment fragment = getFragmentManager().findFragmentByTag(
+                ImageSettingsDialogFragment.IMAGE_SETTINGS_DIALOG_TAG);
+        if (fragment != null && fragment.isVisible()) {
+            if (fragment instanceof  ImageSettingsDialogFragment) {
+                ImageSettingsDialogFragment imFragment = (ImageSettingsDialogFragment) fragment;
+                imFragment.dismissFragment();
+            }
+            return false;
+        }
+        if (mViewPager.getCurrentItem() > PAGE_CONTENT) {
+            if (mViewPager.getCurrentItem() == PAGE_SETTINGS) {
+                mEditorFragment.setFeaturedImageId(mPost.getFeaturedImageId());
+            }
+            mViewPager.setCurrentItem(PAGE_CONTENT);
+            invalidateOptionsMenu();
+        } else {
+            savePostAndFinish();
+        }
+        return true;
     }
 
     // Menu actions
     @Override
     public boolean onOptionsItemSelected(final MenuItem item) {
+        hidePhotoPicker();
+
         int itemId = item.getItemId();
 
         if (itemId == android.R.id.home) {
-            Fragment fragment = getFragmentManager().findFragmentByTag(
-                    ImageSettingsDialogFragment.IMAGE_SETTINGS_DIALOG_TAG);
-            if (fragment != null && fragment.isVisible()) {
-                return false;
-            }
-            if (mViewPager.getCurrentItem() > PAGE_CONTENT) {
-                if (mViewPager.getCurrentItem() == PAGE_SETTINGS) {
-                    mPost.setFeaturedImageId(mEditPostSettingsFragment.getFeaturedImageId());
-                    mEditorFragment.setFeaturedImageId(mPost.getFeaturedImageId());
-                }
-                mViewPager.setCurrentItem(PAGE_CONTENT);
-                invalidateOptionsMenu();
-            } else {
-                saveAndFinish();
-            }
-            return true;
-        }
-
-        // Disable format bar buttons while a media upload is in progress
-        if (mEditorFragment.isUploadingMedia() || mEditorFragment.isActionInProgress()) {
-            ToastUtils.showToast(this, R.string.editor_toast_uploading_please_wait, Duration.SHORT);
-            return false;
+            return handleBackPressed();
         }
 
         if (itemId == R.id.menu_save_post) {
-            return publishPost();
-        } else if (itemId == R.id.menu_preview_post) {
-            mViewPager.setCurrentItem(PAGE_PREVIEW);
-        } else if (itemId == R.id.menu_post_settings) {
-            InputMethodManager imm = ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE));
-            imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
-            if (mShowNewEditor || mShowAztecEditor) {
-                mEditPostSettingsFragment.updateFeaturedImage(mPost.getFeaturedImageId());
+            if (!AppPrefs.isAsyncPromoRequired()) {
+                publishPost();
+            } else {
+                showAsyncPromoDialog();
             }
-            mViewPager.setCurrentItem(PAGE_SETTINGS);
+        } else {
+            // Disable other action bar buttons while a media upload is in progress
+            // (unnecessary for Aztec since it supports progress reattachment)
+            if (!mShowAztecEditor && (mEditorFragment.isUploadingMedia() || mEditorFragment.isActionInProgress())) {
+                ToastUtils.showToast(this, R.string.editor_toast_uploading_please_wait, Duration.SHORT);
+                return false;
+            }
+
+            if (itemId == R.id.menu_preview_post) {
+                mViewPager.setCurrentItem(PAGE_PREVIEW);
+            } else if (itemId == R.id.menu_post_settings) {
+                InputMethodManager imm = ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE));
+                imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
+                if (mEditPostSettingsFragment != null) {
+                    mEditPostSettingsFragment.refreshViews();
+                }
+                mViewPager.setCurrentItem(PAGE_SETTINGS);
+            }
         }
         return false;
     }
 
-    private boolean publishPost() {
-        if (!NetworkUtils.isNetworkAvailable(this)) {
-            ToastUtils.showToast(this, R.string.error_publish_no_network, Duration.SHORT);
-            return false;
-        }
-
-        // Show an Alert Dialog asking the user if he wants to remove all failed media before upload
-        if (mEditorFragment.hasFailedMediaUploads()) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setMessage(R.string.editor_toast_failed_uploads)
-                    .setPositiveButton(R.string.editor_remove_failed_uploads, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            // Clear failed uploads
-                            mEditorFragment.removeAllFailedMediaUploads();
-                        }
-                    }).setNegativeButton(android.R.string.cancel, null);
-            builder.create().show();
-            return true;
-        }
-
-        // Update post, save to db and publish in its own Thread, because 1. update can be pretty slow with a lot of
-        // text 2. better not to call `updatePostObject()` from the UI thread due to weird thread blocking behavior
-        // on API 16 with the visual editor.
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                boolean isFirstTimePublish = false;
-                if (PostStatus.fromPost(mPost) == PostStatus.PUBLISHED &&
-                        (mPost.isLocalDraft() || PostStatus.fromPost(mOriginalPost) == PostStatus.DRAFT)) {
-                    isFirstTimePublish = true;
-                }
-                try {
-                    updatePostObject(false);
-                } catch (IllegalEditorStateException e) {
-                    AppLog.e(T.EDITOR, "Impossible to save and publish the post, we weren't able to update it.");
-                    return;
-                }
-
-                savePostToDb();
-
-                // If the post is empty, don't publish
-                if (!PostUtils.isPublishable(mPost)) {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            ToastUtils.showToast(EditPostActivity.this, R.string.error_publish_empty_post, Duration.SHORT);
-                        }
-                    });
-                    return;
-                }
-
-                PostUtils.trackSavePostAnalytics(mPost, mSiteStore.getSiteByLocalId(mPost.getLocalSiteId()));
-
-                if (isFirstTimePublish) {
-                    PostUploadService.addPostToUploadAndTrackAnalytics(mPost);
-                } else {
-                    PostUploadService.addPostToUpload(mPost);
-                }
-                PostUploadService.setLegacyMode(!mShowNewEditor && !mShowAztecEditor);
-                startService(new Intent(EditPostActivity.this, PostUploadService.class));
-                PendingDraftsNotificationsUtils.cancelPendingDraftAlarms(EditPostActivity.this, mPost.getId());
-                setResult(RESULT_OK);
-                finish();
-            }
-        }).start();
-        return true;
+    private void savePostOnlineAndFinishAsync(boolean isFirstTimePublish) {
+        new SavePostOnlineAndFinishTask(isFirstTimePublish).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    @Override
-    public void openContextMenu(View view) {
-        if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(this, MEDIA_PERMISSION_REQUEST_CODE)) {
-            super.openContextMenu(view);
-        } else {
-            AppLockManager.getInstance().setExtendedTimeout();
-            mMenuView = view;
-        }
-    }
-
-    @Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-        menu.add(0, SELECT_PHOTO_MENU_POSITION, 0, getResources().getText(R.string.select_photo));
-        if (DeviceUtils.getInstance().hasCamera(this)) {
-            menu.add(0, CAPTURE_PHOTO_MENU_POSITION, 0, getResources().getText(R.string.media_add_popup_capture_photo));
-        }
-        menu.add(0, SELECT_VIDEO_MENU_POSITION, 0, getResources().getText(R.string.select_video));
-        if (DeviceUtils.getInstance().hasCamera(this)) {
-            menu.add(0, CAPTURE_VIDEO_MENU_POSITION, 0, getResources().getText(R.string.media_add_popup_capture_video));
-        }
-
-        menu.add(0, ADD_GALLERY_MENU_POSITION, 0, getResources().getText(R.string.media_add_new_media_gallery));
-        menu.add(0, SELECT_LIBRARY_MENU_POSITION, 0, getResources().getText(R.string.select_from_media_library));
-    }
-
-    @Override
-    public boolean onContextItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case SELECT_PHOTO_MENU_POSITION:
-                launchPictureLibrary();
-                return true;
-            case CAPTURE_PHOTO_MENU_POSITION:
-                launchCamera();
-                return true;
-            case SELECT_VIDEO_MENU_POSITION:
-                launchVideoLibrary();
-                return true;
-            case CAPTURE_VIDEO_MENU_POSITION:
-                launchVideoCamera();
-                return true;
-            case ADD_GALLERY_MENU_POSITION:
-                startMediaGalleryActivity(null);
-                return true;
-            case SELECT_LIBRARY_MENU_POSITION:
-                startMediaGalleryAddActivity();
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    @Override
-    public void onUploadBegin(MediaModel media) {
-    }
-
-    @Override
-    public void onUploadSuccess(MediaModel media) {
+    private void onUploadSuccess(MediaModel media) {
         if (mEditorMediaUploadListener != null && media != null) {
             mEditorMediaUploadListener.onMediaUploadSucceeded(String.valueOf(media.getId()),
                     FluxCUtils.mediaFileFromMediaModel(media));
         }
-        removeMediaFromPendingList(media);
     }
 
-    @Override
-    public void onUploadCanceled(MediaModel media) {
-        removeMediaFromPendingList(media);
-    }
-
-    @Override
-    public void onUploadError(MediaModel media, MediaStore.MediaError error) {
+    private void onUploadError(MediaModel media, MediaStore.MediaError error) {
         String localMediaId = String.valueOf(media.getId());
 
         Map<String, Object> properties = null;
@@ -782,55 +927,41 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         AnalyticsTracker.track(Stat.EDITOR_UPLOAD_MEDIA_FAILED, properties);
 
         // Display custom error depending on error type
-        String errorMessage;
-        switch (error.type) {
-            case AUTHORIZATION_REQUIRED:
-                errorMessage = getString(R.string.media_error_no_permission_upload);
-                break;
-            case GENERIC_ERROR:
-            default:
-                errorMessage = TextUtils.isEmpty(error.message) ? getString(R.string.tap_to_try_again) : error.message;
+        String errorMessage = WPMediaUtils.getErrorMessage(this, media, error);
+        if (errorMessage == null) {
+            errorMessage = TextUtils.isEmpty(error.message) ? getString(R.string.tap_to_try_again) : error.message;
         }
-        mEditorMediaUploadListener.onMediaUploadFailed(localMediaId, errorMessage);
 
-        removeMediaFromPendingList(media);
+        if (mEditorMediaUploadListener != null) {
+            mEditorMediaUploadListener.onMediaUploadFailed(localMediaId,
+                    EditorFragmentAbstract.getEditorMimeType(mf), errorMessage);
+        }
     }
 
-    @Override
-    public void onUploadProgress(MediaModel media, float progress) {
+    private void onUploadProgress(MediaModel media, float progress) {
         String localMediaId = String.valueOf(media.getId());
-        mEditorMediaUploadListener.onMediaUploadProgress(localMediaId, progress);
-    }
-
-    private void removeMediaFromPendingList(MediaModel mediaToClear) {
-        if (mediaToClear == null) {
-            return;
-        }
-        for (MediaModel pendingUpload : mPendingUploads) {
-            if (pendingUpload.getId() == mediaToClear.getId()) {
-                mPendingUploads.remove(pendingUpload);
-                break;
-            }
+        if (mEditorMediaUploadListener != null) {
+            mEditorMediaUploadListener.onMediaUploadProgress(localMediaId, progress);
         }
     }
 
     private void launchPictureLibrary() {
-        WordPressMediaUtils.launchPictureLibrary(this);
+        WPMediaUtils.launchPictureLibrary(this, true);
         AppLockManager.getInstance().setExtendedTimeout();
     }
 
     private void launchVideoLibrary() {
-        WordPressMediaUtils.launchVideoLibrary(this);
+        WPMediaUtils.launchVideoLibrary(this, true);
         AppLockManager.getInstance().setExtendedTimeout();
     }
 
     private void launchVideoCamera() {
-        WordPressMediaUtils.launchVideoCamera(this);
+        WPMediaUtils.launchVideoCamera(this);
         AppLockManager.getInstance().setExtendedTimeout();
     }
 
     private void showErrorAndFinish(int errorMessageId) {
-        Toast.makeText(this, getResources().getText(errorMessageId), Toast.LENGTH_LONG).show();
+        ToastUtils.showToast(this, errorMessageId, ToastUtils.Duration.LONG);
         finish();
     }
 
@@ -842,7 +973,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
             // Post created with share with WordPress
             normalizedSourceName = "shared-from-external-app";
         }
-        if (EditPostActivity.NEW_MEDIA_GALLERY.equals(action) || EditPostActivity.NEW_MEDIA_POST.equals(
+        if (EditPostActivity.NEW_MEDIA_POST.equals(
                 action)) {
             // Post created from the media library
             normalizedSourceName = "media-library";
@@ -850,10 +981,6 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         if (intent != null && intent.hasExtra(EXTRA_IS_QUICKPRESS)) {
             // Quick press
             normalizedSourceName = "quick-press";
-        }
-        if (intent != null && intent.getIntExtra("quick-media", -1) > -1) {
-            // Quick photo or quick video
-            normalizedSourceName = "quick-media";
         }
         properties.put("created_post_source", normalizedSourceName);
         AnalyticsUtils.trackWithSiteDetails(
@@ -870,21 +997,23 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         }
 
         // Update post object from fragment fields
+        boolean postTitleOrContentChanged = false;
         if (mEditorFragment != null) {
             if (mShowNewEditor || mShowAztecEditor) {
-                updatePostContentNewEditor(isAutosave, (String) mEditorFragment.getTitle(),
+                postTitleOrContentChanged =
+                        updatePostContentNewEditor(isAutosave, (String) mEditorFragment.getTitle(),
                         (String) mEditorFragment.getContent());
             } else {
                 // TODO: Remove when legacy editor is dropped
-                updatePostContent(isAutosave);
+                postTitleOrContentChanged = updatePostContent(isAutosave);
             }
         }
 
-        if (mEditPostSettingsFragment != null) {
-            mEditPostSettingsFragment.updatePostSettings(mPost);
+        // only makes sense to change the publish date and locallychanged date if the Post was actaully changed
+        if (postTitleOrContentChanged) {
+            PostUtils.updatePublishDateIfShouldBePublishedImmediately(mPost);
+            mPost.setDateLocallyChanged(DateTimeUtils.iso8601FromTimestamp(System.currentTimeMillis() / 1000));
         }
-
-        mPost.setDateLocallyChanged(DateTimeUtils.iso8601FromTimestamp(System.currentTimeMillis() / 1000));
     }
 
     private void savePostAsync(final AfterSavePostListener listener) {
@@ -905,61 +1034,120 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         }).start();
     }
 
+    @Override
+    public void initializeEditorFragment() {
+        if (mEditorFragment instanceof AztecEditorFragment) {
+            AztecEditorFragment aztecEditorFragment = (AztecEditorFragment)mEditorFragment;
+            aztecEditorFragment.setEditorBetaClickListener(EditPostActivity.this);
+            aztecEditorFragment.setEditorImageSettingsListener(EditPostActivity.this);
+
+            Drawable loadingImagePlaceholder = getResources().getDrawable(org.wordpress.android.editor.R.drawable.ic_gridicons_image);
+            loadingImagePlaceholder.setBounds(0, 0,
+                    AztecEditorFragment.DEFAULT_MEDIA_PLACEHOLDER_DIMENSION_DP,
+                    AztecEditorFragment.DEFAULT_MEDIA_PLACEHOLDER_DIMENSION_DP);
+            aztecEditorFragment.setAztecImageLoader(new AztecImageLoader(getBaseContext(), loadingImagePlaceholder));
+            aztecEditorFragment.setLoadingImagePlaceholder(loadingImagePlaceholder);
+
+            Drawable loadingVideoPlaceholder = getResources().getDrawable(org.wordpress.android.editor.R.drawable.ic_gridicons_video_camera);
+            loadingVideoPlaceholder.setBounds(0, 0,
+                    AztecEditorFragment.DEFAULT_MEDIA_PLACEHOLDER_DIMENSION_DP,
+                    AztecEditorFragment.DEFAULT_MEDIA_PLACEHOLDER_DIMENSION_DP);
+            aztecEditorFragment.setAztecVideoLoader(new AztecVideoLoader(getBaseContext(), loadingVideoPlaceholder));
+            aztecEditorFragment.setLoadingVideoPlaceholder(loadingVideoPlaceholder);
+        }
+    }
+
+    @Override
+    public void onImageSettingsRequested(EditorImageMetaData editorImageMetaData) {
+        MediaSettingsActivity.showForResult(this, mSite, editorImageMetaData);
+    }
+
     private interface AfterSavePostListener {
         void onPostSave();
     }
 
     private synchronized void savePostToDb() {
         mDispatcher.dispatch(PostActionBuilder.newUpdatePostAction(mPost));
+
+        // update the original post object, so we'll know of new changes
+        mOriginalPost = mPost.clone();
+
+        // update the list of uploading ids
+        mMediaMarkedUploadingOnStartIds =
+                AztecEditorFragment.getMediaMarkedUploadingInPostContent(this, mPost.getContent());
     }
 
     @Override
     public void onBackPressed() {
-        Fragment imageSettingsFragment = getFragmentManager().findFragmentByTag(
-                ImageSettingsDialogFragment.IMAGE_SETTINGS_DIALOG_TAG);
-        if (imageSettingsFragment != null && imageSettingsFragment.isVisible()) {
-            ((ImageSettingsDialogFragment) imageSettingsFragment).dismissFragment();
+        if (isPhotoPickerShowing()) {
+            hidePhotoPicker();
             return;
         }
 
-        if (mViewPager.getCurrentItem() > PAGE_CONTENT) {
-            if (mViewPager.getCurrentItem() == PAGE_SETTINGS) {
-                mPost.setFeaturedImageId(mEditPostSettingsFragment.getFeaturedImageId());
-                mEditorFragment.setFeaturedImageId(mPost.getFeaturedImageId());
-            }
-            mViewPager.setCurrentItem(PAGE_CONTENT);
-            invalidateOptionsMenu();
-            return;
-        }
-
-        if (mEditorFragment != null && !mEditorFragment.onBackPressed()) {
-            saveAndFinish();
-        }
+        handleBackPressed();
     }
 
-    public boolean isNewPost() {
+    private boolean isNewPost() {
         return mIsNewPost;
     }
 
-    private class SaveAndFinishTask extends AsyncTask<Void, Void, Boolean> {
+    /*
+     * returns true if the user has permission to publish the post - assumed to be true for
+     * dot.org sites because we can't retrieve their capabilities
+     */
+    private boolean userCanPublishPosts() {
+        if (SiteUtils.isAccessedViaWPComRest(mSite)) {
+            return mSite.getHasCapabilityPublishPosts();
+        } else {
+            return true;
+        }
+    }
+
+    private class SavePostOnlineAndFinishTask extends AsyncTask<Void, Void, Void> {
+
+        boolean isFirstTimePublish;
+
+        SavePostOnlineAndFinishTask(boolean isFirstTimePublish) {
+            this.isFirstTimePublish = isFirstTimePublish;
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            // mark as pending if the user doesn't have publishing rights
+            if (!userCanPublishPosts()) {
+               if (PostStatus.fromPost(mPost) != PostStatus.DRAFT && PostStatus.fromPost(mPost) != PostStatus.PENDING) {
+                   mPost.setStatus(PostStatus.PENDING.toString());
+               }
+            }
+
+            savePostToDb();
+            PostUtils.trackSavePostAnalytics(mPost, mSiteStore.getSiteByLocalId(mPost.getLocalSiteId()));
+
+            UploadService.setLegacyMode(!mShowNewEditor && !mShowAztecEditor);
+            if (isFirstTimePublish) {
+                UploadService.uploadPostAndTrackAnalytics(EditPostActivity.this, mPost);
+            } else {
+                UploadService.uploadPost(EditPostActivity.this, mPost);
+            }
+
+            PendingDraftsNotificationsUtils.cancelPendingDraftAlarms(EditPostActivity.this, mPost.getId());
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void saved) {
+            saveResult(true, false);
+            finish();
+        }
+    }
+
+    private class SavePostLocallyAndFinishTask extends AsyncTask<Void, Void, Boolean> {
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            // Fetch post title and content from editor fields and update the Post object
-            try {
-                updatePostObject(false);
-            } catch (IllegalEditorStateException e) {
-                AppLog.e(T.EDITOR, "Impossible to save the post, we weren't able to update it.");
-                return false;
-            }
 
-            if (mEditorFragment != null && PostUtils.hasEmptyContentFields(mPost)) {
-                // New and empty post? delete it
-                if (mIsNewPost) {
-                    mDispatcher.dispatch(PostActionBuilder.newRemovePostAction(mPost));
-                    return false;
-                }
-            } else if (mOriginalPost != null && !PostUtils.postHasEdits(mOriginalPost, mPost)) {
+            if (mOriginalPost != null && !PostUtils.postHasEdits(mOriginalPost, mPost)) {
                 // If no changes have been made to the post, set it back to the original - don't save it
                 mDispatcher.dispatch(PostActionBuilder.newUpdatePostAction(mOriginalPost));
                 return false;
@@ -970,16 +1158,9 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
                 if (mShowNewEditor || mShowAztecEditor) {
                     // Update the post object directly, without re-fetching the fields from the EditorFragment
                     updatePostContentNewEditor(false, mPost.getTitle(), mPost.getContent());
-                    savePostToDb();
-                } else {
-                    try {
-                        updatePostObject(false);
-                    } catch (IllegalEditorStateException e) {
-                        AppLog.e(T.EDITOR, "Impossible to save the post, we weren't able to update it.");
-                        return false;
-                    }
-                    savePostToDb();
                 }
+
+                savePostToDb();
 
                 // now set the pending notification alarm to be triggered in the next day, week, and month
                 PendingDraftsNotificationsUtils.scheduleNextNotifications(EditPostActivity.this, mPost);
@@ -990,23 +1171,210 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
 
         @Override
         protected void onPostExecute(Boolean saved) {
-            if (saved) {
-                Intent i = new Intent();
-                i.putExtra(EXTRA_SAVED_AS_LOCAL_DRAFT, true);
-                i.putExtra(EXTRA_IS_PAGE, mIsPage);
-                setResult(RESULT_OK, i);
-                ToastUtils.showToast(EditPostActivity.this, R.string.editor_toast_changes_saved);
-            }
+            saveResult(saved, true);
             finish();
         }
     }
 
-    private void saveAndFinish() {
-        if (mShowAztecEditor && mAztecEditorFragment != null) {
-            mAztecEditorFragment.saveContentFromSource();
+    private void saveResult(boolean saved, boolean savedLocally) {
+        Intent i = getIntent();
+        i.putExtra(EXTRA_SAVED_AS_LOCAL_DRAFT, savedLocally);
+        i.putExtra(EXTRA_HAS_FAILED_MEDIA, hasFailedMedia());
+        i.putExtra(EXTRA_IS_PAGE, mIsPage);
+        i.putExtra(EXTRA_HAS_CHANGES, saved);
+        i.putExtra(EXTRA_POST_LOCAL_ID, mPost.getId());
+        setResult(RESULT_OK, i);
+    }
+
+    private void publishPost() {
+        AccountModel account = mAccountStore.getAccount();
+        // prompt user to verify e-mail before publishing
+        if (!account.getEmailVerified()) {
+            String message = TextUtils.isEmpty(account.getEmail())
+                    ? getString(R.string.editor_confirm_email_prompt_message)
+                    : String.format(getString(R.string.editor_confirm_email_prompt_message_with_email), account.getEmail());
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.editor_confirm_email_prompt_title)
+                    .setMessage(message)
+                    .setPositiveButton(android.R.string.ok,
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    ToastUtils.showToast(EditPostActivity.this, getString(R.string.toast_saving_post_as_draft));
+                                    savePostAndFinish();
+                                }
+                            })
+                    .setNegativeButton(R.string.editor_confirm_email_prompt_negative,
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    mDispatcher.dispatch(AccountActionBuilder.newSendVerificationEmailAction());
+                                }
+                            });
+            builder.create().show();
+            return;
         }
 
-        new SaveAndFinishTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        boolean postUpdateSuccessful = updatePostObject();
+        if (!postUpdateSuccessful) {
+            // just return, since the only case updatePostObject() can fail is when the editor
+            // fragment is not added to the activity
+            return;
+        }
+
+        // Update post, save to db and publish in its own Thread, because 1. update can be pretty slow with a lot of
+        // text 2. better not to call `updatePostObject()` from the UI thread due to weird thread blocking behavior
+        // on API 16 (and 21) with the visual editor.
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                boolean isFirstTimePublish = isFirstTimePublish();
+
+                boolean postUpdateSuccessful = updatePostObject();
+                if (!postUpdateSuccessful) {
+                    // just return, since the only case updatePostObject() can fail is when the editor
+                    // fragment is not added to the activity
+                    return;
+                }
+
+                boolean isPublishable = PostUtils.isPublishable(mPost);
+
+                // if post was modified or has unsaved local changes and is publishable, save it
+                saveResult(isPublishable, false);
+
+                if (isPublishable) {
+                    if (NetworkUtils.isNetworkAvailable(getBaseContext())) {
+                        // Show an Alert Dialog asking the user if they want to remove all failed media before upload
+                        if (mEditorFragment.hasFailedMediaUploads()) {
+                            EditPostActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    showRemoveFailedUploadsDialog();
+                                }
+                            });
+                        } else {
+                            savePostOnlineAndFinishAsync(isFirstTimePublish);
+                        }
+                    } else {
+                        savePostLocallyAndFinishAsync();
+                    }
+                } else {
+                    EditPostActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            String message = getString(mIsPage ? R.string.error_publish_empty_page : R.string.error_publish_empty_post);
+                            ToastUtils.showToast(EditPostActivity.this, message, Duration.SHORT);
+                        }
+                    });
+                }
+            }
+        }).start();
+    }
+
+    private void showRemoveFailedUploadsDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(R.string.editor_toast_failed_uploads)
+                .setPositiveButton(R.string.editor_remove_failed_uploads, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // Clear failed uploads
+                        mEditorFragment.removeAllFailedMediaUploads();
+                    }
+                }).setNegativeButton(android.R.string.cancel, null);
+        builder.create().show();
+    }
+
+    private void savePostAndFinish() {
+        // Update post, save to db and post online in its own Thread, because 1. update can be pretty slow with a lot of
+        // text 2. better not to call `updatePostObject()` from the UI thread due to weird thread blocking behavior
+        // on API 16 (and 21) with the visual editor.
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // check if the opened post had some unsaved local changes
+                boolean hasLocalChanges = mPost.isLocallyChanged() || mPost.isLocalDraft();
+                boolean isFirstTimePublish = isFirstTimePublish();
+
+                boolean postUpdateSuccessful = updatePostObject();
+                if (!postUpdateSuccessful) {
+                    // just return, since the only case updatePostObject() can fail is when the editor
+                    // fragment is not added to the activity
+                    return;
+                }
+
+                boolean hasChanges = PostUtils.postHasEdits(mOriginalPost, mPost);
+                boolean isPublishable = PostUtils.isPublishable(mPost);
+                boolean hasUnpublishedLocalDraftChanges = PostStatus.fromPost(mPost) == PostStatus.DRAFT &&
+                        isPublishable && hasLocalChanges;
+
+                // if post was modified or has unpublished local changes, save it
+                boolean shouldSave = (mOriginalPost != null && hasChanges)
+                        || hasUnpublishedLocalDraftChanges || (isPublishable && isNewPost());
+                // if post is publishable or not new, sync it
+                boolean shouldSync = isPublishable || !isNewPost();
+
+                saveResult(shouldSave && shouldSync, false);
+
+                definitelyDeleteBackspaceDeletedMediaItems();
+
+                if (shouldSave) {
+                    if (isNewPost()) {
+                        // new post - user just left the editor without publishing, they probably want
+                        // to keep the post as a draft
+                        mPost.setStatus(PostStatus.DRAFT.toString());
+                        if (mEditPostSettingsFragment != null) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mEditPostSettingsFragment.updatePostStatusRelatedViews();
+                                }
+                            });
+                        }
+                    }
+
+                    if (PostStatus.fromPost(mPost) == PostStatus.DRAFT && isPublishable && !hasFailedMedia()
+                            && NetworkUtils.isNetworkAvailable(getBaseContext())) {
+                        savePostOnlineAndFinishAsync(isFirstTimePublish);
+                    } else {
+                        savePostLocallyAndFinishAsync();
+                    }
+                } else {
+                    // discard post if new & empty
+                    if (!isPublishable && isNewPost()) {
+                        mDispatcher.dispatch(PostActionBuilder.newRemovePostAction(mPost));
+                    }
+                    finish();
+                }
+            }
+        }).start();
+    }
+
+    private boolean isFirstTimePublish() {
+        return (PostStatus.fromPost(mPost) == PostStatus.UNKNOWN || PostStatus.fromPost(mPost) == PostStatus.PUBLISHED) &&
+                (mPost.isLocalDraft() || PostStatus.fromPost(mOriginalPost) == PostStatus.DRAFT);
+    }
+
+    /**
+     * Can be dropped and replaced by mEditorFragment.hasFailedMediaUploads() when we drop the visual editor.
+     * mEditorFragment.isActionInProgress() was added to address a timing issue when adding media and immediately
+     * publishing or exiting the visual editor. It's not safe to upload the post in this state.
+     * See https://github.com/wordpress-mobile/WordPress-Editor-Android/issues/294
+     */
+    private boolean hasFailedMedia() {
+        return mEditorFragment.hasFailedMediaUploads() || mEditorFragment.isActionInProgress();
+    }
+
+    private boolean updatePostObject() {
+        try {
+            updatePostObject(false);
+        } catch (IllegalEditorStateException e) {
+            AppLog.e(T.EDITOR, "Impossible to save and publish the post, we weren't able to update it.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void savePostLocallyAndFinishAsync() {
+        new SavePostLocallyAndFinishTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
@@ -1015,7 +1383,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
      */
     @Override
     public void onReflectionFailure(ReflectionException e) {
-        CrashlyticsUtils.logException(e, ExceptionType.SPECIFIC, T.EDITOR, "Reflection Failure on Visual Editor init");
+        CrashlyticsUtils.logException(e, T.EDITOR, "Reflection Failure on Visual Editor init");
         // Disable visual editor and show an error message
         AppPrefs.setVisualEditorEnabled(false);
         ToastUtils.showToast(this, R.string.new_editor_reflection_error, Duration.LONG);
@@ -1044,9 +1412,16 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
                 case 0:
                     // TODO: Remove editor options after testing.
                     if (mShowAztecEditor) {
-                        mAztecEditorFragment = AztecEditorFragment.newInstance("", "");
-                        mAztecEditorFragment.setImageLoader(new AztecImageLoader(getBaseContext()));
-                        return mAztecEditorFragment;
+
+                        // Show confirmation message when coming from editor promotion dialog.
+                        if (mIsPromo) {
+                            showSnackbarConfirmation();
+                        // Show open beta message when Aztec is already enabled.
+                        } else if (AppPrefs.isAztecEditorEnabled() && AppPrefs.isNewEditorBetaRequired()) {
+                            showSnackbarBeta();
+                        }
+
+                        return AztecEditorFragment.newInstance("", "", AppPrefs.isAztecEditorToolbarExpanded());
                     } else if (mShowNewEditor) {
                         EditorWebViewCompatibility.setReflectionFailureListener(EditPostActivity.this);
                         return new EditorFragment();
@@ -1054,9 +1429,9 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
                         return new LegacyEditorFragment();
                     }
                 case 1:
-                    return EditPostSettingsFragment.newInstance(mSite, mPost);
+                    return EditPostSettingsFragment.newInstance();
                 default:
-                    return EditPostPreviewFragment.newInstance(mSite, mPost);
+                    return EditPostPreviewFragment.newInstance(mSite);
             }
         }
 
@@ -1066,11 +1441,15 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
             switch (position) {
                 case 0:
                     mEditorFragment = (EditorFragmentAbstract) fragment;
+                    mEditorFragment.setImageLoader(mImageLoader);
+
                     if (mEditorFragment instanceof EditorMediaUploadListener) {
                         mEditorMediaUploadListener = (EditorMediaUploadListener) mEditorFragment;
 
                         // Set up custom headers for the visual editor's internal WebView
                         mEditorFragment.setCustomHttpHeader("User-Agent", WordPress.getUserAgent());
+
+                        reattachUploadingMedia();
                     }
                     break;
                 case 1:
@@ -1090,10 +1469,8 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
     }
 
     // Moved from EditPostContentFragment
-    public static final String NEW_MEDIA_GALLERY = "NEW_MEDIA_GALLERY";
-    public static final String NEW_MEDIA_GALLERY_EXTRA_IDS = "NEW_MEDIA_GALLERY_EXTRA_IDS";
     public static final String NEW_MEDIA_POST = "NEW_MEDIA_POST";
-    public static final String NEW_MEDIA_POST_EXTRA = "NEW_MEDIA_POST_ID";
+    public static final String NEW_MEDIA_POST_EXTRA_IDS = "NEW_MEDIA_POST_EXTRA_IDS";
     private String mMediaCapturePath = "";
     private int mMaxThumbWidth = 0;
 
@@ -1104,12 +1481,22 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         return mMaxThumbWidth;
     }
 
-    private void addExistingMediaToEditor(long mediaId) {
+    private boolean addExistingMediaToEditor(long mediaId) {
         MediaModel media = mMediaStore.getSiteMediaWithId(mSite, mediaId);
-        if (media != null) {
-            MediaFile mediaFile = FluxCUtils.mediaFileFromMediaModel(media);
-            trackAddMediaFromWPLibraryEvents(mediaFile.isVideo(), media.getMediaId());
-            mEditorFragment.appendMediaFile(mediaFile, media.getUrl(), WordPress.sImageLoader);
+        if (media == null) {
+            return false;
+        }
+
+        MediaFile mediaFile = FluxCUtils.mediaFileFromMediaModel(media);
+        trackAddMediaFromWPLibraryEvents(mediaFile.isVideo(), media.getMediaId());
+        String urlToUse = TextUtils.isEmpty(media.getUrl()) ? media.getFilePath() : media.getUrl();
+        mEditorFragment.appendMediaFile(mediaFile, urlToUse, mImageLoader);
+        return true;
+    }
+
+    private void addExistingMediaToEditorAndSave(long mediaId) {
+        if (addExistingMediaToEditor(mediaId)) {
+            savePostAsync(null);
         }
     }
 
@@ -1164,11 +1551,11 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
                 String stringUri = matcher.group(1);
                 Uri uri = Uri.parse(stringUri);
                 MediaFile mediaFile = FluxCUtils.mediaFileFromMediaModel(queueFileForUpload(uri,
-                        getContentResolver().getType(uri), UploadState.FAILED));
+                        getContentResolver().getType(uri), MediaUploadState.FAILED));
                 if (mediaFile == null) {
                     continue;
                 }
-                String replacement = getUploadErrorHtml(mediaFile.getMediaId(), mediaFile.getFilePath());
+                String replacement = getUploadErrorHtml(String.valueOf(mediaFile.getId()), mediaFile.getFilePath());
                 matcher.appendReplacement(stringBuffer, replacement);
             }
             matcher.appendTail(stringBuffer);
@@ -1228,16 +1615,14 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         String action = getIntent().getAction();
         if (Intent.ACTION_SEND.equals(action) || Intent.ACTION_SEND_MULTIPLE.equals(action)) {
             setPostContentFromShareAction();
-        } else if (NEW_MEDIA_GALLERY.equals(action)) {
-            prepareMediaGallery();
         } else if (NEW_MEDIA_POST.equals(action)) {
             prepareMediaPost();
         }
     }
 
     private void launchCamera() {
-        WordPressMediaUtils.launchCamera(this, BuildConfig.APPLICATION_ID,
-                new WordPressMediaUtils.LaunchCameraCallback() {
+        WPMediaUtils.launchCamera(this, BuildConfig.APPLICATION_ID,
+                new WPMediaUtils.LaunchCameraCallback() {
                     @Override
                     public void onMediaCapturePathReady(String mediaCapturePath) {
                         mMediaCapturePath = mediaCapturePath;
@@ -1285,37 +1670,27 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
             }
 
             if (sharedUris != null) {
-                for (Uri uri : sharedUris) {
-                    addMedia(uri);
-                }
+                addMediaList(sharedUris, false);
             }
         }
     }
 
-    private void startMediaGalleryActivity(MediaGallery mediaGallery) {
-        ActivityLauncher.viewMediaGalleryForSiteAndGallery(this, mSite, mediaGallery);
-    }
-
-    private void prepareMediaGallery() {
-        MediaGallery mediaGallery = new MediaGallery();
-        long[] idsArray = getIntent().getLongArrayExtra(NEW_MEDIA_GALLERY_EXTRA_IDS);
-        ArrayList<Long> idsList = ListUtils.fromLongArray(idsArray);
-        mediaGallery.setIds(idsList);
-        startMediaGalleryActivity(mediaGallery);
-    }
-
     private void prepareMediaPost() {
-        long mediaId = getIntent().getLongExtra(NEW_MEDIA_POST_EXTRA, 0);
-        addExistingMediaToEditor(mediaId);
+        long[] idsArray = getIntent().getLongArrayExtra(NEW_MEDIA_POST_EXTRA_IDS);
+        ArrayList<Long> idsList = ListUtils.fromLongArray(idsArray);
+        for (Long id: idsList) {
+            addExistingMediaToEditor(id);
+        }
+        savePostAsync(null);
     }
 
     // TODO: Replace with contents of the updatePostContentNewEditor() method when legacy editor is dropped
     /**
      * Updates post object with content of this fragment
      */
-    public void updatePostContent(boolean isAutoSave) throws IllegalEditorStateException {
+    public boolean updatePostContent(boolean isAutoSave) throws IllegalEditorStateException {
         if (mPost == null) {
-            return;
+            return false;
         }
         String title = StringUtils.notNullStr((String) mEditorFragment.getTitle());
         SpannableStringBuilder postContent;
@@ -1323,7 +1698,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
             // needed by the legacy editor to save local drafts
             try {
                 postContent = new SpannableStringBuilder(mEditorFragment.getSpannedContent());
-            } catch (IndexOutOfBoundsException e) {
+            } catch (RuntimeException e) {
                 // A core android bug might cause an out of bounds exception, if so we'll just use the current editable
                 // See https://code.google.com/p/android/issues/detail?id=5164
                 postContent = new SpannableStringBuilder(StringUtils.notNullStr((String) mEditorFragment.getContent()));
@@ -1394,52 +1769,60 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
             content = postContent.toString();
         }
 
-        mPost.setTitle(title);
-        mPost.setContent(content);
+        boolean titleChanged = PostUtils.updatePostTitleIfDifferent(mPost, title);
+        boolean contentChanged = PostUtils.updatePostContentIfDifferent(mPost, content);
 
-        if (!mPost.isLocalDraft()) {
+        if (!mPost.isLocalDraft() && (titleChanged || contentChanged)) {
             mPost.setIsLocallyChanged(true);
         }
+
+        return titleChanged || contentChanged;
     }
 
     /**
      * Updates post object with given title and content
      */
-    public void updatePostContentNewEditor(boolean isAutoSave, String title, String content) {
+    public boolean updatePostContentNewEditor(boolean isAutoSave, String title, String content) {
         if (mPost == null) {
-            return;
+            return false;
         }
 
         if (!isAutoSave) {
             // TODO: Shortcode handling, media handling
         }
 
-        mPost.setTitle(title);
-        mPost.setContent(content);
-
-        if (!mPost.isLocalDraft()) {
-            mPost.setIsLocallyChanged(true);
+        boolean titleChanged = PostUtils.updatePostTitleIfDifferent(mPost, title);
+        boolean contentChanged;
+        if (mMediaInsertedOnCreation) {
+            mMediaInsertedOnCreation = false;
+            contentChanged = true;
+        } else if (compareCurrentMediaMarkedUploadingToOriginal(content)) {
+            contentChanged = true;
+        } else {
+            contentChanged = mPost.getContent().compareTo(content) != 0;
+        }
+        if (contentChanged) {
+            mPost.setContent(content);
         }
 
-        mPost.setDateLocallyChanged(DateTimeUtils.iso8601FromTimestamp(System.currentTimeMillis() / 1000));
+        if (!mPost.isLocalDraft() && (titleChanged || contentChanged)) {
+            mPost.setIsLocallyChanged(true);
+            mPost.setDateLocallyChanged(DateTimeUtils.iso8601FromTimestamp(System.currentTimeMillis() / 1000));
+        }
+
+        return titleChanged || contentChanged;
     }
 
-    /**
-     * Media
+    /*
+      * for as long as the user is in the Editor, we check whether there are any differences in media items
+      * being uploaded since they opened the Editor for this Post. If some items have finished, the current list
+      * won't be equal and thus we'll know we need to save the Post content as it's changed, given the local
+      * URLs will have been replaced with the remote ones.
      */
-
-    private void fetchMedia(List<Uri> mediaUris) {
-        for (Uri mediaUri : mediaUris) {
-            if (mediaUri == null) {
-                Toast.makeText(EditPostActivity.this, getString(R.string.gallery_error), Toast.LENGTH_SHORT).show();
-                continue;
-            }
-
-            if (!addMedia(mediaUri)) {
-                Toast.makeText(EditPostActivity.this, getResources().getText(R.string.gallery_error),
-                        Toast.LENGTH_SHORT).show();
-            }
-        }
+    private boolean compareCurrentMediaMarkedUploadingToOriginal(String newContent) {
+        List<String> currentUploadingMedia = AztecEditorFragment.getMediaMarkedUploadingInPostContent(this, newContent);
+        Collections.sort(currentUploadingMedia);
+        return !mMediaMarkedUploadingOnStartIds.equals(currentUploadingMedia);
     }
 
     private void updateMediaFileOnServer(MediaFile mediaFile) {
@@ -1452,25 +1835,35 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
     }
 
     /**
-     * Analytics about new media
+     * Analytics about media from device
      *
+     * @param isNew Whether is a fresh media
      * @param isVideo Whether is a video or not
      * @param uri The URI of the media on the device, or null
-     * @param path The path of the media on the device, or null
      */
-    private void trackAddMediaFromDeviceEvents(boolean isVideo, Uri uri, String path) {
-        if (TextUtils.isEmpty(path) && uri == null) {
+    private void trackAddMediaFromDeviceEvents(boolean isNew, boolean isVideo, Uri uri) {
+        if (uri == null) {
             AppLog.e(T.MEDIA, "Cannot track new media events if both path and mediaURI are null!!");
             return;
         }
 
-        Map<String, Object> properties = AnalyticsUtils.getMediaProperties(this, isVideo, uri, path);
-
+        Map<String, Object> properties = AnalyticsUtils.getMediaProperties(this, isVideo, uri, null);
+        Stat currentStat;
         if (isVideo) {
-            AnalyticsTracker.track(Stat.EDITOR_ADDED_VIDEO_VIA_LOCAL_LIBRARY, properties);
+            if (isNew) {
+                currentStat = Stat.EDITOR_ADDED_VIDEO_NEW;
+            } else {
+                currentStat = Stat.EDITOR_ADDED_VIDEO_VIA_DEVICE_LIBRARY;
+            }
         } else {
-            AnalyticsTracker.track(Stat.EDITOR_ADDED_PHOTO_VIA_LOCAL_LIBRARY, properties);
+            if (isNew) {
+                currentStat = Stat.EDITOR_ADDED_PHOTO_NEW;
+            } else {
+                currentStat = Stat.EDITOR_ADDED_PHOTO_VIA_DEVICE_LIBRARY;
+            }
         }
+
+        AnalyticsUtils.trackWithSiteDetails(currentStat, mSite, properties);
     }
 
     /**
@@ -1486,264 +1879,419 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         }
 
         if (isVideo) {
-            AnalyticsTracker.track(Stat.EDITOR_ADDED_VIDEO_VIA_WP_MEDIA_LIBRARY);
+            AnalyticsUtils.trackWithSiteDetails(Stat.EDITOR_ADDED_VIDEO_VIA_WP_MEDIA_LIBRARY, mSite,  null);
         } else {
-            AnalyticsTracker.track(Stat.EDITOR_ADDED_PHOTO_VIA_WP_MEDIA_LIBRARY);
+            AnalyticsUtils.trackWithSiteDetails(Stat.EDITOR_ADDED_PHOTO_VIA_WP_MEDIA_LIBRARY, mSite,  null);
         }
     }
 
-    private boolean addMedia(Uri mediaUri) {
-        if (mediaUri != null && !MediaUtils.isInMediaStore(mediaUri) && !mediaUri.toString().startsWith("/")
-            && !mediaUri.toString().startsWith("file://") ) {
-            mediaUri = MediaUtils.downloadExternalMedia(this, mediaUri);
-        }
-
+    private boolean addMedia(Uri mediaUri, boolean isNew) {
         if (mediaUri == null) {
             return false;
         }
 
-        boolean isVideo = MediaUtils.isVideo(mediaUri.toString());
-
-        if (mShowNewEditor || mShowAztecEditor) {
-            return addMediaVisualEditor(mediaUri, isVideo);
-        } else {
-            return addMediaLegacyEditor(mediaUri, isVideo);
-        }
-    }
-
-    private String getPathFromContentUri(Uri imageUri) {
-        String path = null;
-        String[] projection = new String[]{android.provider.MediaStore.Images.Media.DATA};
-        Cursor cur = getContentResolver().query(imageUri, projection, null, null, null);
-        if (cur != null && cur.moveToFirst()) {
-            int dataColumn = cur.getColumnIndex(android.provider.MediaStore.Images.Media.DATA);
-            path = cur.getString(dataColumn);
-        }
-        SqlUtils.closeCursor(cur);
-        return path;
-    }
-
-    private boolean addMediaVisualEditor(Uri uri, boolean isVideo) {
-        String path;
-        if (uri.toString().contains("content:")) {
-            path = getPathFromContentUri(uri);
-        } else {
-            // File is not in media library
-            path = uri.toString().replace("file://", "");
-        }
-
-        if (path == null) {
-            ToastUtils.showToast(this, R.string.file_not_found, Duration.SHORT);
-            return false;
-        }
-
-        if (!isVideo && SiteSettingsInterface.getInterface(this, mSite, null).init(false).getOptimizedImage() &&
-               !NetworkUtils.isWiFiConnected(this)) {
-            // Not on WiFi and optimize image is set to ON
-            // Max picture size will be 3000px wide. That's the maximum resolution you can set in the current picker.
-            String optimizedPath = ImageUtils.optimizeImage(this, path, 3000, 85);
-
-            if (optimizedPath == null) {
-                AppLog.e(T.EDITOR, "Optimized picture was null!");
-                // TODO: track analytics here
-                // AnalyticsTracker.track(Stat.EDITOR_RESIZED_PHOTO_ERROR);
-            } else {
-                // TODO: track analytics here
-                // AnalyticsTracker.track(Stat.EDITOR_RESIZED_PHOTO);
-                Uri optimizedImageUri = Uri.parse(optimizedPath);
-                if (optimizedImageUri != null) {
-                    uri = optimizedImageUri;
-                }
-            }
-        }
-
-        MediaModel media = queueFileForUpload(uri, getContentResolver().getType(uri));
-        MediaFile mediaFile = FluxCUtils.mediaFileFromMediaModel(media);
-        trackAddMediaFromDeviceEvents(isVideo, null, path);
-        if (media != null) {
-            mEditorFragment.appendMediaFile(mediaFile, path, WordPress.sImageLoader);
-        }
-
+        List<Uri> uriList = new ArrayList<>();
+        uriList.add(mediaUri);
+        addMediaList(uriList, isNew);
         return true;
     }
 
-    private boolean addMediaLegacyEditor(Uri mediaUri, boolean isVideo) {
-        trackAddMediaFromDeviceEvents(isVideo, mediaUri, null);
+    private AddMediaListThread mAddMediaListThread;
 
-        MediaModel mediaModel = buildMediaModel(mediaUri, getContentResolver().getType(mediaUri), UploadState.QUEUED);
+    private void addMediaList(@NonNull List<Uri> uriList, boolean isNew) {
+        // fetch any shared media first - must be done on the main thread
+        List<Uri> fetchedUriList = fetchMediaList(uriList);
+        mAddMediaListThread = new AddMediaListThread(fetchedUriList, isNew);
+        mAddMediaListThread.start();
+    }
+
+    private void cancelAddMediaListThread() {
+        if (mAddMediaListThread != null && !mAddMediaListThread.isInterrupted()) {
+            try {
+                mAddMediaListThread.interrupt();
+            } catch (SecurityException e) {
+                AppLog.e(T.MEDIA, e);
+            }
+        }
+    }
+
+    /*
+     * processes a list of media in the background (optimizing, resizing, etc.) and adds them to
+     * the editor one at a time
+     */
+    private class AddMediaListThread extends Thread {
+        private final List<Uri> uriList = new ArrayList<>();
+        private final boolean isNew;
+        private ProgressDialog progressDialog;
+        private boolean didAnyFail;
+
+        AddMediaListThread(@NonNull List<Uri> uriList, boolean isNew) {
+            this.uriList.addAll(uriList);
+            this.isNew = isNew;
+            showOverlay(false);
+        }
+
+        private void showProgressDialog(final boolean show) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (show) {
+                            progressDialog = new ProgressDialog(EditPostActivity.this);
+                            progressDialog.setCancelable(false);
+                            progressDialog.setIndeterminate(true);
+                            progressDialog.setMessage(getString(R.string.add_media_progress));
+                            progressDialog.show();
+                        } else if (progressDialog != null && progressDialog.isShowing()) {
+                            progressDialog.dismiss();
+                        }
+                    } catch (IllegalArgumentException e) {
+                        AppLog.e(T.MEDIA, e);
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void run() {
+            // adding multiple media items at once can take several seconds on slower devices, so we show a blocking
+            // progress dialog in this situation - otherwise the user could accidentally back out of the process
+            // before all items were added
+            boolean shouldShowProgress = uriList.size() > 2;
+            if (shouldShowProgress) {
+                showProgressDialog(true);
+            }
+            try {
+                for (Uri mediaUri : uriList) {
+                    if (isInterrupted()) {
+                        return;
+                    }
+                    if (!processMedia(mediaUri)) {
+                        didAnyFail = true;
+                    }
+                }
+            } finally {
+                if (shouldShowProgress) {
+                    showProgressDialog(false);
+                }
+            }
+
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    if (!isInterrupted()) {
+                        savePostAsync(null);
+                        hideOverlay();
+                        if (didAnyFail) {
+                            ToastUtils.showToast(EditPostActivity.this, R.string.gallery_error, ToastUtils.Duration.SHORT);
+                        }
+                    }
+                }
+            });
+        }
+
+        private boolean processMedia(Uri mediaUri) {
+            if (mediaUri == null) {
+                return false;
+            }
+
+            Activity activity = EditPostActivity.this;
+
+            String path = MediaUtils.getRealPathFromURI(activity, mediaUri);
+            if (path == null) {
+                return false;
+            }
+
+            final boolean isVideo = MediaUtils.isVideo(mediaUri.toString());
+            Uri optimizedMedia = WPMediaUtils.getOptimizedMedia(activity, path, isVideo);
+            if (optimizedMedia != null) {
+                mediaUri = optimizedMedia;
+            } else if (mShowNewEditor || mShowAztecEditor) {
+                // Fix for the rotation issue https://github.com/wordpress-mobile/WordPress-Android/issues/5737
+                if (!mSite.isWPCom()) {
+                    // If it's not wpcom we must rotate the picture locally
+                    Uri rotatedMedia = WPMediaUtils.fixOrientationIssue(activity, path, isVideo);
+                    if (rotatedMedia != null) {
+                        mediaUri = rotatedMedia;
+                    }
+                } else {
+                    // It's a wpcom site. Just create a version of the picture rotated for the old visual editor
+                    // All the other editors read EXIF data
+                    if (mShowNewEditor) {
+                        Uri rotatedMedia = WPMediaUtils.fixOrientationIssue(activity, path, isVideo);
+                        if (rotatedMedia != null) {
+                            // The uri variable should remain the same since wpcom rotates the picture server side
+                            path = MediaUtils.getRealPathFromURI(activity, rotatedMedia);
+                        }
+                    }
+                }
+            }
+
+            if (isInterrupted()) {
+                return false;
+            }
+
+            trackAddMediaFromDeviceEvents(isNew, isVideo, mediaUri);
+            postProcessMedia(mediaUri, path, isVideo);
+
+            return true;
+        }
+
+        private void postProcessMedia(final Uri mediaUri, final String path, final boolean isVideo) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (mShowNewEditor || mShowAztecEditor) {
+                        addMediaVisualEditor(mediaUri, path);
+                    } else {
+                        addMediaLegacyEditor(mediaUri, isVideo);
+                    }
+                }
+            });
+        }
+    }
+
+    private void addMediaVisualEditor(Uri uri, String path) {
+        MediaModel media = queueFileForUpload(uri, getContentResolver().getType(uri));
+        MediaFile mediaFile = FluxCUtils.mediaFileFromMediaModel(media);
+        if (media != null) {
+            mEditorFragment.appendMediaFile(mediaFile, path, mImageLoader);
+        }
+    }
+
+    private void addMediaLegacyEditor(Uri mediaUri, boolean isVideo) {
+        MediaModel mediaModel = buildMediaModel(mediaUri, getContentResolver().getType(mediaUri),
+                MediaUploadState.QUEUED);
         if (isVideo) {
             mediaModel.setTitle(getResources().getString(R.string.video));
         } else {
             mediaModel.setTitle(ImageUtils.getTitleForWPImageSpan(this, mediaUri.getEncodedPath()));
         }
-        mediaModel.setPostId(mPost.getId());
+        mediaModel.setLocalPostId(mPost.getId());
 
         mDispatcher.dispatch(MediaActionBuilder.newUpdateMediaAction(mediaModel));
 
         MediaFile mediaFile = FluxCUtils.mediaFileFromMediaModel(mediaModel);
-        mEditorFragment.appendMediaFile(mediaFile, mediaFile.getFilePath(), WordPress.sImageLoader);
-        return true;
+        mEditorFragment.appendMediaFile(mediaFile, mediaFile.getFilePath(), mImageLoader);
+    }
+
+    private void addMediaItemGroupOrSingleItem(Intent data) {
+        ClipData clipData = data.getClipData();
+        if (clipData != null) {
+            for (int i = 0; i < clipData.getItemCount(); i++) {
+                ClipData.Item item = clipData.getItemAt(i);
+                addMedia(item.getUri(), false);
+            }
+        } else {
+            addMedia(data.getData(), false);
+        }
+    }
+
+    private void advertiseImageOptimisationAndAddMedia(final Intent data) {
+        if (WPMediaUtils.shouldAdvertiseImageOptimization(this)) {
+            WPMediaUtils.advertiseImageOptimization(this,
+                    new WPMediaUtils.OnAdvertiseImageOptimizationListener() {
+                        @Override
+                        public void done() {
+                            addMediaItemGroupOrSingleItem(data);
+                        }
+                    });
+        } else {
+            addMediaItemGroupOrSingleItem(data);
+        }
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+
         if (data != null || ((requestCode == RequestCodes.TAKE_PHOTO || requestCode == RequestCodes.TAKE_VIDEO))) {
             switch (requestCode) {
-                case MediaGalleryActivity.REQUEST_CODE:
-                    if (resultCode == Activity.RESULT_OK) {
-                        handleMediaGalleryResult(data);
-                    }
+                case RequestCodes.MULTI_SELECT_MEDIA_PICKER:
+                    handleMediaPickerResult(data);
+                    // No need to bump analytics here. Bumped later in handleMediaPickerResult-> addExistingMediaToEditorAndSave
                     break;
-                case MediaGalleryPickerActivity.REQUEST_CODE:
-                    if (resultCode == Activity.RESULT_OK) {
-                        handleMediaGalleryPickerResult(data);
+                case RequestCodes.PHOTO_PICKER:
+                    // user chose a featured image - pass it to the settings fragment
+                    if (mEditPostSettingsFragment != null) {
+                        mEditPostSettingsFragment.onActivityResult(requestCode, resultCode, data);
                     }
                     break;
                 case RequestCodes.PICTURE_LIBRARY:
-                    Uri imageUri = data.getData();
-                    String mimeType = getContentResolver().getType(imageUri);
-                    fetchMedia(imageUri, mimeType);
+                    advertiseImageOptimisationAndAddMedia(data);
                     break;
                 case RequestCodes.TAKE_PHOTO:
-                    if (resultCode == Activity.RESULT_OK) {
-                        try {
-                            File f = new File(mMediaCapturePath);
-                            Uri capturedImageUri = Uri.fromFile(f);
-                            if (!addMedia(capturedImageUri)) {
-                                ToastUtils.showToast(this, R.string.gallery_error, Duration.SHORT);
-                            }
-                            this.sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED, Uri.parse("file://"
-                                    + Environment.getExternalStorageDirectory())));
-                        } catch (RuntimeException e) {
-                            AppLog.e(T.POSTS, e);
-                        } catch (OutOfMemoryError e) {
-                            AppLog.e(T.POSTS, e);
-                        }
+                    if (WPMediaUtils.shouldAdvertiseImageOptimization(this)) {
+                        WPMediaUtils.advertiseImageOptimization(this,
+                                new WPMediaUtils.OnAdvertiseImageOptimizationListener() {
+                                    @Override
+                                    public void done() {
+                                        addLastTakenPicture();
+                                    }
+                                });
+                    } else {
+                        addLastTakenPicture();
                     }
                     break;
                 case RequestCodes.VIDEO_LIBRARY:
-                    Uri videoUri = data.getData();
-                    fetchMedia(Arrays.asList(videoUri));
+                    addMediaItemGroupOrSingleItem(data);
                     break;
                 case RequestCodes.TAKE_VIDEO:
-                    if (resultCode == Activity.RESULT_OK) {
-                        Uri capturedVideoUri = MediaUtils.getLastRecordedVideoUri(this);
-                        if (!addMedia(capturedVideoUri)) {
-                            ToastUtils.showToast(this, R.string.gallery_error, Duration.SHORT);
-                        }
+                    Uri capturedVideoUri = MediaUtils.getLastRecordedVideoUri(this);
+                    if (addMedia(capturedVideoUri, true)) {
+                        AnalyticsTracker.track(Stat.EDITOR_ADDED_VIDEO_NEW);
+                    } else {
+                        ToastUtils.showToast(this, R.string.gallery_error, Duration.SHORT);
+                    }
+                    break;
+                case RequestCodes.MEDIA_SETTINGS:
+                    if (mEditorFragment instanceof AztecEditorFragment) {
+                        mEditorFragment.onActivityResult(AztecEditorFragment.EDITOR_MEDIA_SETTINGS,
+                                Activity.RESULT_OK, data);
                     }
                     break;
             }
         }
     }
 
-    private ArrayList<MediaModel> mPendingUploads = new ArrayList<>();
+    private void addLastTakenPicture() {
+        try {
+            WPMediaUtils.scanMediaFile(this, mMediaCapturePath);
+            File f = new File(mMediaCapturePath);
+            Uri capturedImageUri = Uri.fromFile(f);
+            if (addMedia(capturedImageUri, true)) {
+                this.sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED, Uri.parse("file://"
+                        + Environment.getExternalStorageDirectory())));
+            } else {
+                ToastUtils.showToast(this, R.string.gallery_error, Duration.SHORT);
+            }
+        } catch (RuntimeException | OutOfMemoryError e) {
+            AppLog.e(T.EDITOR, e);
+        }
+    }
 
-    private void fetchMedia(Uri mediaUri, final String mimeType) {
-        if (!MediaUtils.isInMediaStore(mediaUri)) {
-            // Create an AsyncTask to download the file
-            new AsyncTask<Uri, Integer, Uri>() {
-                @Override
-                protected Uri doInBackground(Uri... uris) {
-                    Uri imageUri = uris[0];
-                    return MediaUtils.downloadExternalMedia(EditPostActivity.this, imageUri);
+    /*
+     * called before we add media to make sure we have access to any media shared from another app (Google Photos, etc.)
+     */
+    private List<Uri> fetchMediaList(@NonNull List<Uri> uriList) {
+        boolean didAnyFail = false;
+        List<Uri> fetchedUriList = new ArrayList<>();
+        for (int i = 0; i < uriList.size(); i++) {
+            Uri mediaUri = uriList.get(i);
+            if (mediaUri == null) {
+                continue;
+            }
+            if (!MediaUtils.isInMediaStore(mediaUri)) {
+                // Do not download the file in async task. See https://github.com/wordpress-mobile/WordPress-Android/issues/5818
+                Uri fetchedUri = null;
+                try {
+                    fetchedUri = MediaUtils.downloadExternalMedia(EditPostActivity.this, mediaUri);
+                } catch (IllegalStateException e) {
+                    // Ref: https://github.com/wordpress-mobile/WordPress-Android/issues/5823
+                    AppLog.e(AppLog.T.UTILS, "Can't download the image at: " + mediaUri.toString(), e);
+                    CrashlyticsUtils.logException(e, AppLog.T.MEDIA, "Can't download the image at: " + mediaUri.toString() +
+                            " See issue #5823");
+                    didAnyFail = true;
                 }
-
-                protected void onPostExecute(Uri uri) {
-                    if (uri != null) {
-                        addMedia(uri);
-                    } else {
-                        Toast.makeText(EditPostActivity.this, getString(R.string.error_downloading_image),
-                                Toast.LENGTH_SHORT).show();
-                    }
+                if (fetchedUri != null) {
+                    fetchedUriList.add(fetchedUri);
+                } else {
+                    didAnyFail = true;
                 }
-            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mediaUri);
-        } else {
-            queueFileForUpload(mediaUri, getContentResolver().getType(mediaUri));
-        }
-    }
-
-    private String getRealPathFromURI(Uri uri) {
-        String path;
-        if ("content".equals(uri.getScheme())) {
-            path = getRealPathFromContentURI(uri);
-        } else if ("file".equals(uri.getScheme())) {
-            path = uri.getPath();
-        } else {
-            path = uri.toString();
-        }
-        return path;
-    }
-
-    private String getRealPathFromContentURI(Uri contentUri) {
-        if (contentUri == null)
-            return null;
-
-        String[] proj = { android.provider.MediaStore.Images.Media.DATA };
-        CursorLoader loader = new CursorLoader(this, contentUri, proj, null, null, null);
-        Cursor cursor = loader.loadInBackground();
-
-        if (cursor == null)
-            return null;
-
-        int column_index = cursor.getColumnIndex(proj[0]);
-        if (column_index == -1) {
-            cursor.close();
-            return null;
+            } else {
+                fetchedUriList.add(mediaUri);
+            }
         }
 
-        String path;
-        if (cursor.moveToFirst()) {
-            path = cursor.getString(column_index);
-        } else {
-            path = null;
+        if (didAnyFail) {
+            ToastUtils.showToast(EditPostActivity.this, R.string.error_downloading_image, ToastUtils.Duration.SHORT);
         }
 
-        cursor.close();
-        return path;
+        return fetchedUriList;
     }
 
-    private void startMediaGalleryAddActivity() {
-        ActivityLauncher.viewMediaGalleryPickerForSite(this, mSite);
-    }
-
-    private void handleMediaGalleryPickerResult(Intent data) {
-        ArrayList<Long> ids = ListUtils.fromLongArray(data.getLongArrayExtra(MediaGalleryPickerActivity.RESULT_IDS));
+    private void handleMediaPickerResult(Intent data) {
+        ArrayList<Long> ids = ListUtils.fromLongArray(data.getLongArrayExtra(MediaBrowserActivity.RESULT_IDS));
         if (ids == null || ids.size() == 0) {
             return;
         }
 
-        long mediaId = ids.get(0);
-        addExistingMediaToEditor(mediaId);
-    }
-
-    private void handleMediaGalleryResult(Intent data) {
-        MediaGallery gallery = (MediaGallery) data.getSerializableExtra(MediaGalleryActivity.RESULT_MEDIA_GALLERY);
-
-        // if blank gallery returned, don't add to span
-        if (gallery == null || gallery.getIds().size() == 0) {
-            return;
-        }
-        mEditorFragment.appendGallery(gallery);
-    }
-
-    private BroadcastReceiver mGalleryReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (LegacyEditorFragment.ACTION_MEDIA_GALLERY_TOUCHED.equals(intent.getAction())) {
-                startMediaGalleryActivity((MediaGallery)intent.getSerializableExtra(LegacyEditorFragment.EXTRA_MEDIA_GALLERY));
+        boolean allAreImages = true;
+        for (Long id: ids) {
+            MediaModel media = mMediaStore.getSiteMediaWithId(mSite, id);
+            if (media != null && !MediaUtils.isValidImage(media.getUrl())) {
+                allAreImages = false;
+                break;
             }
         }
-    };
+
+        // if the user selected multiple items and they're all images, show the insert media
+        // dialog so the user can choose whether to insert them individually or as a gallery
+        if (ids.size() > 1 && allAreImages) {
+            showInsertMediaDialog(ids);
+        } else {
+            for (Long id: ids) {
+                addExistingMediaToEditor(id);
+            }
+            savePostAsync(null);
+        }
+    }
+
+    /*
+     * called after user selects multiple photos from WP media library
+     */
+    private void showInsertMediaDialog(final ArrayList<Long> mediaIds) {
+        InsertMediaCallback callback = new InsertMediaCallback() {
+            @Override
+            public void onCompleted(@NonNull InsertMediaDialog dialog) {
+                switch (dialog.getInsertType()) {
+                    case GALLERY:
+                        MediaGallery gallery = new MediaGallery();
+                        gallery.setType(dialog.getGalleryType().toString());
+                        gallery.setNumColumns(dialog.getNumColumns());
+                        gallery.setIds(mediaIds);
+                        mEditorFragment.appendGallery(gallery);
+                        break;
+                    case INDIVIDUALLY:
+                        for (Long id: mediaIds) {
+                            addExistingMediaToEditor(id);
+                        }
+                        savePostAsync(null);
+                        break;
+                }
+            }
+        };
+        InsertMediaDialog dialog = InsertMediaDialog.newInstance(callback, mSite);
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft.add(dialog, "insert_media");
+        ft.commitAllowingStateLoss();
+    }
 
     private void refreshBlogMedia() {
         if (NetworkUtils.isNetworkAvailable(this)) {
-            FetchMediaListPayload payload = new FetchMediaListPayload(mSite, false);
+            FetchMediaListPayload payload = new FetchMediaListPayload(
+                    mSite, MediaStore.DEFAULT_NUM_MEDIA_PER_FETCH, false);
             mDispatcher.dispatch(MediaActionBuilder.newFetchMediaListAction(payload));
         } else {
             ToastUtils.showToast(this, R.string.error_media_refresh_no_connection, ToastUtils.Duration.SHORT);
+        }
+    }
+
+    @SuppressWarnings("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onAccountChanged(OnAccountChanged event) {
+        if (event.causeOfChange == AccountAction.SEND_VERIFICATION_EMAIL) {
+            if (!event.isError()) {
+                ToastUtils.showToast(this, getString(R.string.toast_verification_email_sent));
+            } else {
+                ToastUtils.showToast(this, getString(R.string.toast_verification_email_send_error));
+            }
         }
     }
 
@@ -1763,8 +2311,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
                     errorMessage = getString(R.string.error_media_unauthorized);
                     break;
                 case PARSE_ERROR:
-                    String errorFormat = getString(R.string.error_media_parse_format);
-                    errorMessage = String.format(errorFormat, event.cause.toString());
+                    errorMessage = getString(R.string.error_media_parse_error);
                     break;
                 case MALFORMED_MEDIA_ARG:
                 case NULL_MEDIA_ARG:
@@ -1783,7 +2330,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
                 for (String videoId : mPendingVideoPressInfoRequests) {
                     String videoUrl = mMediaStore.
                             getUrlForSiteVideoWithVideoPressGuid(mSite, videoId);
-                    String posterUrl = WordPressMediaUtils.getVideoPressVideoPosterFromURL(videoUrl);
+                    String posterUrl = WPMediaUtils.getVideoPressVideoPosterFromURL(videoUrl);
 
                     mEditorFragment.setUrlForVideoPressId(videoId, videoUrl, posterUrl);
                 }
@@ -1793,55 +2340,25 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         }
     }
 
-    private ServiceConnection mMediaUploadConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            mMediaUploadService = (MediaUploadService.MediaUploadBinder) service;
-            mMediaUploadService.setListener(EditPostActivity.this);
-            if (!mPendingUploads.isEmpty()) {
-                for (MediaModel media : mPendingUploads) {
-                    if (media.getUploadState().equals(UploadState.QUEUED.name())) {
-                        mMediaUploadService.addMediaToQueue(media);
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mMediaUploadService = null;
-        }
-    };
-
-
-    private void doBindUploadService(Intent intent) {
-        mMediaUploadServiceBound = bindService(intent, mMediaUploadConnection,
-                Context.BIND_AUTO_CREATE | Context.BIND_ABOVE_CLIENT);
-    }
-
-    private void doUnbindUploadService() {
-        if (mMediaUploadServiceBound) {
-            unbindService(mMediaUploadConnection);
-            mMediaUploadServiceBound = false;
-        }
-    }
-
     /**
      * Starts the upload service to upload selected media.
      */
-    private void startMediaUploadService() {
-        if (mMediaUploadService == null) {
-            Intent intent = new Intent(this, MediaUploadService.class);
-            intent.putExtra(MediaUploadService.SITE_KEY, mSite);
-            doBindUploadService(intent);
-            startService(intent);
-        } else if (mPendingUploads != null && !mPendingUploads.isEmpty()) {
-            for (MediaModel media : mPendingUploads) {
-                if (media.getUploadState().equals(UploadState.QUEUED.name())) {
-                    mMediaUploadService.addMediaToQueue(media);
-                }
-            }
+    private void startUploadService(MediaModel media) {
+        // make sure we only pass items with the QUEUED state to the UploadService
+        if (!MediaUploadState.QUEUED.toString().equals(media.getUploadState())) {
+            return;
         }
+
+        final ArrayList<MediaModel> mediaList = new ArrayList<>();
+        mediaList.add(media);
+        // before starting the service, we need to update the posts' contents so we are sure the service
+        // can retrieve it from there on
+        savePostAsync(new AfterSavePostListener() {
+            @Override
+            public void onPostSave() {
+                UploadService.uploadMediaFromEditor(EditPostActivity.this, mediaList);
+            }
+        });
     }
 
     private String getVideoThumbnail(String videoPath) {
@@ -1849,8 +2366,10 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         try {
             File outputFile = File.createTempFile("thumb", ".png", getCacheDir());
             FileOutputStream outputStream = new FileOutputStream(outputFile);
-            Bitmap thumb = ThumbnailUtils.createVideoThumbnail(videoPath,
-                    android.provider.MediaStore.Images.Thumbnails.MINI_KIND);
+            Bitmap thumb = ImageUtils.getVideoFrameFromVideo(
+                    videoPath,
+                    ImageUtils.getMaximumThumbnailWidthForEditor(this)
+            );
             if (thumb != null) {
                 thumb.compress(Bitmap.CompressFormat.PNG, 75, outputStream);
                 thumbnailPath = outputFile.getAbsolutePath();
@@ -1862,73 +2381,51 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
     }
 
     /**
-     * Queues a media file for upload and starts the MediaUploadService. Toasts will alert the user
+     * Queues a media file for upload and starts the UploadService. Toasts will alert the user
      * if there are issues with the file.
      */
     private MediaModel queueFileForUpload(Uri uri, String mimeType) {
-        return queueFileForUpload(uri, mimeType, UploadState.QUEUED);
+        return queueFileForUpload(uri, mimeType, MediaUploadState.QUEUED);
     }
 
-    private MediaModel queueFileForUpload(Uri uri, String mimeType, UploadState startingState) {
-        String path = getRealPathFromURI(uri);
+    private MediaModel queueFileForUpload(Uri uri, String mimeType, MediaUploadState startingState) {
+        String path = MediaUtils.getRealPathFromURI(this, uri);
 
         // Invalid file path
         if (TextUtils.isEmpty(path)) {
-            Toast.makeText(this, R.string.editor_toast_invalid_path, Toast.LENGTH_SHORT).show();
+            ToastUtils.showToast(this, R.string.editor_toast_invalid_path, ToastUtils.Duration.SHORT);
             return null;
         }
 
         // File not found
         File file = new File(path);
         if (!file.exists()) {
-            Toast.makeText(this, R.string.file_not_found, Toast.LENGTH_SHORT).show();
+            ToastUtils.showToast(this, R.string.file_not_found, ToastUtils.Duration.SHORT);
             return null;
         }
 
+        // we need to update media with the local post Id
         MediaModel media = buildMediaModel(uri, mimeType, startingState);
+        media.setLocalPostId(mPost.getId());
         mDispatcher.dispatch(MediaActionBuilder.newUpdateMediaAction(media));
-        mPendingUploads.add(media);
-        startMediaUploadService();
+
+        startUploadService(media);
 
         return media;
     }
 
-    private MediaModel buildMediaModel(Uri uri, String mimeType, UploadState startingState) {
-        String path = getRealPathFromURI(uri);
+    private MediaModel buildMediaModel(Uri uri, String mimeType, MediaUploadState startingState) {
 
-        MediaModel media = mMediaStore.instantiateMediaModel();
-        AppLog.i(T.MEDIA, "New media instantiated localId=" + media.getId());
-        String filename = org.wordpress.android.fluxc.utils.MediaUtils.getFileName(path);
-        String fileExtension = org.wordpress.android.fluxc.utils.MediaUtils.getExtension(path);
-
-        // Try to get mimetype if none was passed to this method
-        if (mimeType == null) {
-            mimeType = getContentResolver().getType(uri);
-            if (mimeType == null) {
-                mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension);
-            }
-            if (mimeType == null) {
-                // Default to image jpeg
-                mimeType = "image/jpeg";
-            }
-        }
-        // If file extension is null, upload won't work on wordpress.com
-        if (fileExtension == null) {
-            fileExtension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
-            filename += "." + fileExtension;
-        }
-
-        if (org.wordpress.android.fluxc.utils.MediaUtils.isVideoMimeType(mimeType)) {
+        MediaModel media = FluxCUtils.mediaModelFromLocalUri(this, uri, mimeType, mMediaStore, mSite.getId());
+        if (org.wordpress.android.fluxc.utils.MediaUtils.isVideoMimeType(media.getMimeType())) {
+            String path = MediaUtils.getRealPathFromURI(this, uri);
             media.setThumbnailUrl(getVideoThumbnail(path));
         }
 
-        media.setFileName(filename);
-        media.setFilePath(path);
-        media.setLocalSiteId(mSite.getId());
-        media.setFileExtension(fileExtension);
-        media.setMimeType(mimeType);
-        media.setUploadState(startingState.name());
-        media.setUploadDate(DateTimeUtils.iso8601UTCFromTimestamp(System.currentTimeMillis() / 1000));
+        media.setUploadState(startingState);
+        if (!mPost.isLocalDraft()) {
+            media.setPostId(mPost.getRemotePostId());
+        }
 
         return media;
     }
@@ -1944,14 +2441,20 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
 
     @Override
     public void onAddMediaClicked() {
-        // no op
+        if (isPhotoPickerShowing()) {
+            hidePhotoPicker();
+        } else if (WPMediaUtils.currentUserCanUploadMedia(mSite)) {
+            showPhotoPicker();
+        } else {
+            // show the WP media library instead of the photo picker if the user doesn't have upload permission
+            ActivityLauncher.viewMediaPickerForResult(this, mSite, MediaBrowserType.EDITOR_PICKER);
+        }
     }
 
     @Override
     public void onMediaDropped(final ArrayList<Uri> mediaUris) {
         mDroppedMediaUris = mediaUris;
-
-        if (PermissionUtils.checkAndRequestStoragePermission(this, DRAG_AND_DROP_MEDIA_PERMISSION_REQUEST_CODE)) {
+        if (PermissionUtils.checkAndRequestStoragePermission(this, WPPermissionUtils.EDITOR_DRAG_DROP_PERMISSION_REQUEST_CODE)) {
             runOnUiThread(mFetchMediaRunnable);
         }
     }
@@ -1969,33 +2472,144 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
     }
 
     @Override
-    public void onMediaRetryClicked(String mediaId) {
-        MediaModel media = null;
+    public boolean onMediaRetryClicked(final String mediaId) {
+        if (TextUtils.isEmpty(mediaId)) {
+            AppLog.e(T.MEDIA, "Invalid media id passed to onMediaRetryClicked");
+            return false;
+        }
+        MediaModel media = mMediaStore.getMediaWithLocalId(StringUtils.stringToInt(mediaId));
+        if (media == null) {
+            AppLog.e(T.MEDIA, "Can't find media with local id: " + mediaId);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(getString(R.string.cannot_retry_deleted_media_item));
+            builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mEditorFragment.removeMedia(mediaId);
+                        }
+                    });
+                    dialog.dismiss();
+                }
+            });
 
-        List<MediaModel> localMediaList = mMediaStore.getLocalSiteMedia(mSite);
-        for (MediaModel localMedia : localMediaList) {
-            if (String.valueOf(localMedia.getId()).equals(mediaId)) {
-                media = localMedia;
-                break;
-            }
+            builder.setNegativeButton(getString(R.string.no), new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    dialog.dismiss();
+                }
+            });
+
+            AlertDialog dialog = builder.create();
+            dialog.show();
+
+            return false;
         }
 
-        if (media != null) {
-            media.setUploadState(UploadState.QUEUED.name());
+        if (media.getUrl() != null && media.getUploadState().equals(MediaUploadState.UPLOADED.toString())) {
+            // Note: we should actually do this when the editor fragment starts instead of waiting for user input.
+            // Notify the editor fragment upload was successful and it should replace the local url by the remote url.
+            if (mEditorMediaUploadListener != null) {
+                mEditorMediaUploadListener.onMediaUploadSucceeded(String.valueOf(media.getId()),
+                        FluxCUtils.mediaFileFromMediaModel(media));
+            }
+        } else {
+
+            UploadService.cancelFinalNotification(this, mPost);
+            UploadService.cancelFinalNotificationForMedia(this, mSite);
+            media.setUploadState(MediaUploadState.QUEUED);
             mDispatcher.dispatch(MediaActionBuilder.newUpdateMediaAction(media));
-            mPendingUploads.add(media);
-            startMediaUploadService();
+            startUploadService(media);
         }
 
         AnalyticsTracker.track(Stat.EDITOR_UPLOAD_MEDIA_RETRIED);
+        return true;
     }
 
     @Override
-    public void onMediaUploadCancelClicked(String mediaId, boolean delete) {
-        MediaModel media = new MediaModel();
-        media.setMediaId(Long.valueOf(mediaId));
-        MediaPayload payload = new MediaPayload(mSite, media);
-        mDispatcher.dispatch(MediaActionBuilder.newCancelMediaUploadAction(payload));
+    public void onMediaUploadCancelClicked(String localMediaId) {
+        if (!TextUtils.isEmpty(localMediaId)) {
+            cancelMediaUpload(StringUtils.stringToInt(localMediaId), true);
+        } else {
+            // Passed mediaId is incorrect: cancel all uploads for this post
+            ToastUtils.showToast(this, getString(R.string.error_all_media_upload_canceled));
+            EventBus.getDefault().post(new PostEvents.PostMediaCanceled(mPost));
+        }
+    }
+
+    @Override
+    public void onMediaDeleted(String localMediaId) {
+        if (!TextUtils.isEmpty(localMediaId)) {
+            mAztecBackspaceDeletedMediaItemIds.add(localMediaId);
+            // passing false here as we need to keep the media item in case the user wants to undo
+            cancelMediaUpload(StringUtils.stringToInt(localMediaId), false);
+        }
+    }
+
+    private void cancelMediaUpload(int localMediaId, boolean delete) {
+        MediaModel mediaModel = mMediaStore.getMediaWithLocalId(Integer.valueOf(localMediaId));
+        if (mediaModel != null) {
+            CancelMediaPayload payload = new CancelMediaPayload(mSite, mediaModel, delete);
+            mDispatcher.dispatch(MediaActionBuilder.newCancelMediaUploadAction(payload));
+        }
+    }
+
+    /*
+    * When the user deletes a media item that was being uploaded at that moment, we only cancel the
+    * upload but keep the media item in FluxC DB because the user might have deleted it accidentally,
+    * and they can always UNDO the delete action in Aztec.
+    * So, when the user exits then editor (and thus we lose the undo/redo history) we are safe to
+    * physically delete from the FluxC DB those items that have been deleted by the user using backspace.
+    * */
+    private void definitelyDeleteBackspaceDeletedMediaItems() {
+        for (String mediaId : mAztecBackspaceDeletedMediaItemIds) {
+            if (!TextUtils.isEmpty(mediaId)) {
+                // make sure the MediaModel exists
+                MediaModel mediaModel = mMediaStore.getMediaWithLocalId(StringUtils.stringToInt(mediaId));
+                if (mediaModel == null) {
+                    continue;
+                }
+
+                // also make sure it's not being uploaded anywhere else (maybe on some other Post,
+                // simultaneously)
+                if (mediaModel.getUploadState() != null &&
+                        MediaUtils.isLocalFile(mediaModel.getUploadState().toLowerCase())
+                        && !UploadService.isPendingOrInProgressMediaUpload(mediaModel)) {
+                    mDispatcher.dispatch(MediaActionBuilder.newRemoveMediaAction(mediaModel));
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onUndoMediaCheck(final String undoedContent) {
+        // here we check which elements tagged UPLOADING are there in undoedContent,
+        // and check for the ones that ARE NOT being uploaded or queued in the UploadService.
+        // These are the CANCELED ONES, so mark them FAILED now to retry.
+
+        List <MediaModel> currentlyUploadingMedia = UploadService.getPendingOrInProgressMediaUploadsForPost(mPost);
+        List<String> mediaMarkedUploading  =
+                AztecEditorFragment.getMediaMarkedUploadingInPostContent(EditPostActivity.this, undoedContent);
+
+        // go through the list of items marked UPLOADING within the Post content, and look in the UploadService
+        // to see whether they're really being uploaded or not. If an item is not really being uploaded, mark that item failed
+        for (String mediaId : mediaMarkedUploading) {
+            boolean found = false;
+            for (MediaModel media : currentlyUploadingMedia) {
+                if (StringUtils.stringToInt(mediaId) == media.getId()) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                if (mEditorFragment instanceof AztecEditorFragment) {
+                    mAztecBackspaceDeletedMediaItemIds.remove(mediaId);
+                    ((AztecEditorFragment)mEditorFragment).setMediaToFailed(mediaId);
+                }
+            }
+        }
+
     }
 
     @Override
@@ -2009,8 +2623,14 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
         String videoUrl = mMediaStore.
                 getUrlForSiteVideoWithVideoPressGuid(mSite, videoId);
 
+        if (videoUrl == null) {
+            AppLog.w(T.EDITOR, "The editor wants more info about the following VideoPress code: " + videoId
+                    + " but it's not available in the current site " + mSite.getUrl() + " Maybe it's from another site?" );
+            return;
+        }
+
         if (videoUrl.isEmpty()) {
-            if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(this, MEDIA_PERMISSION_REQUEST_CODE)) {
+            if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(this, WPPermissionUtils.EDITOR_MEDIA_PERMISSION_REQUEST_CODE)) {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -2026,7 +2646,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
             }
         }
 
-        String posterUrl = WordPressMediaUtils.getVideoPressVideoPosterFromURL(videoUrl);
+        String posterUrl = WPMediaUtils.getVideoPressVideoPosterFromURL(videoUrl);
 
         mEditorFragment.setUrlForVideoPressId(videoId, videoUrl, posterUrl);
     }
@@ -2044,6 +2664,43 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
 
     @Override
     public void onEditorFragmentInitialized() {
+        boolean shouldFinishInit = true;
+        // now that we have the Post object initialized,
+        // check whether we have media items to insert from the WRITE POST with media functionality
+        if (getIntent().hasExtra(EXTRA_INSERT_MEDIA)) {
+
+            // Bump analytics
+            AnalyticsTracker.track(Stat.NOTIFICATION_UPLOAD_MEDIA_SUCCESS_WRITE_POST);
+
+            List<MediaModel> mediaList = (List<MediaModel>) getIntent().getSerializableExtra(EXTRA_INSERT_MEDIA);
+            // removing this from the intent so it doesn't insert the media items again on each Acivity re-creation
+            getIntent().removeExtra(EXTRA_INSERT_MEDIA);
+            if (mediaList != null && !mediaList.isEmpty()) {
+                shouldFinishInit = false;
+                mMediaInsertedOnCreation = true;
+                for (MediaModel media : mediaList) {
+                    addExistingMediaToEditor(media.getMediaId());
+                }
+                savePostAsync(new AfterSavePostListener() {
+                    @Override
+                    public void onPostSave() {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                onEditorFinalTouchesBeforeShowing();
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+        if (shouldFinishInit) {
+            onEditorFinalTouchesBeforeShowing();
+        }
+    }
+
+    private void onEditorFinalTouchesBeforeShowing() {
         fillContentEditorFields();
         // Set the error listener
         if (mEditorFragment instanceof EditorFragment) {
@@ -2052,7 +2709,7 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
                 @Override
                 public void onJavaScriptError(String sourceFile, int lineNumber, String message) {
                     CrashlyticsUtils.logException(new JavaScriptException(sourceFile, lineNumber, message),
-                            ExceptionType.SPECIFIC, T.EDITOR,
+                            T.EDITOR,
                             String.format(Locale.US, "%s:%d: %s", sourceFile, lineNumber, message));
                 }
 
@@ -2071,35 +2728,84 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
     @Override
     public void onTrackableEvent(TrackableEvent event) {
         switch (event) {
+            case BOLD_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_BOLD);
+                break;
+            case BLOCKQUOTE_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_BLOCKQUOTE);
+                break;
+            case ELLIPSIS_COLLAPSE_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_ELLIPSIS_COLLAPSE);
+                AppPrefs.setAztecEditorToolbarExpanded(false);
+                break;
+            case ELLIPSIS_EXPAND_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_ELLIPSIS_EXPAND);
+                AppPrefs.setAztecEditorToolbarExpanded(true);
+                break;
+            case HEADING_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_HEADING);
+                break;
+            case HEADING_1_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_HEADING_1);
+                break;
+            case HEADING_2_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_HEADING_2);
+                break;
+            case HEADING_3_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_HEADING_3);
+                break;
+            case HEADING_4_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_HEADING_4);
+                break;
+            case HEADING_5_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_HEADING_5);
+                break;
+            case HEADING_6_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_HEADING_6);
+                break;
+            case HORIZONTAL_RULE_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_HORIZONTAL_RULE);
+                break;
             case HTML_BUTTON_TAPPED:
                 AnalyticsTracker.track(Stat.EDITOR_TAPPED_HTML);
-                break;
-            case MEDIA_BUTTON_TAPPED:
-                AnalyticsTracker.track(Stat.EDITOR_TAPPED_IMAGE);
-                break;
-            case UNLINK_BUTTON_TAPPED:
-                AnalyticsTracker.track(Stat.EDITOR_TAPPED_UNLINK);
-                break;
-            case LINK_BUTTON_TAPPED:
-                AnalyticsTracker.track(Stat.EDITOR_TAPPED_LINK);
+                hidePhotoPicker();
                 break;
             case IMAGE_EDITED:
                 AnalyticsTracker.track(Stat.EDITOR_EDITED_IMAGE);
                 break;
-            case BOLD_BUTTON_TAPPED:
-                AnalyticsTracker.track(Stat.EDITOR_TAPPED_BOLD);
-                break;
             case ITALIC_BUTTON_TAPPED:
                 AnalyticsTracker.track(Stat.EDITOR_TAPPED_ITALIC);
                 break;
-            case OL_BUTTON_TAPPED:
-                AnalyticsTracker.track(Stat.EDITOR_TAPPED_ORDERED_LIST);
+            case LINK_ADDED_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_LINK_ADDED);
+                hidePhotoPicker();
                 break;
-            case UL_BUTTON_TAPPED:
-                AnalyticsTracker.track(Stat.EDITOR_TAPPED_UNORDERED_LIST);
+            case LINK_REMOVED_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_LINK_REMOVED);
                 break;
-            case BLOCKQUOTE_BUTTON_TAPPED:
-                AnalyticsTracker.track(Stat.EDITOR_TAPPED_BLOCKQUOTE);
+            case LIST_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_LIST);
+                break;
+            case LIST_ORDERED_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_LIST_ORDERED);
+                break;
+            case LIST_UNORDERED_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_LIST_UNORDERED);
+                break;
+            case MEDIA_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_IMAGE);
+                break;
+            case NEXT_PAGE_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_NEXT_PAGE);
+                break;
+            case PARAGRAPH_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_PARAGRAPH);
+                break;
+            case PREFORMAT_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_PREFORMAT);
+                break;
+            case READ_MORE_BUTTON_TAPPED:
+                AnalyticsTracker.track(Stat.EDITOR_TAPPED_READ_MORE);
                 break;
             case STRIKETHROUGH_BUTTON_TAPPED:
                 AnalyticsTracker.track(Stat.EDITOR_TAPPED_STRIKETHROUGH);
@@ -2107,9 +2813,140 @@ public class EditPostActivity extends AppCompatActivity implements EditorFragmen
             case UNDERLINE_BUTTON_TAPPED:
                 AnalyticsTracker.track(Stat.EDITOR_TAPPED_UNDERLINE);
                 break;
-            case MORE_BUTTON_TAPPED:
-                AnalyticsTracker.track(Stat.EDITOR_TAPPED_MORE);
-                break;
         }
+    }
+
+    // FluxC events
+
+    @SuppressWarnings("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onMediaUploaded(MediaStore.OnMediaUploaded event) {
+        if (isFinishing()) return;
+
+        // event for unknown media, ignoring
+        if (event.media == null) {
+            AppLog.w(AppLog.T.MEDIA, "Media event carries null media object, not recognized");
+            return;
+        }
+
+        if (event.isError()) {
+            onUploadError(event.media, event.error);
+        } else if (event.completed) {
+            // if the remote url on completed is null, we consider this upload wasn't successful
+            if (event.media.getUrl() == null) {
+                MediaStore.MediaError error = new MediaStore.MediaError(MediaErrorType.GENERIC_ERROR);
+                onUploadError(event.media, error);
+            } else {
+                onUploadSuccess(event.media);
+            }
+        } else {
+            onUploadProgress(event.media, event.progress);
+        }
+    }
+
+    @SuppressWarnings("unused")
+    public void onEventMainThread(VideoOptimizer.ProgressEvent event) {
+        if (!isFinishing()) {
+            // use upload progress rather than optimizer progress since the former includes upload+optimization
+            float progress = UploadService.getUploadProgressForMedia(event.media);
+            onUploadProgress(event.media, progress);
+        }
+    }
+
+    @SuppressWarnings("unused")
+    public void onEventMainThread(UploadService.UploadMediaRetryEvent event) {
+        if (!isFinishing()
+                && event.mediaModelList != null
+                && mEditorMediaUploadListener != null) {
+            for (MediaModel media : event.mediaModelList) {
+                String localMediaId = String.valueOf(media.getId());
+                EditorFragmentAbstract.MediaType mediaType = media.isVideo() ?
+                        EditorFragmentAbstract.MediaType.VIDEO : EditorFragmentAbstract.MediaType.IMAGE;
+                mEditorMediaUploadListener.onMediaUploadRetry(localMediaId, mediaType);
+            }
+        }
+    }
+
+    protected void showSnackbarBeta() {
+        Snackbar.make(
+                mViewPager,
+                getString(R.string.new_editor_beta_message),
+                Snackbar.LENGTH_LONG
+        )
+                .setAction(
+                        R.string.new_editor_beta_action,
+                        new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                ActivityLauncher.showAztecEditorReleaseNotes(EditPostActivity.this);
+                                AnalyticsTracker.track(Stat.EDITOR_AZTEC_BETA_LINK);
+                            }
+                        }
+                )
+                .show();
+        AppPrefs.setNewEditorBetaRequired(false);
+    }
+
+    protected void showSnackbarConfirmation() {
+        if (mViewPager != null) {
+            Snackbar.make(
+                    mViewPager,
+                    getString(R.string.new_editor_promo_confirmation_message),
+                    Snackbar.LENGTH_LONG
+            )
+                    .setAction(
+                            R.string.new_editor_promo_confirmation_action,
+                            new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    ActivityLauncher.viewAppSettings(EditPostActivity.this);
+                                    finish();
+                                }
+                            }
+                    )
+                    .show();
+        }
+    }
+
+    private void showAsyncPromoDialog() {
+        PromoDialogAdvanced asyncPromoDialog = new PromoDialogAdvanced.Builder(
+                R.drawable.img_promo_async,
+                R.string.async_promo_title,
+                R.string.async_promo_description,
+                android.R.string.ok)
+                .setLinkText(R.string.async_promo_link)
+                .build();
+
+        asyncPromoDialog.setLinkOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(EditPostActivity.this, ReleaseNotesActivity.class);
+                intent.putExtra(ReleaseNotesActivity.KEY_TARGET_URL,
+                        "https://make.wordpress.org/mobile/whats-new-in-android-media-uploading/");
+                startActivity(intent);
+            }
+        });
+
+        asyncPromoDialog.setPositiveButtonOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                publishPost();
+            }
+        });
+
+        asyncPromoDialog.show(getSupportFragmentManager(), ASYNC_PROMO_DIALOG_TAG);
+        AppPrefs.setAsyncPromoRequired(false);
+    }
+
+    // EditPostActivityHook methods
+
+    @Override
+    public PostModel getPost() {
+        return mPost;
+    }
+
+    @Override
+    public SiteModel getSite() {
+        return mSite;
     }
 }

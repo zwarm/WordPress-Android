@@ -1,7 +1,6 @@
 package org.wordpress.android.ui.main;
 
 import android.animation.ObjectAnimator;
-import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -15,6 +14,7 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.app.RemoteInput;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.AppCompatDialogFragment;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.TextView;
@@ -30,17 +30,18 @@ import org.wordpress.android.fluxc.generated.SiteActionBuilder;
 import org.wordpress.android.fluxc.model.PostModel;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.store.AccountStore;
+import org.wordpress.android.fluxc.store.AccountStore.AuthenticationErrorType;
 import org.wordpress.android.fluxc.store.AccountStore.OnAccountChanged;
 import org.wordpress.android.fluxc.store.AccountStore.OnAuthenticationChanged;
 import org.wordpress.android.fluxc.store.PostStore;
 import org.wordpress.android.fluxc.store.SiteStore;
 import org.wordpress.android.fluxc.store.SiteStore.OnSiteChanged;
+import org.wordpress.android.fluxc.store.SiteStore.OnSiteRemoved;
 import org.wordpress.android.networking.ConnectionChangeReceiver;
 import org.wordpress.android.push.GCMMessageService;
 import org.wordpress.android.push.GCMRegistrationIntentService;
 import org.wordpress.android.push.NativeNotificationsUtils;
 import org.wordpress.android.push.NotificationsProcessingService;
-import org.wordpress.android.push.NotificationsScreenLockWatchService;
 import org.wordpress.android.ui.ActivityId;
 import org.wordpress.android.ui.ActivityLauncher;
 import org.wordpress.android.ui.RequestCodes;
@@ -52,7 +53,7 @@ import org.wordpress.android.ui.notifications.receivers.NotificationsPendingDraf
 import org.wordpress.android.ui.notifications.utils.NotificationsActions;
 import org.wordpress.android.ui.notifications.utils.NotificationsUtils;
 import org.wordpress.android.ui.notifications.utils.PendingDraftsNotificationsUtils;
-import org.wordpress.android.ui.posts.PromoDialog;
+import org.wordpress.android.ui.posts.PromoDialogEditor;
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.ui.prefs.AppSettingsFragment;
 import org.wordpress.android.ui.prefs.SiteSettingsFragment;
@@ -82,6 +83,8 @@ import de.greenrobot.event.EventBus;
  */
 public class WPMainActivity extends AppCompatActivity {
     public static final String ARG_OPENED_FROM_PUSH = "opened_from_push";
+    public static final String ARG_SHOW_LOGIN_EPILOGUE = "show_login_epilogue";
+    public static final String ARG_OLD_SITES_IDS = "ARG_OLD_SITES_IDS";
 
     private WPViewPager mViewPager;
     private WPMainTabLayout mTabLayout;
@@ -212,6 +215,8 @@ public class WPMainActivity extends AppCompatActivity {
         });
 
 
+        String authTokenToSet = null;
+
         if (savedInstanceState == null) {
             if (FluxCUtils.isSignedInWPComOrHasWPOrgSite(mAccountStore, mSiteStore)) {
                 // open note detail if activity called from a push, otherwise return to the tab
@@ -231,25 +236,56 @@ public class WPMainActivity extends AppCompatActivity {
                     if (mTabAdapter.isValidPosition(position) && position != mViewPager.getCurrentItem()) {
                         mViewPager.setCurrentItem(position);
                     }
-                    checkMagicLinkSignIn();
+
+                    if (!AppPrefs.isLoginWizardStyleActivated()) {
+                        checkMagicLinkSignIn();
+                    } else if (hasMagicLinkLoginIntent()) {
+                        if (mAccountStore.hasAccessToken()) {
+                            ToastUtils.showToast(this, R.string.login_already_logged_in_wpcom);
+                        } else {
+                            authTokenToSet = getAuthToken();
+                        }
+                    }
                 }
             } else {
-                ActivityLauncher.showSignInForResult(this);
+                if (hasMagicLinkLoginIntent()) {
+                    authTokenToSet = getAuthToken();
+                } else {
+                    ActivityLauncher.showSignInForResult(this);
+                    finish();
+                }
             }
         }
-        startService(new Intent(this, NotificationsScreenLockWatchService.class));
 
         // ensure the deep linking activity is enabled. It may have been disabled elsewhere and failed to get re-enabled
         WPActivityUtils.enableComponent(this, ReaderPostPagerActivity.class);
 
         // monitor whether we're not the default app
         trackDefaultApp();
+
+        // We need to register the dispatcher here otherwise it won't trigger if for example Site Picker is present
+        mDispatcher.register(this);
+        EventBus.getDefault().register(this);
+
+        if (authTokenToSet != null) {
+            // Save Token to the AccountStore. This will trigger a onAuthenticationChanged.
+            AccountStore.UpdateTokenPayload payload = new AccountStore.UpdateTokenPayload(authTokenToSet);
+            mDispatcher.dispatch(AccountActionBuilder.newUpdateAccessTokenAction(payload));
+        } else if (getIntent().getBooleanExtra(ARG_SHOW_LOGIN_EPILOGUE, false) && savedInstanceState == null) {
+            ActivityLauncher.showLoginEpilogue(this, false, getIntent().getIntegerArrayListExtra(ARG_OLD_SITES_IDS));
+        }
     }
 
-    @Override
-    protected void onDestroy() {
-        stopService(new Intent(this, NotificationsScreenLockWatchService.class));
-        super.onDestroy();
+    private boolean hasMagicLinkLoginIntent() {
+        String action = getIntent().getAction();
+        Uri uri = getIntent().getData();
+        String host = (uri != null && uri.getHost() != null) ? uri.getHost() : "";
+        return Intent.ACTION_VIEW.equals(action) && host.contains(SignInActivity.MAGIC_LOGIN);
+    }
+
+    private @Nullable String getAuthToken() {
+        Uri uri = getIntent().getData();
+        return uri != null ? uri.getQueryParameter(SignInActivity.TOKEN_PARAMETER) : null;
     }
 
     private void setTabLayoutElevation(float newElevation){
@@ -265,14 +301,18 @@ public class WPMainActivity extends AppCompatActivity {
         }
     }
 
-    private void showVisualEditorPromoDialogIfNeeded() {
-        if (AppPrefs.isVisualEditorPromoRequired() && AppPrefs.isVisualEditorEnabled()) {
-            DialogFragment newFragment = PromoDialog.newInstance(R.drawable.new_editor_promo_header,
-                    R.string.new_editor_promo_title, R.string.new_editor_promo_desc,
-                    R.string.new_editor_promo_button_label);
-            newFragment.show(getFragmentManager(), "visual-editor-promo");
-            AppPrefs.setVisualEditorPromoRequired(false);
-        }
+    private void showNewEditorPromoDialog() {
+        AppCompatDialogFragment newFragment = new PromoDialogEditor.Builder(
+                R.drawable.img_promo_editor,
+                R.string.new_editor_promo_title,
+                R.string.new_editor_promo_description,
+                R.string.new_editor_promo_button_positive)
+                .setLinkText(R.string.new_editor_promo_link)
+                .setNegativeButtonText(R.string.new_editor_promo_button_negative)
+                .setTitleBetaText(R.string.new_editor_promo_title_beta)
+                .build();
+        newFragment.show(getSupportFragmentManager(), "new-editor-promo");
+        AppPrefs.setNewEditorPromoRequired(false);
     }
 
     @Override
@@ -390,17 +430,10 @@ public class WPMainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onStop() {
+    protected void onDestroy() {
         EventBus.getDefault().unregister(this);
         mDispatcher.unregister(this);
-        super.onStop();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        mDispatcher.register(this);
-        EventBus.getDefault().register(this);
+        super.onDestroy();
     }
 
     @Override
@@ -464,11 +497,18 @@ public class WPMainActivity extends AppCompatActivity {
     }
 
     private void trackLastVisibleTab(int position, boolean trackAnalytics) {
-        if (position ==  WPMainTabAdapter.TAB_MY_SITE) {
-            showVisualEditorPromoDialogIfNeeded();
-        }
         switch (position) {
             case WPMainTabAdapter.TAB_MY_SITE:
+                // show the new editor promo if the user is logged in and this is at least the second time
+                // the my site tab has been visited
+                if (AppPrefs.isNewEditorPromoRequired()
+                        && !AppPrefs.isAztecEditorEnabled()
+                        && FluxCUtils.isSignedInWPComOrHasWPOrgSite(mAccountStore, mSiteStore)) {
+                    int count = AppPrefs.bumpAndReturnAztecPromoCounter();
+                    if (count >= 2)  {
+                        showNewEditorPromoDialog();
+                    }
+                }
                 ActivityId.trackLastActivity(ActivityId.MY_SITE);
                 if (trackAnalytics) {
                     AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.MY_SITE_ACCESSED,
@@ -557,9 +597,7 @@ public class WPMainActivity extends AppCompatActivity {
                 }
                 break;
             case RequestCodes.REAUTHENTICATE:
-                if (resultCode == RESULT_CANCELED) {
-                    ActivityLauncher.showSignInForResult(this);
-                } else {
+                if (resultCode == RESULT_OK) {
                     // Register for Cloud messaging
                     startService(new Intent(this, GCMRegistrationIntentService.class));
                 }
@@ -575,7 +613,7 @@ public class WPMainActivity extends AppCompatActivity {
                 break;
             case RequestCodes.SITE_SETTINGS:
                 if (resultCode == SiteSettingsFragment.RESULT_BLOG_REMOVED) {
-                    handleBlogRemoved();
+                    handleSiteRemoved();
                 }
                 break;
             case RequestCodes.APP_SETTINGS:
@@ -587,6 +625,12 @@ public class WPMainActivity extends AppCompatActivity {
                 if (getNotificationsListFragment() != null) {
                     getNotificationsListFragment().onActivityResult(requestCode, resultCode, data);
                 }
+                break;
+            case RequestCodes.PHOTO_PICKER:
+                if (getMeFragment() != null) {
+                    getMeFragment().onActivityResult(requestCode, resultCode, data);
+                }
+                break;
         }
     }
 
@@ -607,6 +651,17 @@ public class WPMainActivity extends AppCompatActivity {
     }
 
     /*
+     * returns the "me" fragment from the sites tab
+     */
+    private MeFragment getMeFragment() {
+        Fragment fragment = mTabAdapter.getFragment(WPMainTabAdapter.TAB_ME);
+        if (fragment instanceof MeFragment) {
+            return (MeFragment) fragment;
+        }
+        return null;
+    }
+
+    /*
      * returns the my site fragment from the sites tab
      */
     private NotificationsListFragment getNotificationsListFragment() {
@@ -622,20 +677,27 @@ public class WPMainActivity extends AppCompatActivity {
     @SuppressWarnings("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onAuthenticationChanged(OnAuthenticationChanged event) {
-        if (event.isError() && mSelectedSite != null) {
-            AuthenticationDialogUtils.showAuthErrorView(this, mSelectedSite);
+        if (event.isError()) {
+            if (mSelectedSite != null && event.error.type == AuthenticationErrorType.INVALID_TOKEN) {
+                AuthenticationDialogUtils.showAuthErrorView(this, mSiteStore, mSelectedSite);
+            }
+
+            return;
+        }
+
+        if (mAccountStore.hasAccessToken() && hasMagicLinkLoginIntent()) {
+            AnalyticsTracker.track(AnalyticsTracker.Stat.LOGIN_MAGIC_LINK_SUCCEEDED);
+            ActivityLauncher.showLoginEpilogue(this, true, getIntent().getIntegerArrayListExtra(ARG_OLD_SITES_IDS));
         }
     }
 
     @SuppressWarnings("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onAccountChanged(OnAccountChanged event) {
-        if (!FluxCUtils.isSignedInWPComOrHasWPOrgSite(mAccountStore, mSiteStore)) {
-            // User signed out
-            resetFragments();
-            ActivityLauncher.showSignInForResult(this);
+        // Sign-out is handled in `handleSiteRemoved`, no need to show the `SignInActivity` here
+        if (mAccountStore.hasAccessToken()) {
+            mTabLayout.showNoteBadge(mAccountStore.getAccount().getHasUnseenNotes());
         }
-        mTabLayout.showNoteBadge(mAccountStore.getAccount().getHasUnseenNotes());
     }
 
     @SuppressWarnings("unused")
@@ -665,13 +727,18 @@ public class WPMainActivity extends AppCompatActivity {
         }
     }
 
-    private void handleBlogRemoved() {
+    private void handleSiteRemoved() {
         if (!FluxCUtils.isSignedInWPComOrHasWPOrgSite(mAccountStore, mSiteStore)) {
+            // User signed-out or removed the last self-hosted site
+            resetFragments();
+            // Reset site selection
+            setSelectedSite(null);
+            // Show the sign in screen
             ActivityLauncher.showSignInForResult(this);
         } else {
             SiteModel site = getSelectedSite();
-            if (site != null) {
-                ActivityLauncher.showSitePickerForResult(this, site);
+            if (site == null && mSiteStore.hasSite()) {
+                ActivityLauncher.showSitePickerForResult(this, mSiteStore.getSites().get(0));
             }
         }
     }
@@ -694,7 +761,7 @@ public class WPMainActivity extends AppCompatActivity {
             return;
         }
 
-        // When we select a site, we want to update its informations or options
+        // When we select a site, we want to update its information or options
         mDispatcher.dispatch(SiteActionBuilder.newFetchSiteAction(selectedSite));
 
         // Make selected site visible
@@ -747,7 +814,8 @@ public class WPMainActivity extends AppCompatActivity {
     @SuppressWarnings("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onSiteChanged(OnSiteChanged event) {
-        // "Reload" selected site from the db, would be smarter if the OnSiteChanged provided the list of changed sites.
+        // "Reload" selected site from the db
+        // It would be better if the OnSiteChanged provided the list of changed sites.
         if (getSelectedSite() == null && mSiteStore.hasSite()) {
             setSelectedSite(mSiteStore.getSites().get(0));
         }
@@ -759,5 +827,11 @@ public class WPMainActivity extends AppCompatActivity {
         if (site != null) {
             mSelectedSite = site;
         }
+    }
+
+    @SuppressWarnings("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onSiteRemoved(OnSiteRemoved event) {
+        handleSiteRemoved();
     }
 }

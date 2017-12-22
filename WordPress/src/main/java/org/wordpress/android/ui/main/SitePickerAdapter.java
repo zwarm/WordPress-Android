@@ -5,11 +5,14 @@ import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.support.annotation.LayoutRes;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.RadioButton;
 import android.widget.TextView;
 
 import org.wordpress.android.R;
@@ -19,7 +22,6 @@ import org.wordpress.android.fluxc.store.AccountStore;
 import org.wordpress.android.fluxc.store.SiteStore;
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.util.AppLog;
-import org.wordpress.android.util.GravatarUtils;
 import org.wordpress.android.util.SiteUtils;
 import org.wordpress.android.util.StringUtils;
 import org.wordpress.android.widgets.WPNetworkImageView;
@@ -33,23 +35,30 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.SiteViewHolder> {
+public class SitePickerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     interface OnSiteClickListener {
         void onSiteClick(SiteRecord site);
+        boolean onSiteLongClick(SiteRecord site);
     }
 
     interface OnSelectedCountChangedListener {
         void onSelectedCountChanged(int numSelected);
     }
 
-    interface OnDataLoadedListener {
+    public interface OnDataLoadedListener {
         void onBeforeLoad(boolean isEmpty);
         void onAfterLoad();
     }
 
+    public interface HeaderHandler {
+        RecyclerView.ViewHolder onCreateViewHolder(LayoutInflater layoutInflater, ViewGroup parent, boolean attachToRoot);
+        void onBindViewHolder(final RecyclerView.ViewHolder holder, SiteList sites);
+    }
+
     private final int mTextColorNormal;
     private final int mTextColorHidden;
+    private final @LayoutRes int mItemLayoutReourceId;
 
     private static int mBlavatarSz;
 
@@ -60,6 +69,7 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
 
     private final LayoutInflater mInflater;
     private final HashSet<Integer> mSelectedPositions = new HashSet<>();
+    private final HeaderHandler mHeaderHandler;
 
     private boolean mIsMultiSelectEnabled;
     private final boolean mIsInSearchMode;
@@ -67,13 +77,20 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
     private boolean mShowSelfHostedSites = true;
     private String mLastSearch;
     private SiteList mAllSites;
+    private ArrayList<Integer> mIgnoreSitesIds;
 
     private OnSiteClickListener mSiteSelectedListener;
     private OnSelectedCountChangedListener mSelectedCountListener;
     private OnDataLoadedListener mDataLoadedListener;
 
+    private boolean mIsSingleItemSelectionEnabled;
+    private int mSelectedItemPos;
+
     // show recently picked first if there are at least this many blogs
-    private static final int RECENTLY_PICKED_THRESHOLD = 15;
+    private static final int RECENTLY_PICKED_THRESHOLD = 11;
+
+    private static final int VIEW_TYPE_HEADER = 0;
+    private static final int VIEW_TYPE_ITEM = 1;
 
     @Inject AccountStore mAccountStore;
     @Inject SiteStore mSiteStore;
@@ -85,6 +102,7 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
         private final WPNetworkImageView imgBlavatar;
         private final View divider;
         private Boolean isSiteHidden;
+        private final RadioButton selectedRadioButton;
 
         public SiteViewHolder(View view) {
             super(view);
@@ -94,14 +112,28 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
             imgBlavatar = (WPNetworkImageView) view.findViewById(R.id.image_blavatar);
             divider = view.findViewById(R.id.divider);
             isSiteHidden = null;
+            selectedRadioButton = (RadioButton) view.findViewById(R.id.radio_selected);
         }
     }
 
-    public  SitePickerAdapter(Context context,
-                              int currentLocalBlogId,
-                              String lastSearch,
-                              boolean isInSearchMode,
-                              OnDataLoadedListener dataLoadedListener) {
+    public SitePickerAdapter(Context context,
+            @LayoutRes int itemLayoutResourceId,
+            int currentLocalBlogId,
+            String lastSearch,
+            boolean isInSearchMode,
+            OnDataLoadedListener dataLoadedListener) {
+        this(context, itemLayoutResourceId, currentLocalBlogId, lastSearch, isInSearchMode, dataLoadedListener, null,
+                null);
+    }
+
+    public SitePickerAdapter(Context context,
+            @LayoutRes int itemLayoutResourceId,
+            int currentLocalBlogId,
+            String lastSearch,
+            boolean isInSearchMode,
+            OnDataLoadedListener dataLoadedListener,
+            HeaderHandler headerHandler,
+            ArrayList<Integer> ignoreSitesIds) {
         super();
         ((WordPress) context.getApplicationContext()).component().inject(this);
 
@@ -110,6 +142,7 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
         mLastSearch = StringUtils.notNullStr(lastSearch);
         mAllSites = new SiteList();
         mIsInSearchMode = isInSearchMode;
+        mItemLayoutReourceId = itemLayoutResourceId;
         mCurrentLocalId = currentLocalBlogId;
         mInflater = LayoutInflater.from(context);
         mDataLoadedListener = dataLoadedListener;
@@ -118,23 +151,49 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
         mTextColorNormal = context.getResources().getColor(R.color.grey_dark);
         mTextColorHidden = context.getResources().getColor(R.color.grey);
 
-        mSelectedItemBackground = new ColorDrawable(context.getResources().getColor(R.color.translucent_grey_lighten_20));
+        mSelectedItemBackground = new ColorDrawable(context.getResources().getColor(R.color.grey_lighten_20_translucent_50));
+
+        mHeaderHandler = headerHandler;
+        mSelectedItemPos = getPositionOffset();
+
+        mIgnoreSitesIds = ignoreSitesIds;
 
         loadSites();
     }
 
     @Override
     public int getItemCount() {
+        return (mHeaderHandler != null ? 1 : 0) + mSites.size();
+    }
+
+    public int getSitesCount(){
         return mSites.size();
     }
 
     @Override
     public long getItemId(int position) {
-        return getItem(position).localId;
+        if (mHeaderHandler != null && position == 0) {
+            return RecyclerView.NO_ID;
+        } else {
+            return getItem(position).localId;
+        }
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if (mHeaderHandler == null) {
+            return VIEW_TYPE_ITEM;
+        } else {
+            return position == 0 ? VIEW_TYPE_HEADER : VIEW_TYPE_ITEM;
+        }
     }
 
     private SiteRecord getItem(int position) {
-        return mSites.get(position);
+        return mSites.get(position - getPositionOffset());
+    }
+
+    private int getPositionOffset(){
+        return (mHeaderHandler == null ? 0 : 1);
     }
 
     void setOnSelectedCountChangedListener(OnSelectedCountChangedListener listener) {
@@ -143,18 +202,31 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
 
     public void setOnSiteClickListener(OnSiteClickListener listener) {
         mSiteSelectedListener = listener;
+        notifyDataSetChanged();
     }
 
     @Override
-    public SiteViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View itemView = mInflater.inflate(R.layout.site_picker_listitem, parent, false);
-        return new SiteViewHolder(itemView);
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        if (viewType == VIEW_TYPE_HEADER) {
+            return mHeaderHandler.onCreateViewHolder(mInflater, parent, false);
+        } else {
+            View itemView = mInflater.inflate(mItemLayoutReourceId, parent, false);
+            return new SiteViewHolder(itemView);
+        }
     }
 
     @Override
-    public void onBindViewHolder(final SiteViewHolder holder, int position) {
+    public void onBindViewHolder(final RecyclerView.ViewHolder viewHolder, int position) {
+        int viewType = getItemViewType(position);
+
+        if (viewType == VIEW_TYPE_HEADER) {
+            mHeaderHandler.onBindViewHolder(viewHolder, mSites);
+            return;
+        }
+
         SiteRecord site = getItem(position);
 
+        final SiteViewHolder holder = (SiteViewHolder) viewHolder;
         holder.txtTitle.setText(site.getBlogNameOrHomeURL());
         holder.txtDomain.setText(site.homeURL);
         holder.imgBlavatar.setImageUrl(site.blavatarUrl, WPNetworkImageView.ImageType.BLAVATAR);
@@ -173,28 +245,97 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
             holder.imgBlavatar.setAlpha(site.isHidden ? 0.5f : 1f);
         }
 
-        // only show divider after last recent pick
-        boolean showDivider = site.isRecentPick
-                && !mIsInSearchMode
-                && position < getItemCount() - 1
-                && !getItem(position + 1).isRecentPick;
-        holder.divider.setVisibility(showDivider ?  View.VISIBLE : View.GONE);
+        if (holder.divider != null) {
+            // only show divider after last recent pick
+            boolean showDivider = site.isRecentPick
+                    && !mIsInSearchMode
+                    && position < getItemCount() - 1
+                    && !getItem(position + 1).isRecentPick;
+            holder.divider.setVisibility(showDivider ?  View.VISIBLE : View.GONE);
+        }
 
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                int clickedPosition = holder.getAdapterPosition();
-                if (isValidPosition(clickedPosition)) {
-                    if (mIsMultiSelectEnabled) {
-                        toggleSelection(clickedPosition);
-                    } else if (mSiteSelectedListener != null) {
-                        mSiteSelectedListener.onSiteClick(getItem(clickedPosition));
+        if (mIsMultiSelectEnabled || mSiteSelectedListener != null) {
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    int clickedPosition = holder.getAdapterPosition();
+                    if (isValidPosition(clickedPosition)) {
+                        if (mIsMultiSelectEnabled) {
+                            toggleSelection(clickedPosition);
+                        } else if (mSiteSelectedListener != null) {
+                            mSiteSelectedListener.onSiteClick(getItem(clickedPosition));
+                        }
+                    } else {
+                        AppLog.w(AppLog.T.MAIN, "site picker > invalid clicked position " + clickedPosition);
                     }
-                } else {
-                    AppLog.w(AppLog.T.MAIN, "site picker > invalid clicked position " + clickedPosition);
                 }
+            });
+
+            holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    int clickedPosition = holder.getAdapterPosition();
+                    if (isValidPosition(clickedPosition)) {
+                        if (mIsMultiSelectEnabled) {
+                            toggleSelection(clickedPosition);
+                            return true;
+                        } else if (mSiteSelectedListener != null) {
+                            boolean result = mSiteSelectedListener.onSiteLongClick(getItem(clickedPosition));
+                            setItemSelected(clickedPosition, true);
+                            return result;
+                        }
+                    } else {
+                        AppLog.w(AppLog.T.MAIN, "site picker > invalid clicked position " + clickedPosition);
+                    }
+                    return false;
+                }
+            });
+        }
+
+        if (mIsSingleItemSelectionEnabled) {
+            if (getSitesCount() <= 1) {
+                holder.selectedRadioButton.setVisibility(View.GONE);
+            } else {
+                holder.selectedRadioButton.setVisibility(View.VISIBLE);
+                holder.selectedRadioButton.setChecked(mSelectedItemPos == position);
+                holder.layoutContainer.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        selectSingleItem(holder.getAdapterPosition());
+                    }
+                });
             }
-        });
+        } else {
+            if (holder.selectedRadioButton != null) {
+                holder.selectedRadioButton.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void selectSingleItem(final int newItemPosition) {
+        // clear last selected item
+        notifyItemChanged(mSelectedItemPos);
+        mSelectedItemPos = newItemPosition;
+        // select new item
+        notifyItemChanged(mSelectedItemPos);
+    }
+
+    public void setSingleItemSelectionEnabled(final boolean enabled) {
+        if (enabled != mIsSingleItemSelectionEnabled) {
+            mIsSingleItemSelectionEnabled = enabled;
+            notifyDataSetChanged();
+        }
+    }
+
+    public void findAndSelect(final int lastUsedBlogLocalId) {
+        int positionInSitesArray = mSites.indexOfSiteId(lastUsedBlogLocalId);
+        if (positionInSitesArray != -1) {
+            selectSingleItem(positionInSitesArray + getPositionOffset());
+        }
+    }
+
+    public int getSelectedItemLocalId() {
+        return mSites.size() != 0 ? getItem(mSelectedItemPos).localId : -1;
     }
 
     public String getLastSearch() {
@@ -237,9 +378,7 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
         mIsMultiSelectEnabled = enable;
         mSelectedPositions.clear();
 
-        if (enable) {
-            loadSites();
-        }
+        loadSites();
     }
 
     int getNumSelected() {
@@ -249,7 +388,7 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
     int getNumHiddenSelected() {
         int numHidden = 0;
         for (Integer i: mSelectedPositions) {
-            if (mSites.get(i).isHidden) {
+            if (isValidPosition(i) && mSites.get(i).isHidden) {
                 numHidden++;
             }
         }
@@ -259,7 +398,7 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
     int getNumVisibleSelected() {
         int numVisible = 0;
         for (Integer i: mSelectedPositions) {
-            if (!mSites.get(i).isHidden) {
+            if (i < mSites.size() && !mSites.get(i).isHidden) {
                 numVisible++;
             }
         }
@@ -343,25 +482,35 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
 
     Set<SiteRecord> setVisibilityForSelectedSites(boolean makeVisible) {
         SiteList sites = getSelectedSites();
-        Set<SiteRecord> siteRecordSet = new HashSet<>();
+        Set<SiteRecord> changeSet = new HashSet<>();
         if (sites != null && sites.size() > 0) {
+            ArrayList<Integer> recentIds = AppPrefs.getRecentlyPickedSiteIds();
+            int currentSiteId = AppPrefs.getSelectedSite();
             for (SiteRecord site: sites) {
                 int index = mAllSites.indexOfSite(site);
                 if (index > -1) {
                     SiteRecord siteRecord = mAllSites.get(index);
                     if (siteRecord.isHidden == makeVisible) {
-                        // add it to change set
-                        siteRecordSet.add(siteRecord);
+                        changeSet.add(siteRecord);
+                        siteRecord.isHidden = !makeVisible;
+                        if (!makeVisible
+                                && siteRecord.localId != currentSiteId
+                                && recentIds.contains(siteRecord.localId)) {
+                            AppPrefs.removeRecentlyPickedSiteId(siteRecord.localId);
+                        }
                     }
-                    siteRecord.isHidden = !makeVisible;
                 }
             }
+
+            if (!changeSet.isEmpty()) {
+                notifyDataSetChanged();
+            }
         }
-        notifyDataSetChanged();
-        return siteRecordSet;
+
+        return changeSet;
     }
 
-    void loadSites() {
+    public void loadSites() {
         new LoadSitesTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -392,12 +541,10 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
     /*
      * AsyncTask which loads sites from database and populates the adapter
      */
-    private boolean mIsTaskRunning;
-    private class LoadSitesTask extends AsyncTask<Void, Void, Void> {
+    private class LoadSitesTask extends AsyncTask<Void, Void, SiteList[]> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            mIsTaskRunning = true;
             if (mDataLoadedListener != null) {
                 boolean isEmpty = mSites == null || mSites.size() == 0;
                 mDataLoadedListener.onBeforeLoad(isEmpty);
@@ -407,16 +554,25 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
         @Override
         protected void onCancelled() {
             super.onCancelled();
-            mIsTaskRunning = false;
         }
 
         @Override
-        protected Void doInBackground(Void... params) {
+        protected SiteList[] doInBackground(Void... params) {
             List<SiteModel> siteModels;
             if (mIsInSearchMode) {
                 siteModels = mSiteStore.getSites();
             } else {
                 siteModels = getBlogsForCurrentView();
+            }
+
+            if (mIgnoreSitesIds != null) {
+                List<SiteModel> unignoredSiteModels = new ArrayList<>();
+                for (SiteModel site : siteModels) {
+                    if (!mIgnoreSitesIds.contains(site.getId())) {
+                        unignoredSiteModels.add(site);
+                    }
+                }
+                siteModels = unignoredSiteModels;
             }
 
             SiteList sites = new SiteList(siteModels);
@@ -452,17 +608,22 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
             }
 
             if (mSites == null || !mSites.isSameList(sites)) {
-                mAllSites = (SiteList) sites.clone();
-                mSites = filteredSitesByTextIfInSearchMode(sites);
+                SiteList allSites = (SiteList) sites.clone();
+                SiteList filteredSites = filteredSitesByTextIfInSearchMode(sites);
+
+                return new SiteList[]{allSites, filteredSites};
             }
 
             return null;
         }
 
         @Override
-        protected void onPostExecute(Void results) {
-            notifyDataSetChanged();
-            mIsTaskRunning = false;
+        protected void onPostExecute(SiteList[] updatedSiteLists) {
+            if (updatedSiteLists != null) {
+                mAllSites = updatedSiteLists[0];
+                mSites = updatedSiteLists[1];
+                notifyDataSetChanged();
+            }
             if (mDataLoadedListener != null) {
                 mDataLoadedListener.onAfterLoad();
             }
@@ -471,21 +632,17 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
         private List<SiteModel> getBlogsForCurrentView() {
             if (mShowHiddenSites) {
                 if (mShowSelfHostedSites) {
-                    // all self-hosted sites and all wp.com sites
                     return mSiteStore.getSites();
                 } else {
-                    // only wp.com and jetpack sites
-                    return mSiteStore.getWPComAndJetpackSites();
+                    return mSiteStore.getSitesAccessedViaWPComRest();
                 }
             } else {
                 if (mShowSelfHostedSites) {
-                    // all self-hosted sites plus visible wp.com and jetpack sites
-                    List<SiteModel> out = mSiteStore.getVisibleWPComAndJetpackSites();
-                    out.addAll(mSiteStore.getSelfHostedSites());
+                    List<SiteModel> out = mSiteStore.getVisibleSitesAccessedViaWPCom();
+                    out.addAll(mSiteStore.getSitesAccessedViaXMLRPC());
                     return out;
                 } else {
-                    // only visible wp.com and jetpack blogs
-                    return mSiteStore.getVisibleWPComAndJetpackSites();
+                    return mSiteStore.getVisibleSitesAccessedViaWPCom();
                 }
             }
         }
@@ -494,7 +651,7 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
     /**
      * SiteRecord is a simplified version of the full account (blog) record
      */
-     static class SiteRecord {
+     public static class SiteRecord {
         final int localId;
         final long siteId;
         final String blogName;
@@ -510,7 +667,7 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
             blogName = SiteUtils.getSiteNameOrHomeURL(siteModel);
             homeURL = SiteUtils.getHomeURLOrHostName(siteModel);
             url = siteModel.getUrl();
-            blavatarUrl = GravatarUtils.blavatarFromUrl(url, mBlavatarSz);
+            blavatarUrl = SiteUtils.getSiteIconUrl(siteModel, mBlavatarSz);
             isHidden = !siteModel.isVisible();
         }
 
@@ -520,9 +677,13 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
             }
             return blogName;
         }
+
+        public int getLocalId() {
+            return localId;
+        }
     }
 
-    static class SiteList extends ArrayList<SiteRecord> {
+    public static class SiteList extends ArrayList<SiteRecord> {
         SiteList() { }
         SiteList(List<SiteModel> siteModels) {
             if (siteModels != null) {
@@ -567,12 +728,5 @@ public class SitePickerAdapter extends RecyclerView.Adapter<SitePickerAdapter.Si
             }
             return -1;
         }
-    }
-
-    /*
-     * same as Long.compare() which wasn't added until API 19
-     */
-    private static int compareTimestamps(long timestamp1, long timestamp2) {
-        return timestamp1 < timestamp2 ? -1 : (timestamp1 == timestamp2 ? 0 : 1);
     }
 }

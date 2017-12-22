@@ -19,6 +19,7 @@ import org.wordpress.android.datasets.ReaderCommentTable;
 import org.wordpress.android.datasets.ReaderPostTable;
 import org.wordpress.android.fluxc.store.AccountStore;
 import org.wordpress.android.fluxc.store.SiteStore;
+import org.wordpress.android.fluxc.tools.FluxCImageLoader;
 import org.wordpress.android.models.ReaderComment;
 import org.wordpress.android.models.ReaderCommentList;
 import org.wordpress.android.models.ReaderPost;
@@ -28,6 +29,7 @@ import org.wordpress.android.ui.reader.ReaderAnim;
 import org.wordpress.android.ui.reader.ReaderInterfaces;
 import org.wordpress.android.ui.reader.actions.ReaderActions;
 import org.wordpress.android.ui.reader.actions.ReaderCommentActions;
+import org.wordpress.android.ui.reader.utils.ReaderCommentLeveler;
 import org.wordpress.android.ui.reader.utils.ReaderLinkMovementMethod;
 import org.wordpress.android.ui.reader.views.ReaderCommentsPostHeaderView;
 import org.wordpress.android.ui.reader.views.ReaderIconCountView;
@@ -71,6 +73,7 @@ public class ReaderCommentAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     @Inject AccountStore mAccountStore;
     @Inject SiteStore mSiteStore;
+    @Inject FluxCImageLoader mImageLoader;
 
     public interface RequestReplyListener {
         void onRequestReply(long commentId);
@@ -227,7 +230,7 @@ public class ReaderCommentAdapter extends RecyclerView.Adapter<RecyclerView.View
             String avatarUrl = GravatarUtils.fixGravatarUrl(comment.getAuthorAvatar(), mAvatarSz);
             commentHolder.imgAvatar.setImageUrl(avatarUrl, WPNetworkImageView.ImageType.AVATAR);
         } else {
-            commentHolder.imgAvatar.showDefaultGravatarImage();
+            commentHolder.imgAvatar.showDefaultGravatarImageAndNullifyUrl();
         }
 
         // tapping avatar or author name opens blog preview
@@ -265,7 +268,7 @@ public class ReaderCommentAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
 
         int maxImageWidth = mContentWidth - indentWidth;
-        CommentUtils.displayHtmlComment(commentHolder.txtText, comment.getText(), maxImageWidth);
+        CommentUtils.displayHtmlComment(commentHolder.txtText, comment.getText(), maxImageWidth, mImageLoader);
 
         // different background for highlighted comment, with optional progress bar
         if (mHighlightCommentId != 0 && mHighlightCommentId == comment.commentId) {
@@ -325,6 +328,16 @@ public class ReaderCommentAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     private ReaderComment getItem(int position) {
         return position == 0 ? null : mComments.get(position - NUM_HEADERS);
+    }
+
+    /*
+     * refresh the post from the database - used to reflect changes to comment counts, etc.
+     */
+    public void refreshPost() {
+        if (mPost != null) {
+            ReaderPost post = ReaderPostTable.getBlogPost(mPost.blogId, mPost.postId, true);
+            setPost(post);
+        }
     }
 
     private void showLikeStatus(final CommentHolder holder, int position) {
@@ -519,7 +532,7 @@ public class ReaderCommentAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             if (result) {
                 // assign the comments with children sorted under their parents and indent levels applied
-                mComments = ReaderCommentList.getLevelList(tmpComments);
+                mComments = new ReaderCommentLeveler(tmpComments).createLevelList();
                 notifyDataSetChanged();
             }
             if (mDataLoadedListener != null) {

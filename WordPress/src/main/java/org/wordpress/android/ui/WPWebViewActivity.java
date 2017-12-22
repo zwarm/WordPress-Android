@@ -10,7 +10,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
@@ -21,9 +20,9 @@ import org.wordpress.android.fluxc.store.SiteStore;
 import org.wordpress.android.ui.reader.ReaderActivityLauncher;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.StringUtils;
+import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.util.URLFilteredWebViewClient;
 import org.wordpress.android.util.UrlUtils;
-import org.wordpress.android.util.WPMeShortlinks;
 import org.wordpress.android.util.WPUrlUtils;
 import org.wordpress.android.util.WPWebViewClient;
 import org.wordpress.android.util.helpers.WPWebChromeClient;
@@ -32,6 +31,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -77,7 +77,8 @@ public class WPWebViewActivity extends WebViewActivity {
     public static final String URL_TO_LOAD = "url_to_load";
     public static final String WPCOM_LOGIN_URL = "https://wordpress.com/wp-login.php";
     public static final String LOCAL_BLOG_ID = "local_blog_id";
-    public static final String SHARABLE_URL = "sharable_url";
+    public static final String SHAREABLE_URL = "shareable_url";
+    public static final String SHARE_SUBJECT = "share_subject";
     public static final String REFERRER_URL = "referrer_url";
     public static final String DISABLE_LINKS_ON_PAGE = "DISABLE_LINKS_ON_PAGE";
     public static final String ALLOWED_URLS = "allowed_urls";
@@ -94,7 +95,30 @@ public class WPWebViewActivity extends WebViewActivity {
     }
 
     public static void openUrlByUsingGlobalWPCOMCredentials(Context context, String url) {
-        openWPCOMURL(context, url);
+        openWPCOMURL(context, url, null, null);
+    }
+
+    public static void openPostUrlByUsingGlobalWPCOMCredentials(Context context, String url, String shareableUrl,
+                                                                String shareSubject) {
+        openWPCOMURL(context, url, shareableUrl, shareSubject);
+    }
+
+    // frameNonce is used to show drafts, without it "no page found" error would be thrown
+    public static void openJetpackBlogPostPreview(Context context, String url, String shareableUrl, String shareSubject,
+                                                  String frameNonce) {
+        if (!TextUtils.isEmpty(frameNonce)) {
+            url += "&frame-nonce=" + frameNonce;
+        }
+        Intent intent = new Intent(context, WPWebViewActivity.class);
+        intent.putExtra(WPWebViewActivity.URL_TO_LOAD, url);
+        intent.putExtra(WPWebViewActivity.DISABLE_LINKS_ON_PAGE, false);
+        if (!TextUtils.isEmpty(shareableUrl)) {
+            intent.putExtra(WPWebViewActivity.SHAREABLE_URL, shareableUrl);
+        }
+        if (!TextUtils.isEmpty(shareSubject)) {
+            intent.putExtra(WPWebViewActivity.SHARE_SUBJECT, shareSubject);
+        }
+        context.startActivity(intent);
     }
 
     // Note: The webview has links disabled (excepted for urls in the whitelist: listOfAllowedURLs)
@@ -112,8 +136,7 @@ public class WPWebViewActivity extends WebViewActivity {
 
         if (TextUtils.isEmpty(url)) {
             AppLog.e(AppLog.T.UTILS, "Empty or null URL");
-            Toast.makeText(context, context.getResources().getText(R.string.invalid_site_url_message),
-                    Toast.LENGTH_SHORT).show();
+            ToastUtils.showToast(context, R.string.invalid_site_url_message, ToastUtils.Duration.SHORT);
             return;
         }
 
@@ -127,7 +150,10 @@ public class WPWebViewActivity extends WebViewActivity {
         intent.putExtra(WPWebViewActivity.DISABLE_LINKS_ON_PAGE, true);
             intent.putExtra(ALLOWED_URLS, listOfAllowedURLs);
         if (post != null) {
-            intent.putExtra(WPWebViewActivity.SHARABLE_URL, WPMeShortlinks.getPostShortlink(site, post));
+            intent.putExtra(WPWebViewActivity.SHAREABLE_URL, post.getLink());
+            if (!TextUtils.isEmpty(post.getTitle())) {
+                intent.putExtra(WPWebViewActivity.SHARE_SUBJECT, post.getTitle());
+            }
         }
         context.startActivity(intent);
     }
@@ -144,8 +170,7 @@ public class WPWebViewActivity extends WebViewActivity {
 
         if (TextUtils.isEmpty(url)) {
             AppLog.e(AppLog.T.UTILS, "Empty or null URL");
-            Toast.makeText(context, context.getResources().getText(R.string.invalid_site_url_message),
-                    Toast.LENGTH_SHORT).show();
+            ToastUtils.showToast(context, R.string.invalid_site_url_message, ToastUtils.Duration.SHORT);
             return;
         }
 
@@ -165,14 +190,13 @@ public class WPWebViewActivity extends WebViewActivity {
 
         if (TextUtils.isEmpty(url)) {
             AppLog.e(AppLog.T.UTILS, "Empty or null URL passed to openUrlByUsingMainWPCOMCredentials");
-            Toast.makeText(context, context.getResources().getText(R.string.invalid_site_url_message),
-                    Toast.LENGTH_SHORT).show();
+            ToastUtils.showToast(context, R.string.invalid_site_url_message, ToastUtils.Duration.SHORT);
             return false;
         }
         return true;
     }
 
-    private static void openWPCOMURL(Context context, String url) {
+    private static void openWPCOMURL(Context context, String url, String shareableUrl, String shareSubject) {
         if (!checkContextAndUrl(context, url)) {
             return;
         }
@@ -181,6 +205,12 @@ public class WPWebViewActivity extends WebViewActivity {
         intent.putExtra(WPWebViewActivity.USE_GLOBAL_WPCOM_USER, true);
         intent.putExtra(WPWebViewActivity.URL_TO_LOAD, url);
         intent.putExtra(WPWebViewActivity.AUTHENTICATION_URL, WPCOM_LOGIN_URL);
+        if (!TextUtils.isEmpty(shareableUrl)) {
+            intent.putExtra(WPWebViewActivity.SHAREABLE_URL, shareableUrl);
+        }
+        if (!TextUtils.isEmpty(shareSubject)) {
+            intent.putExtra(WPWebViewActivity.SHARE_SUBJECT, shareSubject);
+        }
         context.startActivity(intent);
     }
 
@@ -195,7 +225,7 @@ public class WPWebViewActivity extends WebViewActivity {
 
         // Configure the allowed URLs if available
         ArrayList<String> allowedURL = null;
-        if (extras.getBoolean(DISABLE_LINKS_ON_PAGE, false)) {
+        if (extras != null && extras.getBoolean(DISABLE_LINKS_ON_PAGE, false)) {
             String addressToLoad = extras.getString(URL_TO_LOAD);
             String authURL = extras.getString(AUTHENTICATION_URL);
             allowedURL = new ArrayList<>();
@@ -243,15 +273,28 @@ public class WPWebViewActivity extends WebViewActivity {
         String username = extras.getString(AUTHENTICATION_USER, "");
         String password = extras.getString(AUTHENTICATION_PASSWD, "");
         String authURL = extras.getString(AUTHENTICATION_URL);
-        if (extras.getBoolean(USE_GLOBAL_WPCOM_USER, false)) {
-            username = mAccountStore.getAccount().getUserName();
-        }
 
         if (TextUtils.isEmpty(addressToLoad) || !UrlUtils.isValidUrlAndHostNotNull(addressToLoad)) {
             AppLog.e(AppLog.T.UTILS, "Empty or null or invalid URL passed to WPWebViewActivity");
-            Toast.makeText(this, getText(R.string.invalid_site_url_message),
-                    Toast.LENGTH_SHORT).show();
+            ToastUtils.showToast(this, R.string.invalid_site_url_message, ToastUtils.Duration.SHORT);
             finish();
+            return;
+        }
+
+        if (extras.getBoolean(USE_GLOBAL_WPCOM_USER, false)) {
+            username = mAccountStore.getAccount().getUserName();
+
+            // Custom domains are not properly authenticated due to a server side(?) issue, so this gets around that
+            if (!addressToLoad.contains(".wordpress.com")) {
+                List<SiteModel> wpComSites = mSiteStore.getWPComSites();
+                for (SiteModel siteModel : wpComSites) {
+                    // Only replace the url if we know the unmapped url and if it's a custom domain
+                    if (!TextUtils.isEmpty(siteModel.getUnmappedUrl())
+                            && !siteModel.getUrl().contains(".wordpress.com")) {
+                        addressToLoad = addressToLoad.replace(siteModel.getUrl(), siteModel.getUnmappedUrl());
+                    }
+                }
+            }
         }
 
         if (TextUtils.isEmpty(authURL) && TextUtils.isEmpty(username) && TextUtils.isEmpty(password)) {
@@ -268,14 +311,13 @@ public class WPWebViewActivity extends WebViewActivity {
         } else {
             if (TextUtils.isEmpty(authURL) || !UrlUtils.isValidUrlAndHostNotNull(authURL)) {
                 AppLog.e(AppLog.T.UTILS, "Empty or null or invalid auth URL passed to WPWebViewActivity");
-                Toast.makeText(this, getText(R.string.invalid_site_url_message),
-                        Toast.LENGTH_SHORT).show();
+                ToastUtils.showToast(this, R.string.invalid_site_url_message, ToastUtils.Duration.SHORT);
                 finish();
             }
 
             if (TextUtils.isEmpty(username)) {
                 AppLog.e(AppLog.T.UTILS, "Username empty/null");
-                Toast.makeText(this, getText(R.string.incorrect_credentials), Toast.LENGTH_SHORT).show();
+                ToastUtils.showToast(this, R.string.incorrect_credentials, ToastUtils.Duration.SHORT);
                 finish();
             }
 
@@ -359,13 +401,17 @@ public class WPWebViewActivity extends WebViewActivity {
         } else if (itemID == R.id.menu_share) {
             Intent share = new Intent(Intent.ACTION_SEND);
             share.setType("text/plain");
-            // Use the preferred sharable URL or the default webview URL
+            // Use the preferred shareable URL or the default webview URL
             Bundle extras = getIntent().getExtras();
-            String sharableUrl = extras.getString(SHARABLE_URL, null);
-            if (sharableUrl == null) {
-                sharableUrl = mWebView.getUrl();
+            String shareableUrl = extras.getString(SHAREABLE_URL, null);
+            if (TextUtils.isEmpty(shareableUrl)) {
+                shareableUrl = mWebView.getUrl();
             }
-            share.putExtra(Intent.EXTRA_TEXT, sharableUrl);
+            share.putExtra(Intent.EXTRA_TEXT, shareableUrl);
+            String shareSubject = extras.getString(SHARE_SUBJECT, null);
+            if (!TextUtils.isEmpty(shareSubject)) {
+                share.putExtra(Intent.EXTRA_SUBJECT, shareSubject);
+            }
             startActivity(Intent.createChooser(share, getText(R.string.share_link)));
             return true;
         } else if (itemID == R.id.menu_browser) {

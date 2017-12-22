@@ -2,6 +2,7 @@ package org.wordpress.android.ui.prefs;
 
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import org.wordpress.android.BuildConfig;
@@ -17,6 +18,7 @@ import org.wordpress.android.ui.comments.CommentsListFragment.CommentStatusCrite
 import org.wordpress.android.ui.reader.utils.ReaderUtils;
 import org.wordpress.android.ui.stats.StatsTimeframe;
 import org.wordpress.android.util.StringUtils;
+import org.wordpress.android.util.WPMediaUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +27,10 @@ import java.util.List;
 public class AppPrefs {
     private static final int THEME_IMAGE_SIZE_WIDTH_DEFAULT = 400;
     private static final int MAX_PENDING_DRAFTS_AMOUNT = 100;
-    public static final int MAX_RECENTLY_PICKED_SITES = 4;
+
+    // store twice as many recent sites as we show
+    private static final int MAX_RECENTLY_PICKED_SITES_TO_SHOW = 5;
+    private static final int MAX_RECENTLY_PICKED_SITES_TO_SAVE = MAX_RECENTLY_PICKED_SITES_TO_SHOW * 2;
 
     public interface PrefKey {
         String name();
@@ -46,9 +51,6 @@ public class AppPrefs {
         // title of the last active page in ReaderSubsActivity
         READER_SUBS_PAGE_TITLE,
 
-        // email retrieved and attached to mixpanel profile
-        MIXPANEL_EMAIL_ADDRESS,
-
         // index of the last active tab in main activity
         MAIN_TAB_INDEX,
 
@@ -60,12 +62,6 @@ public class AppPrefs {
 
         // last data stored for the Stats Widgets
         STATS_WIDGET_DATA,
-
-        // aztec editor enabled
-        AZTEC_EDITOR_ENABLED,
-
-        // visual editor enabled
-        VISUAL_EDITOR_ENABLED,
 
         // Store the number of times Stats are loaded without errors. It's used to show the Widget promo dialog.
         STATS_WIDGET_PROMO_ANALYTICS,
@@ -90,6 +86,14 @@ public class AppPrefs {
 
         // list of last time a notification has been created for a draft
         PENDING_DRAFTS_NOTIFICATION_LAST_NOTIFICATION_DATES,
+
+        // Optimize Image and Video settings
+        IMAGE_OPTIMIZE_ENABLED,
+        IMAGE_OPTIMIZE_WIDTH,
+        IMAGE_OPTIMIZE_QUALITY,
+        VIDEO_OPTIMIZE_ENABLED,
+        VIDEO_OPTIMIZE_WIDTH,
+        VIDEO_OPTIMIZE_QUALITY, // Encoder max bitrate
     }
 
     /**
@@ -106,8 +110,29 @@ public class AppPrefs {
         // visual editor available
         VISUAL_EDITOR_AVAILABLE,
 
-        // When we need to show the Visual Editor Promo Dialog
-        VISUAL_EDITOR_PROMO_REQUIRED,
+        // visual editor enabled
+        VISUAL_EDITOR_ENABLED,
+
+        // aztec editor enabled
+        AZTEC_EDITOR_ENABLED,
+
+        // aztec editor toolbar expanded state
+        AZTEC_EDITOR_TOOLBAR_EXPANDED,
+
+        // When we need to show the new editor beta snackbar
+        AZTEC_EDITOR_BETA_REQUIRED,
+
+        // When we need to show the new editor promo dialog
+        AZTEC_EDITOR_PROMO_REQUIRED,
+
+        // counter which determines whether it's time to show the above promo
+        AZTEC_EDITOR_PROMO_COUNTER,
+
+        // When we need to show the async promo dialog
+        ASYNC_PROMO_REQUIRED,
+
+        // When we need to show the new image optimize promo dialog
+        IMAGE_OPTIMIZE_PROMO_REQUIRED,
 
         // Global plans features
         GLOBAL_PLANS_PLANS_FEATURES,
@@ -115,26 +140,28 @@ public class AppPrefs {
         // When we need to sync IAP data with the wpcom backend
         IAP_SYNC_REQUIRED,
 
-        // When we need to show the Gravatar Change Promo Tooltip
-        GRAVATAR_CHANGE_PROMO_REQUIRED,
-
         // When we need to show the snackbar indicating how notifications can be navigated through
         SWIPE_TO_NAVIGATE_NOTIFICATIONS,
 
         // Same as above but for the reader
         SWIPE_TO_NAVIGATE_READER,
 
-        // access token migrated to AccountStore, must wait for network calls to return before app access
-        ACCESS_TOKEN_MIGRATED,
+        // smart toast counters
+        SMART_TOAST_COMMENTS_LONG_PRESS_USAGE_COUNTER,
+        SMART_TOAST_COMMENTS_LONG_PRESS_TOAST_COUNTER,
 
-        // Self-hosted sites migration to FluxC
-        SELF_HOSTED_SITES_MIGRATED_TO_FLUXC,
+        // permission keys - set once a specific permission has been asked, regardless of response
+        ASKED_PERMISSION_STORAGE_WRITE,
+        ASKED_PERMISSION_STORAGE_READ,
+        ASKED_PERMISSION_CAMERA,
+        ASKED_PERMISSION_LOCATION_COURSE,
+        ASKED_PERMISSION_LOCATION_FINE,
 
-        // Draft migration to FluxC
-        DRAFTS_MIGRATED_TO_FLUXC,
+        // wizard style login flow active
+        LOGIN_WIZARD_STYLE_ACTIVE,
 
-        // aztec editor available
-        AZTEC_EDITOR_AVAILABLE,
+        // Updated after WP.com themes have been fetched
+        LAST_WP_COM_THEMES_SYNC
     }
 
     private static SharedPreferences prefs() {
@@ -184,26 +211,29 @@ public class AppPrefs {
         }
     }
 
-    private static int getInt(PrefKey key) {
+    public static int getInt(PrefKey key) {
         return getInt(key, 0);
     }
 
-    private static void setInt(PrefKey key, int value) {
+    public static void setInt(PrefKey key, int value) {
         setString(key, Integer.toString(value));
     }
 
-    private static boolean getBoolean(PrefKey key, boolean def) {
-
+    public static boolean getBoolean(PrefKey key, boolean def) {
         String value = getString(key, Boolean.toString(def));
         return Boolean.parseBoolean(value);
     }
 
-    private static void setBoolean(PrefKey key, boolean value) {
+    public static void setBoolean(PrefKey key, boolean value) {
         setString(key, Boolean.toString(value));
     }
 
     private static void remove(PrefKey key) {
         prefs().edit().remove(key.name()).apply();
+    }
+
+    public static boolean keyExists(@NonNull PrefKey key) {
+        return prefs().contains(key.name());
     }
 
     // Exposed methods
@@ -336,16 +366,6 @@ public class AppPrefs {
         remove(DeletablePrefKey.LAST_ACTIVITY_STR);
     }
 
-    // Mixpanel email retrieval check
-
-    public static String getMixpanelUserEmail() {
-        return getString(DeletablePrefKey.MIXPANEL_EMAIL_ADDRESS, null);
-    }
-
-    public static void setMixpanelUserEmail(String email) {
-        setString(DeletablePrefKey.MIXPANEL_EMAIL_ADDRESS, email);
-    }
-
     public static int getMainTabIndex() {
         return getInt(DeletablePrefKey.MAIN_TAB_INDEX);
     }
@@ -393,37 +413,46 @@ public class AppPrefs {
         }
     }
 
+    // Wizard-style login flow
+    public static void setLoginWizardStyleActive(boolean loginWizardActive) {
+        setBoolean(UndeletablePrefKey.LOGIN_WIZARD_STYLE_ACTIVE, loginWizardActive);
+        if (loginWizardActive) {
+            AnalyticsTracker.track(Stat.LOGIN_WIZARD_STYLE_ACTIVATED);
+        }
+    }
+
+    public static boolean isLoginWizardStyleActivated() {
+        return BuildConfig.LOGIN_WIZARD_STYLE_ACTIVE || getBoolean(UndeletablePrefKey.LOGIN_WIZARD_STYLE_ACTIVE, false);
+    }
+
     // Aztec Editor
     public static void setAztecEditorEnabled(boolean isEnabled) {
-        setBoolean(DeletablePrefKey.AZTEC_EDITOR_ENABLED, isEnabled);
+        setBoolean(UndeletablePrefKey.AZTEC_EDITOR_ENABLED, isEnabled);
         AnalyticsTracker.track(isEnabled ? Stat.EDITOR_AZTEC_TOGGLED_ON : Stat.EDITOR_AZTEC_TOGGLED_OFF);
     }
 
     public static boolean isAztecEditorEnabled() {
-        return isAztecEditorAvailable() && getBoolean(DeletablePrefKey.AZTEC_EDITOR_ENABLED, true);
+        return getBoolean(UndeletablePrefKey.AZTEC_EDITOR_ENABLED, false);
     }
 
-    public static void setAztecEditorAvailable(boolean aztecEditorAvailable) {
-        setBoolean(UndeletablePrefKey.AZTEC_EDITOR_AVAILABLE, aztecEditorAvailable);
-        if (aztecEditorAvailable) {
-            AnalyticsTracker.track(Stat.EDITOR_AZTEC_ENABLED);
-        }
+    public static boolean isAztecEditorToolbarExpanded() {
+        return getBoolean(UndeletablePrefKey.AZTEC_EDITOR_TOOLBAR_EXPANDED, false);
     }
 
-    public static boolean isAztecEditorAvailable() {
-        return BuildConfig.AZTEC_EDITOR_AVAILABLE || getBoolean(UndeletablePrefKey.AZTEC_EDITOR_AVAILABLE, false);
+    public static void setAztecEditorToolbarExpanded(boolean isExpanded) {
+        setBoolean(UndeletablePrefKey.AZTEC_EDITOR_TOOLBAR_EXPANDED, isExpanded);
     }
 
     // Visual Editor
     public static void setVisualEditorEnabled(boolean visualEditorEnabled) {
-        setBoolean(DeletablePrefKey.VISUAL_EDITOR_ENABLED, visualEditorEnabled);
-        AnalyticsTracker.track(visualEditorEnabled ? Stat.EDITOR_TOGGLED_ON : Stat.EDITOR_TOGGLED_OFF);
+        setBoolean(UndeletablePrefKey.VISUAL_EDITOR_ENABLED, visualEditorEnabled);
+        AnalyticsTracker.track(visualEditorEnabled ? Stat.EDITOR_HYBRID_TOGGLED_ON : Stat.EDITOR_HYBRID_TOGGLED_OFF);
     }
 
     public static void setVisualEditorAvailable(boolean visualEditorAvailable) {
         setBoolean(UndeletablePrefKey.VISUAL_EDITOR_AVAILABLE, visualEditorAvailable);
         if (visualEditorAvailable) {
-            AnalyticsTracker.track(Stat.EDITOR_ENABLED_NEW_VERSION);
+            AnalyticsTracker.track(Stat.EDITOR_HYBRID_ENABLED);
         }
     }
 
@@ -432,23 +461,39 @@ public class AppPrefs {
     }
 
     public static boolean isVisualEditorEnabled() {
-        return isVisualEditorAvailable() && getBoolean(DeletablePrefKey.VISUAL_EDITOR_ENABLED, !isAztecEditorEnabled());
+        return isVisualEditorAvailable() && getBoolean(UndeletablePrefKey.VISUAL_EDITOR_ENABLED, !isAztecEditorEnabled());
     }
 
-    public static boolean isVisualEditorPromoRequired() {
-        return getBoolean(UndeletablePrefKey.VISUAL_EDITOR_PROMO_REQUIRED, true);
+    public static boolean isNewEditorBetaRequired() {
+        return getBoolean(UndeletablePrefKey.AZTEC_EDITOR_BETA_REQUIRED, true);
     }
 
-    public static void setVisualEditorPromoRequired(boolean required) {
-        setBoolean(UndeletablePrefKey.VISUAL_EDITOR_PROMO_REQUIRED, required);
+    public static boolean isNewEditorPromoRequired() {
+       return getBoolean(UndeletablePrefKey.AZTEC_EDITOR_PROMO_REQUIRED, true);
+   }
+
+    public static boolean isAsyncPromoRequired() {
+        return getBoolean(UndeletablePrefKey.ASYNC_PROMO_REQUIRED, true);
     }
 
-    public static boolean isGravatarChangePromoRequired() {
-        return getBoolean(UndeletablePrefKey.GRAVATAR_CHANGE_PROMO_REQUIRED, true);
+    public static void setNewEditorBetaRequired(boolean required) {
+        setBoolean(UndeletablePrefKey.AZTEC_EDITOR_BETA_REQUIRED, required);
     }
 
-    public static void setGravatarChangePromoRequired(boolean required) {
-        setBoolean(UndeletablePrefKey.GRAVATAR_CHANGE_PROMO_REQUIRED, required);
+    public static void setNewEditorPromoRequired(boolean required) {
+       setBoolean(UndeletablePrefKey.AZTEC_EDITOR_PROMO_REQUIRED, required);
+   }
+
+    public static void setAsyncPromoRequired(boolean required) {
+        setBoolean(UndeletablePrefKey.ASYNC_PROMO_REQUIRED, required);
+    }
+
+    public static boolean isImageOptimizePromoRequired() {
+        return getBoolean(UndeletablePrefKey.IMAGE_OPTIMIZE_PROMO_REQUIRED, true);
+    }
+
+    public static void setImageOptimizePromoRequired(boolean required) {
+        setBoolean(UndeletablePrefKey.IMAGE_OPTIMIZE_PROMO_REQUIRED, required);
     }
 
     // Store the number of times Stats are loaded successfully before showing the Promo Dialog
@@ -459,6 +504,12 @@ public class AppPrefs {
 
     public static int getAnalyticsForStatsWidgetPromo() {
         return getInt(DeletablePrefKey.STATS_WIDGET_PROMO_ANALYTICS);
+    }
+
+    public static int bumpAndReturnAztecPromoCounter() {
+        int count = getInt(UndeletablePrefKey.AZTEC_EDITOR_PROMO_COUNTER) + 1;
+        setInt(UndeletablePrefKey.AZTEC_EDITOR_PROMO_COUNTER, count);
+        return count;
     }
 
     public static void setGlobalPlansFeatures(String jsonOfFeatures) {
@@ -533,16 +584,74 @@ public class AppPrefs {
         editor.apply();
     }
 
+    public static boolean isImageOptimize() {
+        return getBoolean(DeletablePrefKey.IMAGE_OPTIMIZE_ENABLED, false);
+    }
+
+    public static void setImageOptimize(boolean optimize) {
+        setBoolean(DeletablePrefKey.IMAGE_OPTIMIZE_ENABLED, optimize);
+    }
+
+    public static void setImageOptimizeMaxSize(int width) {
+        setInt(DeletablePrefKey.IMAGE_OPTIMIZE_WIDTH, width);
+    }
+
+    public static int getImageOptimizeMaxSize() {
+        int resizeWidth = getInt(DeletablePrefKey.IMAGE_OPTIMIZE_WIDTH, 0);
+        return resizeWidth == 0 ? WPMediaUtils.OPTIMIZE_IMAGE_MAX_SIZE : resizeWidth;
+    }
+
+    public static void setImageOptimizeQuality(int quality) {
+        setInt(DeletablePrefKey.IMAGE_OPTIMIZE_QUALITY, quality);
+    }
+
+    public static int getImageOptimizeQuality() {
+        int quality = getInt(DeletablePrefKey.IMAGE_OPTIMIZE_QUALITY, 0);
+        return quality > 1 ? quality : WPMediaUtils.OPTIMIZE_IMAGE_ENCODER_QUALITY;
+    }
+
+    public static boolean isVideoOptimize() {
+        return getBoolean(DeletablePrefKey.VIDEO_OPTIMIZE_ENABLED, false);
+    }
+
+    public static void setVideoOptimize(boolean optimize) {
+        setBoolean(DeletablePrefKey.VIDEO_OPTIMIZE_ENABLED, optimize);
+    }
+
+    public static void setVideoOptimizeWidth(int width) {
+        setInt(DeletablePrefKey.VIDEO_OPTIMIZE_WIDTH, width);
+    }
+
+    public static int getVideoOptimizeWidth() {
+        int resizeWidth =getInt(DeletablePrefKey.VIDEO_OPTIMIZE_WIDTH, 0);
+        return resizeWidth == 0 ? WPMediaUtils.OPTIMIZE_VIDEO_MAX_WIDTH : resizeWidth;
+    }
+
+    public static void setVideoOptimizeQuality(int quality) {
+        setInt(DeletablePrefKey.VIDEO_OPTIMIZE_QUALITY, quality);
+    }
+
+    public static int getVideoOptimizeQuality() {
+        int quality =  getInt(DeletablePrefKey.VIDEO_OPTIMIZE_QUALITY, 0);
+        return quality > 1 ? quality : WPMediaUtils.OPTIMIZE_VIDEO_ENCODER_BITRATE_KB;
+    }
+
     /*
      * returns a list of local IDs of sites recently chosen in the site picker
      */
     public static ArrayList<Integer> getRecentlyPickedSiteIds() {
+        return getRecentlyPickedSiteIds(MAX_RECENTLY_PICKED_SITES_TO_SHOW);
+    }
+    private static ArrayList<Integer> getRecentlyPickedSiteIds(int limit) {
         String idsAsString = getString(DeletablePrefKey.RECENTLY_PICKED_SITE_IDS, "");
         List<String> items = Arrays.asList(idsAsString.split(","));
 
         ArrayList<Integer> siteIds = new ArrayList<>();
         for (String item : items) {
             siteIds.add(StringUtils.stringToInt(item));
+            if (siteIds.size() == limit) {
+                break;
+            }
         }
 
         return siteIds;
@@ -554,7 +663,7 @@ public class AppPrefs {
     public static void addRecentlyPickedSiteId(Integer localId) {
         if (localId == 0) return;
 
-        ArrayList<Integer> currentIds = getRecentlyPickedSiteIds();
+        ArrayList<Integer> currentIds = getRecentlyPickedSiteIds(MAX_RECENTLY_PICKED_SITES_TO_SAVE);
 
         // remove this ID if it already exists in the list
         int index = currentIds.indexOf(localId);
@@ -566,8 +675,8 @@ public class AppPrefs {
         currentIds.add(0, localId);
 
         // remove at max
-        if (currentIds.size() > MAX_RECENTLY_PICKED_SITES) {
-            currentIds.remove(MAX_RECENTLY_PICKED_SITES);
+        if (currentIds.size() > MAX_RECENTLY_PICKED_SITES_TO_SAVE) {
+            currentIds.remove(MAX_RECENTLY_PICKED_SITES_TO_SAVE);
         }
 
         // store in prefs
@@ -575,27 +684,22 @@ public class AppPrefs {
         setString(DeletablePrefKey.RECENTLY_PICKED_SITE_IDS, idsAsString);
     }
 
-    public static boolean wasAccessTokenMigrated() {
-        return getBoolean(UndeletablePrefKey.ACCESS_TOKEN_MIGRATED, false);
+    public static void removeRecentlyPickedSiteId(Integer localId) {
+        ArrayList<Integer> currentIds = getRecentlyPickedSiteIds(MAX_RECENTLY_PICKED_SITES_TO_SAVE);
+
+        int index = currentIds.indexOf(localId);
+        if (index > -1) {
+            currentIds.remove(index);
+            String idsAsString = TextUtils.join(",", currentIds);
+            setString(DeletablePrefKey.RECENTLY_PICKED_SITE_IDS, idsAsString);
+        }
     }
 
-    public static void setAccessTokenMigrated(boolean migrated) {
-        setBoolean(UndeletablePrefKey.ACCESS_TOKEN_MIGRATED, migrated);
+    public static long getLastWpComThemeSync() {
+        return getLong(UndeletablePrefKey.LAST_WP_COM_THEMES_SYNC);
     }
 
-    public static boolean wereSelfHostedSitesMigratedToFluxC() {
-        return getBoolean(UndeletablePrefKey.SELF_HOSTED_SITES_MIGRATED_TO_FLUXC, false);
-    }
-
-    public static void setSelfHostedSitesMigratedToFluxC(boolean migrated) {
-        setBoolean(UndeletablePrefKey.SELF_HOSTED_SITES_MIGRATED_TO_FLUXC, migrated);
-    }
-
-    public static boolean wereDraftsMigratedToFluxC() {
-        return getBoolean(UndeletablePrefKey.DRAFTS_MIGRATED_TO_FLUXC, false);
-    }
-
-    public static void setDraftsMigratedToFluxC(boolean migrated) {
-        setBoolean(UndeletablePrefKey.DRAFTS_MIGRATED_TO_FLUXC, migrated);
+    public static void setLastWpComThemeSync(long time) {
+        setLong(UndeletablePrefKey.LAST_WP_COM_THEMES_SYNC, time);
     }
 }

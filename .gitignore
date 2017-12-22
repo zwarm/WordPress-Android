@@ -58,3 +58,6 @@ WordPress/src/androidTest/monkeys/*.png
 /.okbuck
 /.buckd
 /buck-out
+
+# Google services configuration
+google-services.json

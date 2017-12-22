@@ -133,7 +133,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         mStatusColorUnapproved = ContextCompat.getColor(context, R.color.comment_status_unapproved);
 
         mUnselectedColor = ContextCompat.getColor(context, R.color.white);
-        mSelectedColor = ContextCompat.getColor(context, R.color.translucent_grey_lighten_20);
+        mSelectedColor = ContextCompat.getColor(context, R.color.grey_lighten_20_translucent_50);
 
         mStatusTextSpam = context.getResources().getString(R.string.comment_status_spam);
         mStatusTextUnapproved = context.getResources().getString(R.string.comment_status_unapproved);
@@ -173,7 +173,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         String author = context.getString(R.string.anonymous);
         if (!TextUtils.isEmpty(comment.getAuthorName())) {
-            author = StringUtils.unescapeHTML(comment.getAuthorName().trim());
+            author = comment.getAuthorName().trim();
         }
 
         if (!TextUtils.isEmpty(comment.getPostTitle())) {
@@ -181,7 +181,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                              + "<font color=" + HtmlUtils.colorResToHtmlColor(context, R.color.grey_darken_10) + ">"
                              + " " + context.getString(R.string.on) + " "
                              + "</font>"
-                             + StringUtils.unescapeHTML(comment.getPostTitle().trim());
+                             + comment.getPostTitle().trim();
         } else {
             formattedTitle = author;
         }

@@ -14,7 +14,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
@@ -22,9 +21,9 @@ import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.store.AccountStore;
 import org.wordpress.android.fluxc.store.SiteStore;
 import org.wordpress.android.util.AppLog;
+import org.wordpress.android.util.FluxCUtils;
 import org.wordpress.android.util.SiteUtils;
 import org.wordpress.android.util.ToastUtils;
-import org.wordpress.android.util.FluxCUtils;
 
 import javax.inject.Inject;
 
@@ -110,7 +109,7 @@ public class StatsWidgetConfigureActivity extends AppCompatActivity
     private void setupActionBar() {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
-            actionBar.setHomeAsUpIndicator(R.drawable.ic_close_white_24dp);
+            actionBar.setHomeAsUpIndicator(R.drawable.ic_cross_white_24dp);
             actionBar.setHomeButtonEnabled(false);
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setTitle(R.string.site_picker_title);
@@ -139,17 +138,17 @@ public class StatsWidgetConfigureActivity extends AppCompatActivity
 
         if (site == null) {
             AppLog.e(AppLog.T.STATS, "The blog with local_blog_id " + localID + " cannot be loaded from the DB.");
-            Toast.makeText(this, R.string.stats_no_blog, Toast.LENGTH_LONG).show();
+            ToastUtils.showToast(this, R.string.stats_no_blog, ToastUtils.Duration.LONG);
             finish();
             return;
         }
 
-        if (!SiteUtils.isAccessibleViaWPComAPI(site)) {
+        if (!SiteUtils.isAccessedViaWPComRest(site)) {
             // The blog could be a self-hosted blog with NO Jetpack installed on it
             // Or a Jetpack blog whose options are not yet synched in the app
             // In both of these cases show a generic message that encourages the user to refresh
             // the blog within the app. There are so many different paths here that's better to handle them in the app.
-            Toast.makeText(this, R.string.stats_widget_error_jetpack_no_blogid, Toast.LENGTH_LONG).show();
+            ToastUtils.showToast(this, R.string.stats_widget_error_jetpack_no_blogid, ToastUtils.Duration.LONG);
             finish();
             return;
         }

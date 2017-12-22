@@ -6,12 +6,14 @@ import android.app.Dialog;
 import android.content.ComponentCallbacks2;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.net.ConnectivityManager;
 import android.net.http.HttpResponseCache;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.SystemClock;
+import android.support.annotation.Nullable;
 import android.support.multidex.MultiDexApplication;
 import android.support.v7.app.AppCompatDelegate;
 import android.text.TextUtils;
@@ -21,8 +23,10 @@ import android.webkit.WebView;
 
 import com.android.volley.RequestQueue;
 import com.crashlytics.android.Crashlytics;
+import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 import com.wordpress.rest.RestClient;
@@ -32,22 +36,22 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import org.wordpress.android.analytics.AnalyticsTracker;
 import org.wordpress.android.analytics.AnalyticsTracker.Stat;
-import org.wordpress.android.analytics.AnalyticsTrackerMixpanel;
 import org.wordpress.android.analytics.AnalyticsTrackerNosara;
 import org.wordpress.android.datasets.NotificationsTable;
 import org.wordpress.android.datasets.ReaderDatabase;
 import org.wordpress.android.fluxc.Dispatcher;
 import org.wordpress.android.fluxc.generated.AccountActionBuilder;
 import org.wordpress.android.fluxc.generated.SiteActionBuilder;
+import org.wordpress.android.fluxc.generated.ThemeActionBuilder;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.module.AppContextModule;
 import org.wordpress.android.fluxc.persistence.WellSqlConfig;
 import org.wordpress.android.fluxc.store.AccountStore;
 import org.wordpress.android.fluxc.store.AccountStore.OnAccountChanged;
-import org.wordpress.android.fluxc.store.PostStore;
+import org.wordpress.android.fluxc.store.MediaStore;
 import org.wordpress.android.fluxc.store.SiteStore;
-import org.wordpress.android.fluxc.store.SiteStore.OnSiteChanged;
 import org.wordpress.android.fluxc.tools.FluxCImageLoader;
+import org.wordpress.android.fluxc.utils.ErrorUtils.OnUnexpectedError;
 import org.wordpress.android.modules.AppComponent;
 import org.wordpress.android.modules.DaggerAppComponent;
 import org.wordpress.android.networking.ConnectionChangeReceiver;
@@ -62,21 +66,23 @@ import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.ui.stats.StatsWidgetProvider;
 import org.wordpress.android.ui.stats.datasets.StatsDatabaseHelper;
 import org.wordpress.android.ui.stats.datasets.StatsTable;
+import org.wordpress.android.ui.uploads.UploadService;
 import org.wordpress.android.util.AnalyticsUtils;
 import org.wordpress.android.util.AppLog;
+import org.wordpress.android.util.AppLog.AppLogListener;
+import org.wordpress.android.util.AppLog.LogLevel;
 import org.wordpress.android.util.AppLog.T;
 import org.wordpress.android.util.BitmapLruCache;
+import org.wordpress.android.util.CrashlyticsUtils;
 import org.wordpress.android.util.DateTimeUtils;
+import org.wordpress.android.util.FluxCUtils;
 import org.wordpress.android.util.HelpshiftHelper;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.PackageUtils;
 import org.wordpress.android.util.ProfilingUtils;
 import org.wordpress.android.util.RateLimitedTask;
-import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.util.VolleyUtils;
 import org.wordpress.android.util.WPActivityUtils;
-import org.wordpress.android.util.WPLegacyMigrationUtils;
-import org.wordpress.android.util.FluxCUtils;
 import org.wordpress.passcodelock.AbstractAppLock;
 import org.wordpress.passcodelock.AppLockManager;
 
@@ -85,7 +91,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -100,6 +105,7 @@ public class WordPress extends MultiDexApplication {
     public static final String SITE = "SITE";
     public static String versionName;
     public static WordPressDB wpDB;
+    public static boolean sAppIsInTheBackground;
 
     private static RestClientUtils sRestClientUtils;
     private static RestClientUtils sRestClientUtilsVersion1_1;
@@ -114,10 +120,12 @@ public class WordPress extends MultiDexApplication {
     private static Context mContext;
     private static BitmapLruCache mBitmapCache;
 
+    private static GoogleApiClient mCredentialsClient;
+
     @Inject Dispatcher mDispatcher;
     @Inject AccountStore mAccountStore;
     @Inject SiteStore mSiteStore;
-    @Inject PostStore mPostStore;
+    @Inject MediaStore mMediaStore;
 
     @Inject @Named("custom-ssl") RequestQueue mRequestQueue;
     public static RequestQueue sRequestQueue;
@@ -129,15 +137,6 @@ public class WordPress extends MultiDexApplication {
     private AppComponent mAppComponent;
     public AppComponent component() {
         return mAppComponent;
-    }
-
-    // FluxC migration - drop the migration code after wpandroid 7.8
-    public static boolean sIsMigrationInProgress;
-    private static MigrationListener sMigrationListener;
-    private int mRemainingSelfHostedSitesToFetch;
-
-    public interface MigrationListener {
-        void onCompletion();
     }
 
     /**
@@ -183,22 +182,12 @@ public class WordPress extends MultiDexApplication {
         }
     };
 
-    /**
-     * Shutdown task used if migration to FluxC can't be performed due to lack of network connectivity.
-     */
-    private static final Runnable sShutdown = new Runnable() {
-        @Override
-        public void run() {
-            System.exit(0);
-        }
-    };
-
     public static BitmapLruCache getBitmapCache() {
         if (mBitmapCache == null) {
             // The cache size will be measured in kilobytes rather than
             // number of items. See http://developer.android.com/training/displaying-bitmaps/cache-bitmap.html
             int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
-            int cacheSize = maxMemory / 16;  //Use 1/16th of the available memory for this memory cache.
+            int cacheSize = maxMemory / 4;  //Use 1/4th of the available memory for this memory cache.
             mBitmapCache = new BitmapLruCache(cacheSize);
         }
         return mBitmapCache;
@@ -225,17 +214,23 @@ public class WordPress extends MultiDexApplication {
         sImageLoader = mImageLoader;
         sOAuthAuthenticator = mOAuthAuthenticator;
 
-        ProfilingUtils.start("App Startup");
-        // Enable log recording
-        AppLog.enableRecording(true);
-        AppLog.i(T.UTILS, "WordPress.onCreate");
-
         if (!PackageUtils.isDebugBuild()) {
             Fabric.with(this, new Crashlytics());
         }
 
-        // If the migration was not done and if we have something to migrate
-        runFluxCMigration();
+        ProfilingUtils.start("App Startup");
+        // Enable log recording
+        AppLog.enableRecording(true);
+        AppLog.addListener(new AppLogListener() {
+            @Override
+            public void onLog(T tag, LogLevel logLevel, String message) {
+                StringBuffer sb = new StringBuffer();
+                sb.append(logLevel.toString()).append("/").append(AppLog.TAG).append("-")
+                        .append(tag.toString()).append(": ").append(message);
+                CrashlyticsUtils.log(sb.toString());
+            }
+        });
+        AppLog.i(T.UTILS, "WordPress.onCreate");
 
         versionName = PackageUtils.getVersionName(this);
         initWpDb();
@@ -279,101 +274,35 @@ public class WordPress extends MultiDexApplication {
         // https://developer.android.com/reference/android/support/v7/app/AppCompatDelegate.html#setCompatVectorFromResourcesEnabled(boolean)
         // Note: if removed, this will cause crashes on Android < 21
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+
+        // verify media is sanitized
+        sanitizeMediaUploadStateForSite();
+
+        // setup the Credentials Client so we can clean it up on wpcom logout
+        mCredentialsClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+                    @Override public void onConnected(@Nullable Bundle bundle) {}
+                    @Override public void onConnectionSuspended(int i) {}
+                })
+                .addApi(Auth.CREDENTIALS_API)
+                .build();
+        mCredentialsClient.connect();
     }
 
-    private void runFluxCMigration() {
-        // If the migration was not done and if we have something to migrate
-        if ((!AppPrefs.wasAccessTokenMigrated() || !AppPrefs.wereSelfHostedSitesMigratedToFluxC()
-                || !AppPrefs.wereDraftsMigratedToFluxC())
-                && (WPLegacyMigrationUtils.hasSelfHostedSiteToMigrate(this)
-                || WPLegacyMigrationUtils.getLatestDeprecatedAccessToken(this) != null
-                || WPLegacyMigrationUtils.hasDraftsToMigrate(this))) {
-            sIsMigrationInProgress = true;
-
-            // No connection? Then exit and ask the user to come back.
-            if (!NetworkUtils.isNetworkAvailable(this)) {
-                AppLog.i(T.DB, "No connection - aborting migration");
-                ToastUtils.showToast(this, getResources().getString(R.string.migration_error_not_connected),
-                        ToastUtils.Duration.LONG);
-                new Handler().postDelayed(sShutdown, 3500);
-                return;
-            }
-
-            migrateAccessToken();
-        }
-    }
-
-    private void migrateAccessToken() {
-        // Migrate access token AccountStore
-        if (!AppPrefs.wasAccessTokenMigrated() && !mAccountStore.hasAccessToken()) {
-            AppLog.i(T.DB, "No access token found in FluxC - attempting to migrate existing one");
-            // It will take some time to update the access token in the AccountStore if it was migrated
-            // so it will be set to the migrated token
-            String migratedToken = WPLegacyMigrationUtils.migrateAccessTokenToAccountStore(this, mDispatcher);
-            if (!TextUtils.isEmpty(migratedToken)) {
-                AppLog.i(T.DB, "Access token successfully migrated to FluxC - fetching accounts and sites");
-                AppPrefs.setAccessTokenMigrated(true);
-
-                mDispatcher.dispatch(AccountActionBuilder.newFetchAccountAction());
-                mDispatcher.dispatch(AccountActionBuilder.newFetchSettingsAction());
-                mDispatcher.dispatch(SiteActionBuilder.newFetchSitesAction());
-                return;
-            }
-            // Even if there was no token to migrate, turn this flag on so we don't attempt to migrate again
-            AppPrefs.setAccessTokenMigrated(true);
-        }
-
-        migrateSelfHostedSites();
-    }
-
-    private void migrateSelfHostedSites() {
-        if (!AppPrefs.wereSelfHostedSitesMigratedToFluxC()) {
-            List<SiteModel> siteList = WPLegacyMigrationUtils.migrateSelfHostedSitesFromDeprecatedDB(this, mDispatcher);
-            if (siteList != null && !siteList.isEmpty()) {
-                AppLog.i(T.DB, "Finished migrating " + siteList.size() + " self-hosted sites - fetching site info");
-                AppPrefs.setSelfHostedSitesMigratedToFluxC(true);
-                mRemainingSelfHostedSitesToFetch = siteList.size();
-                for (SiteModel siteModel : siteList) {
-                    mDispatcher.dispatch(SiteActionBuilder.newFetchSiteAction(siteModel));
+    private void sanitizeMediaUploadStateForSite() {
+        int siteLocalId = AppPrefs.getSelectedSite();
+        final SiteModel selectedSite = mSiteStore.getSiteByLocalId(siteLocalId);
+        if (selectedSite != null) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    UploadService.sanitizeMediaUploadStateForSite(mMediaStore, mDispatcher, selectedSite);
                 }
-                return;
-            } else {
-                AppLog.i(T.DB, "No self-hosted sites to migrate");
-                AppPrefs.setSelfHostedSitesMigratedToFluxC(true);
-            }
-        } else {
-            AppLog.i(T.DB, "Self-hosted sites have already been migrated");
+            }).start();
         }
-
-        migrateDrafts();
-    }
-
-    private void migrateDrafts() {
-        // Migrate drafts to FluxC
-        if (!AppPrefs.wereDraftsMigratedToFluxC()) {
-            WPLegacyMigrationUtils.migrateDraftsFromDeprecatedDB(this, mDispatcher, mSiteStore);
-            AppPrefs.setDraftsMigratedToFluxC(true);
-        }
-
-        AppLog.i(T.DB, "Migration complete!");
-        endMigration();
-    }
-
-    private void endMigration() {
-        AppLog.i(T.DB, "Ending migration to FluxC");
-        sIsMigrationInProgress = false;
-        if (sMigrationListener != null) {
-            sMigrationListener.onCompletion();
-            sMigrationListener = null;
-        }
-    }
-
-    public static void registerMigrationListener(MigrationListener listener) {
-        sMigrationListener = listener;
     }
 
     private void initAnalytics(final long elapsedTimeOnCreate) {
-        AnalyticsTracker.registerTracker(new AnalyticsTrackerMixpanel(getContext(), BuildConfig.MIXPANEL_TOKEN));
         AnalyticsTracker.registerTracker(new AnalyticsTrackerNosara(getContext()));
         AnalyticsTracker.init(getContext());
 
@@ -386,7 +315,6 @@ public class WordPress extends MultiDexApplication {
         if (oldVersionCode == 0) {
             // Track application installed if there isn't old version code
             AnalyticsTracker.track(Stat.APPLICATION_INSTALLED);
-            AppPrefs.setVisualEditorPromoRequired(false);
         }
         if (oldVersionCode != 0 && oldVersionCode < versionCode) {
             Map<String, Long> properties = new HashMap<String, Long>(1);
@@ -415,10 +343,8 @@ public class WordPress extends MultiDexApplication {
 
         // Refresh account informations
         if (mAccountStore.hasAccessToken()) {
-            if (!sIsMigrationInProgress) {
-                mDispatcher.dispatch(AccountActionBuilder.newFetchAccountAction());
-                mDispatcher.dispatch(AccountActionBuilder.newFetchSettingsAction());
-            }
+            mDispatcher.dispatch(AccountActionBuilder.newFetchAccountAction());
+            mDispatcher.dispatch(AccountActionBuilder.newFetchSettingsAction());
             NotificationsUpdateService.startService(getContext());
         }
     }
@@ -517,6 +443,10 @@ public class WordPress extends MultiDexApplication {
         AnalyticsTracker.track(Stat.ACCOUNT_LOGOUT);
 
         removeWpComUserRelatedData(getApplicationContext());
+
+        if (mCredentialsClient != null && mCredentialsClient.isConnected()) {
+            Auth.CredentialsApi.disableAutoSignIn(mCredentialsClient);
+        }
     }
 
     @SuppressWarnings("unused")
@@ -539,23 +469,15 @@ public class WordPress extends MultiDexApplication {
 
     @SuppressWarnings("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onSiteChanged(OnSiteChanged event) {
-        if (!sIsMigrationInProgress || sMigrationListener == null) {
-            return;
+    public void onParseError(OnUnexpectedError event) {
+        AppLog.d(T.API, "Receiving OnUnexpectedError event, message: " + event.exception.getMessage());
+        String description = "FluxC: " + event.description;
+        if (event.extras != null) {
+            for (String key : event.extras.keySet()) {
+                CrashlyticsUtils.setString(key, event.extras.get(key));
+            }
         }
-
-        if (mRemainingSelfHostedSitesToFetch == 0) {
-            // Token has been migrated, and any WP.com sites have been fetched
-            // Attempt to migrate self-hosted sites
-            AppLog.i(T.DB, "Access token migrated and WP.com sites fetched - attempting to migrate self-hosted sites");
-            migrateSelfHostedSites();
-        } else if (mRemainingSelfHostedSitesToFetch > 1) {
-            mRemainingSelfHostedSitesToFetch--;
-            AppLog.i(T.DB, "Self-hosted sites remaining to fetch for migration: " + mRemainingSelfHostedSitesToFetch);
-        } else {
-            AppLog.i(T.DB, "The last self-hosted site has been fetched - starting draft migration");
-            migrateDrafts();
-        }
+        CrashlyticsUtils.logException(event.exception, event.type, description);
     }
 
     public void removeWpComUserRelatedData(Context context) {
@@ -575,6 +497,10 @@ public class WordPress extends MultiDexApplication {
 
         // reset default account
         mDispatcher.dispatch(AccountActionBuilder.newSignOutAction());
+        // delete site-associated themes (keep WP.com themes cached)
+        for (SiteModel site : mSiteStore.getSites()) {
+            mDispatcher.dispatch(ThemeActionBuilder.newRemoveSiteThemesAction(site));
+        }
         // delete wpcom and jetpack sites
         mDispatcher.dispatch(SiteActionBuilder.newRemoveWpcomAndJetpackSitesAction());
 
@@ -685,6 +611,26 @@ public class WordPress extends MultiDexApplication {
     }
 
     /**
+     * Gets a field from the project's BuildConfig using reflection. This is useful when flavors
+     * are used at the project level to set custom fields.
+     * based on: https://code.google.com/p/android/issues/detail?id=52962#c38
+     * @param activity            Used to get the Application instance
+     * @param configValueName     The name of the field-to-access
+     * @return                    The string value of the field, or empty string if the field is not found.
+     */
+    public static String getBuildConfigString(Activity activity, String configValueName) {
+        if (!BuildConfig.DEBUG) return "";
+
+        String value = (String) WordPress.getBuildConfigValue(activity.getApplication(), configValueName);
+        if (!TextUtils.isEmpty(value)) {
+            AppLog.d(AppLog.T.NUX, "Auto-filled from build config: " + configValueName);
+            return value;
+        }
+
+        return "";
+    }
+
+    /**
      * Detect when the app goes to the background and come back to the foreground.
      *
      * Turns out that when your app has no more visible UI, a callback is triggered.
@@ -696,13 +642,15 @@ public class WordPress extends MultiDexApplication {
      */
     private class ApplicationLifecycleMonitor implements Application.ActivityLifecycleCallbacks, ComponentCallbacks2 {
         private final int DEFAULT_TIMEOUT = 2 * 60; // 2 minutes
+        private final long MAX_ACTIVITY_TRANSITION_TIME_MS = 2000;
+
         private Date mLastPingDate;
         private Date mApplicationOpenedDate;
-        boolean mFirstActivityResumed = true;
         private Timer mActivityTransitionTimer;
         private TimerTask mActivityTransitionTimerTask;
-        private final long MAX_ACTIVITY_TRANSITION_TIME_MS = 2000;
-        boolean mIsInBackground = true;
+        private boolean mConnectionReceiverRegistered;
+
+        boolean mFirstActivityResumed = true;
 
         @Override
         public void onConfigurationChanged(final Configuration newConfig) {
@@ -767,37 +715,47 @@ public class WordPress extends MultiDexApplication {
          * Our implementation uses `onActivityPaused` and `onActivityResumed` of ApplicationLifecycleMonitor
          * to start and stop the timer that detects when the app goes to background.
          *
-         * So when the user is simply navigating between the activities, the onActivityPaused() calls `startActivityTransitionTimer`
-         * and starts the timer, but almost immediately the new activity being entered, the ApplicationLifecycleMonitor cancels the timer
-         * in its onActivityResumed method, that in order calls `stopActivityTransitionTimer`.
-         * And so mIsInBackground would be false.
+         * So when the user is simply navigating between the activities, the onActivityPaused()
+         * calls `startActivityTransitionTimer` and starts the timer, but almost immediately the new activity being
+         * entered, the ApplicationLifecycleMonitor cancels the timer in its onActivityResumed method, that in order
+         * calls `stopActivityTransitionTimer` and so mIsInBackground would be false.
          *
-         * In the case the app is sent to background, the TimerTask is instead executed, and the code that handles all the background logic is run.
+         * In the case the app is sent to background, the TimerTask is instead executed, and the code that handles all
+         * the background logic is run.
          */
         private void startActivityTransitionTimer() {
             this.mActivityTransitionTimer = new Timer();
             this.mActivityTransitionTimerTask = new TimerTask() {
                 public void run() {
-                    AppLog.i(T.UTILS, "App goes to background");
-                    // We're in the Background
-                    mIsInBackground = true;
-                    String lastActivityString = AppPrefs.getLastActivityStr();
-                    ActivityId lastActivity = ActivityId.getActivityIdFromName(lastActivityString);
-                    Map<String, Object> properties = new HashMap<String, Object>();
-                    properties.put("last_visible_screen", lastActivity.toString());
-                    if (mApplicationOpenedDate != null) {
-                        Date now = new Date();
-                        properties.put("time_in_app", DateTimeUtils.secondsBetween(now, mApplicationOpenedDate));
-                        mApplicationOpenedDate = null;
-                    }
-                    AnalyticsTracker.track(AnalyticsTracker.Stat.APPLICATION_CLOSED, properties);
-                    AnalyticsTracker.endSession(false);
-                    ConnectionChangeReceiver.setEnabled(WordPress.this, false);
+                    onAppGoesToBackground();
                 }
             };
 
             this.mActivityTransitionTimer.schedule(mActivityTransitionTimerTask,
                     MAX_ACTIVITY_TRANSITION_TIME_MS);
+        }
+
+        private void onAppGoesToBackground() {
+            AppLog.i(T.UTILS, "App goes to background");
+            sAppIsInTheBackground = true;
+            String lastActivityString = AppPrefs.getLastActivityStr();
+            ActivityId lastActivity = ActivityId.getActivityIdFromName(lastActivityString);
+            Map<String, Object> properties = new HashMap<String, Object>();
+            properties.put("last_visible_screen", lastActivity.toString());
+            if (mApplicationOpenedDate != null) {
+                Date now = new Date();
+                properties.put("time_in_app", DateTimeUtils.secondsBetween(now, mApplicationOpenedDate));
+                mApplicationOpenedDate = null;
+            }
+            AnalyticsTracker.track(AnalyticsTracker.Stat.APPLICATION_CLOSED, properties);
+            AnalyticsTracker.endSession(false);
+            // Methods onAppComesFromBackground / onAppGoesToBackground are only workarounds to track when the
+            // app goes to or comes from background, but they are not 100% reliable, we should avoid unregistering
+            // the receiver twice.
+            if (mConnectionReceiverRegistered) {
+                mConnectionReceiverRegistered = false;
+                unregisterReceiver(ConnectionChangeReceiver.getInstance());
+            }
         }
 
         private void stopActivityTransitionTimer() {
@@ -809,7 +767,7 @@ public class WordPress extends MultiDexApplication {
                 this.mActivityTransitionTimer.cancel();
             }
 
-            mIsInBackground = false;
+            sAppIsInTheBackground = false;
         }
 
         /**
@@ -819,10 +777,21 @@ public class WordPress extends MultiDexApplication {
          */
         private void onAppComesFromBackground(Activity activity) {
             AppLog.i(T.UTILS, "App comes from background");
-            ConnectionChangeReceiver.setEnabled(WordPress.this, true);
+            // https://developer.android.com/reference/android/net/ConnectivityManager.html
+            // Apps targeting Android 7.0 (API level 24) and higher do not receive this broadcast if they
+            // declare the broadcast receiver in their manifest. Apps will still receive broadcasts if they
+            // register their BroadcastReceiver with Context.registerReceiver() and that context is still valid.
+            if (!mConnectionReceiverRegistered) {
+                mConnectionReceiverRegistered = true;
+                registerReceiver(ConnectionChangeReceiver.getInstance(),
+                        new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+            }
             AnalyticsUtils.refreshMetadata(mAccountStore, mSiteStore);
             mApplicationOpenedDate = new Date();
-            AnalyticsTracker.track(AnalyticsTracker.Stat.APPLICATION_OPENED);
+            Map<String, Boolean> properties = new HashMap<>(1);
+            properties.put("pin_lock_enabled", AppLockManager.getInstance().getAppLock() != null
+                    && AppLockManager.getInstance().getAppLock().isPasswordLocked());
+            AnalyticsTracker.track(Stat.APPLICATION_OPENED, properties);
             if (NetworkUtils.isNetworkAvailable(mContext)) {
                 // Refresh account informations and Notifications
                 if (mAccountStore.hasAccessToken()) {
@@ -835,13 +804,11 @@ public class WordPress extends MultiDexApplication {
                     }
                 }
 
+                // verify media is sanitized
+                sanitizeMediaUploadStateForSite();
+
                 // Rate limited PN Token Update
                 updatePushNotificationTokenIfNotLimited();
-
-                // Don't update sites or delete expired stats if migration is in progress
-                if (sIsMigrationInProgress) {
-                    return;
-                }
 
                 // Rate limited WPCom blog list update
                 mUpdateSiteList.runIfNotLimited();
@@ -864,13 +831,13 @@ public class WordPress extends MultiDexApplication {
 
         @Override
         public void onActivityResumed(Activity activity) {
-            if (mIsInBackground) {
+            if (sAppIsInTheBackground) {
                 // was in background before
                 onAppComesFromBackground(activity);
             }
             stopActivityTransitionTimer();
 
-            mIsInBackground = false;
+            sAppIsInTheBackground = false;
             if (mFirstActivityResumed) {
                 deferredInit(activity);
             }

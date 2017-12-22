@@ -185,7 +185,7 @@ public class ReaderPostPagerActivity extends AppCompatActivity
         // for related posts, show an X in the toolbar which closes the activity - using the
         // back button will navigate through related posts
         if (mIsRelatedPostView) {
-            mToolbar.setNavigationIcon(R.drawable.ic_close_white_24dp);
+            mToolbar.setNavigationIcon(R.drawable.ic_cross_white_24dp);
             mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -532,7 +532,7 @@ public class ReaderPostPagerActivity extends AppCompatActivity
     @Override
     public boolean onOptionsItemSelected(final MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
-            onBackPressed();
+            finish();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -674,6 +674,8 @@ public class ReaderPostPagerActivity extends AppCompatActivity
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        if (isFinishing()) return;
+
                         AppLog.d(AppLog.T.READER, "reader pager > creating adapter");
                         PostPagerAdapter adapter =
                                 new PostPagerAdapter(getFragmentManager(), idList);

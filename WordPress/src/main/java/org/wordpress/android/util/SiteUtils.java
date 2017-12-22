@@ -1,10 +1,19 @@
 package org.wordpress.android.util;
 
+import android.text.TextUtils;
+
 import org.wordpress.android.fluxc.model.SiteModel;
+import org.wordpress.android.fluxc.store.SiteStore;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SiteUtils {
     public static String getSiteNameOrHomeURL(SiteModel site) {
-        String siteName = getSiteName(site);
+        String siteName = site.getName();
+        if (siteName == null) {
+            return "";
+        }
         if (siteName.trim().length() == 0) {
             siteName = getHomeURLOrHostName(site);
         }
@@ -14,24 +23,38 @@ public class SiteUtils {
     public static String getHomeURLOrHostName(SiteModel site) {
         String homeURL = UrlUtils.removeScheme(site.getUrl());
         homeURL = StringUtils.removeTrailingSlash(homeURL);
-        if (homeURL.length() == 0) {
+        if (TextUtils.isEmpty(homeURL)) {
             return UrlUtils.getHost(site.getXmlRpcUrl());
         }
         return homeURL;
-    }
-
-    public static String getSiteName(SiteModel site) {
-        return StringUtils.unescapeHTML(site.getName());
     }
 
     /**
      * @return true if the site is WPCom or Jetpack and is not private
      */
     public static boolean isPhotonCapable(SiteModel site) {
-        return SiteUtils.isAccessibleViaWPComAPI(site) && !site.isPrivate();
+        return SiteUtils.isAccessedViaWPComRest(site) && !site.isPrivate();
     }
 
-    public static boolean isAccessibleViaWPComAPI(SiteModel site) {
-        return site.isWPCom() || site.isJetpackConnected();
+    public static boolean isAccessedViaWPComRest(SiteModel site) {
+        return site.getOrigin() == SiteModel.ORIGIN_WPCOM_REST;
+    }
+
+    public static String getSiteIconUrl(SiteModel site, int size) {
+        if (!TextUtils.isEmpty(site.getIconUrl())) {
+            return PhotonUtils.getPhotonImageUrl(site.getIconUrl(), size, size, PhotonUtils.Quality.HIGH);
+        } else {
+            return GravatarUtils.blavatarFromUrl(site.getUrl(), size);
+        }
+    }
+
+    public static ArrayList<Integer> getCurrentSiteIds(SiteStore siteStore, boolean selfhostedOnly) {
+        ArrayList<Integer> siteIDs = new ArrayList<>();
+        List<SiteModel> sites = selfhostedOnly ? siteStore.getSitesAccessedViaXMLRPC() : siteStore.getSites();
+        for (SiteModel site : sites) {
+            siteIDs.add(site.getId());
+        }
+
+        return siteIDs;
     }
 }

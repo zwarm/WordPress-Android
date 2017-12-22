@@ -38,6 +38,7 @@ import org.wordpress.android.ui.FilteredRecyclerView;
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.NetworkUtils;
+import org.wordpress.android.util.SmartToast;
 import org.wordpress.android.util.ToastUtils;
 
 import java.util.ArrayList;
@@ -50,7 +51,7 @@ public class CommentsListFragment extends Fragment {
     public static final int COMMENTS_PER_PAGE = 30;
 
     interface OnCommentSelectedListener {
-        void onCommentSelected(long commentId);
+        void onCommentSelected(long commentId, CommentStatus statusFilter);
     }
 
     public enum CommentStatusCriteria implements FilterCriteria {
@@ -106,6 +107,9 @@ public class CommentsListFragment extends Fragment {
         ((WordPress) getActivity().getApplication()).component().inject(this);
         mDispatcher.register(this);
         updateSiteOrFinishActivity(savedInstanceState);
+        if (savedInstanceState == null) {
+            SmartToast.show(getActivity(), SmartToast.SmartToastType.COMMENTS_LONG_PRESS);
+        }
     }
 
     @Override
@@ -133,7 +137,7 @@ public class CommentsListFragment extends Fragment {
 
     private CommentAdapter getAdapter() {
         if (mAdapter == null) {
-             // called after comments have been loaded
+            // called after comments have been loaded
             CommentAdapter.OnDataLoadedListener dataLoadedListener = new CommentAdapter.OnDataLoadedListener() {
                 @Override
                 public void onDataLoaded(boolean isEmpty) {
@@ -185,12 +189,13 @@ public class CommentsListFragment extends Fragment {
                     if (mActionMode == null) {
                         mFilteredCommentsView.invalidate();
                         if (getActivity() instanceof OnCommentSelectedListener) {
-                            ((OnCommentSelectedListener) getActivity()).onCommentSelected(comment.getRemoteCommentId());
+                            ((OnCommentSelectedListener) getActivity()).onCommentSelected(comment.getRemoteCommentId(), mCommentStatusFilter.toCommentStatus());
                         }
                     } else {
                         getAdapter().toggleItemSelected(position, view);
                     }
                 }
+
                 @Override
                 public void onCommentLongPressed(int position, View view) {
                     // enable CAB if it's not already enabled
@@ -277,7 +282,7 @@ public class CommentsListFragment extends Fragment {
 
             @Override
             public void onLoadFilterCriteriaOptionsAsync(FilteredRecyclerView.FilterCriteriaAsyncLoaderListener listener,
-                                               boolean refresh) {
+                                                         boolean refresh) {
             }
 
             @Override
@@ -347,7 +352,7 @@ public class CommentsListFragment extends Fragment {
         // the following will change the look and feel of the toolbar to match the current design
         mFilteredCommentsView.setToolbarBackgroundColor(ContextCompat.getColor(getActivity(), R.color.blue_medium));
         mFilteredCommentsView.setToolbarSpinnerTextColor(ContextCompat.getColor(getActivity(), R.color.white));
-        mFilteredCommentsView.setToolbarSpinnerDrawable(R.drawable.arrow);
+        mFilteredCommentsView.setToolbarSpinnerDrawable(R.drawable.ic_dropdown_blue_light_24dp);
         mFilteredCommentsView.setToolbarLeftAndRightPadding(
                 getResources().getDimensionPixelSize(R.dimen.margin_filter_spinner),
                 getResources().getDimensionPixelSize(R.dimen.margin_none));
@@ -360,7 +365,7 @@ public class CommentsListFragment extends Fragment {
         super.onResume();
         if (mFilteredCommentsView.getAdapter() == null) {
             mFilteredCommentsView.setAdapter(getAdapter());
-            if (!NetworkUtils.isNetworkAvailable(getActivity())){
+            if (!NetworkUtils.isNetworkAvailable(getActivity())) {
                 ToastUtils.showToast(getActivity(), getString(R.string.error_refresh_comments_showing_older));
             }
             getAdapter().loadComments(mCommentStatusFilter.toCommentStatus());
@@ -475,7 +480,7 @@ public class CommentsListFragment extends Fragment {
     }
 
     private void moderateComments(CommentList comments, CommentStatus status) {
-        for (CommentModel comment: comments) {
+        for (CommentModel comment : comments) {
             // Preemptive update
             comment.setStatus(status.toString());
             if (shouldRemoveCommentFromList(comment)) {
@@ -500,11 +505,11 @@ public class CommentsListFragment extends Fragment {
         getAdapter().loadComments(mCommentStatusFilter.toCommentStatus());
     }
 
-    void updateEmptyView(){
+    void updateEmptyView() {
         //this is called from CommentsActivity in the case the last moment for a given type has been changed from that
         //status, leaving the list empty, so we need to update the empty view. The method inside FilteredRecyclerView
         //does the handling itself, so we only check for null here.
-        if (mFilteredCommentsView != null){
+        if (mFilteredCommentsView != null) {
             mFilteredCommentsView.updateEmptyView(EmptyViewMessageType.NO_CONTENT);
         }
     }
@@ -527,7 +532,7 @@ public class CommentsListFragment extends Fragment {
         }
 
         //immediately load/refresh whatever we have in our local db as we wait for the API call to get latest results
-        if (!loadMore){
+        if (!loadMore) {
             getAdapter().loadComments(mCommentStatusFilter.toCommentStatus());
         }
 
@@ -582,13 +587,15 @@ public class CommentsListFragment extends Fragment {
             MenuInflater inflater = actionMode.getMenuInflater();
             inflater.inflate(R.menu.menu_comments_cab, menu);
             mFilteredCommentsView.setSwipeToRefreshEnabled(false);
+            SmartToast.disableSmartToast(SmartToast.SmartToastType.COMMENTS_LONG_PRESS);
             return true;
         }
 
-        private void setItemEnabled(Menu menu, int menuId, boolean isEnabled) {
+        private void setItemEnabled(Menu menu, int menuId, boolean isEnabled, boolean isVisible) {
             final MenuItem item = menu.findItem(menuId);
-            if (item == null || item.isEnabled() == isEnabled)
+            if (item == null || (item.isEnabled() == isEnabled && item.isVisible() == isVisible))
                 return;
+            item.setVisible(isVisible);
             item.setEnabled(isEnabled);
             if (item.getIcon() != null) {
                 // must mutate the drawable to avoid affecting other instances of it
@@ -609,16 +616,16 @@ public class CommentsListFragment extends Fragment {
             boolean hasAnyNonSpam = hasSelection && selectedComments.hasAnyWithoutStatus(CommentStatus.SPAM);
             boolean hasTrash = hasSelection && selectedComments.hasAnyWithStatus(CommentStatus.TRASH);
 
-            setItemEnabled(menu, R.id.menu_approve, hasUnapproved || hasSpam || hasTrash);
-            setItemEnabled(menu, R.id.menu_unapprove, hasApproved);
-            setItemEnabled(menu, R.id.menu_spam, hasAnyNonSpam);
-            setItemEnabled(menu, R.id.menu_trash, hasSelection);
+            setItemEnabled(menu, R.id.menu_approve, hasUnapproved || hasSpam || hasTrash, true);
+            setItemEnabled(menu, R.id.menu_unapprove, hasApproved, true);
+            setItemEnabled(menu, R.id.menu_spam, hasAnyNonSpam, hasAnyNonSpam);
+            setItemEnabled(menu, R.id.menu_unspam, hasSpam && !hasAnyNonSpam, hasSpam && !hasAnyNonSpam);
+            setItemEnabled(menu, R.id.menu_trash, hasSelection, true);
 
             final MenuItem trashItem = menu.findItem(R.id.menu_trash);
             if (trashItem != null && mCommentStatusFilter == CommentStatusCriteria.TRASH) {
                 trashItem.setTitle(R.string.mnu_comment_delete_permanently);
             }
-
             return true;
         }
 
@@ -634,6 +641,9 @@ public class CommentsListFragment extends Fragment {
                 return true;
             } else if (i == R.id.menu_unapprove) {
                 moderateSelectedComments(CommentStatus.UNAPPROVED);
+                return true;
+            } else if (i == R.id.menu_unspam) {
+                moderateSelectedComments(CommentStatus.APPROVED);
                 return true;
             } else if (i == R.id.menu_spam) {
                 moderateSelectedComments(CommentStatus.SPAM);

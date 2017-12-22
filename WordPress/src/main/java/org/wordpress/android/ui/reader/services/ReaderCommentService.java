@@ -131,6 +131,7 @@ public class ReaderCommentService extends Service {
         String path = "sites/" + blogId + "/posts/" + postId + "/replies/"
                     + "?number=" + Integer.toString(ReaderConstants.READER_MAX_COMMENTS_TO_REQUEST)
                     + "&meta=likes"
+                    + "&force=wpcom"
                     + "&hierarchical=true"
                     + "&order=ASC"
                     + "&page=" + pageNumber;
@@ -138,7 +139,7 @@ public class ReaderCommentService extends Service {
         RestRequest.Listener listener = new RestRequest.Listener() {
             @Override
             public void onResponse(JSONObject jsonObject) {
-                handleUpdateCommentsResponse(jsonObject, blogId, pageNumber, resultListener);
+                handleUpdateCommentsResponse(jsonObject, blogId, postId, pageNumber, resultListener);
             }
         };
         RestRequest.ErrorListener errorListener = new RestRequest.ErrorListener() {
@@ -153,6 +154,7 @@ public class ReaderCommentService extends Service {
     }
     private static void handleUpdateCommentsResponse(final JSONObject jsonObject,
                                                      final long blogId,
+                                                     final long postId,
                                                      final int pageNumber,
                                                      final ReaderActions.UpdateResultListener resultListener) {
         if (jsonObject == null) {
@@ -167,6 +169,11 @@ public class ReaderCommentService extends Service {
 
                 ReaderDatabase.getWritableDb().beginTransaction();
                 try {
+                    // purge existing comments if this was a request for the first page of comments
+                    if (pageNumber == 1) {
+                        ReaderCommentTable.purgeCommentsForPost(blogId, postId);
+                    }
+
                     ReaderCommentList serverComments = new ReaderCommentList();
                     JSONArray jsonCommentList = jsonObject.optJSONArray("comments");
                     if (jsonCommentList != null) {

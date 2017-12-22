@@ -17,7 +17,6 @@ import org.wordpress.android.WordPress;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.store.SiteStore;
 import org.wordpress.android.util.AppLog;
-import org.wordpress.android.util.GravatarUtils;
 import org.wordpress.android.util.SiteUtils;
 import org.wordpress.android.widgets.WPNetworkImageView;
 
@@ -94,7 +93,7 @@ public class StatsWidgetConfigureAdapter extends RecyclerView.Adapter<StatsWidge
         mTextColorNormal = context.getResources().getColor(R.color.grey_dark);
         mTextColorHidden = context.getResources().getColor(R.color.grey);
 
-        mSelectedItemBackground = new ColorDrawable(context.getResources().getColor(R.color.translucent_grey_lighten_20));
+        mSelectedItemBackground = new ColorDrawable(context.getResources().getColor(R.color.grey_lighten_20_translucent_50));
 
         loadSites();
     }
@@ -211,21 +210,17 @@ public class StatsWidgetConfigureAdapter extends RecyclerView.Adapter<StatsWidge
         private List<SiteModel> getBlogsForCurrentView() {
             if (mShowHiddenSites) {
                 if (mShowSelfHostedSites) {
-                    // all self-hosted sites and all wp.com sites
                     return mSiteStore.getSites();
                 } else {
-                    // only wp.com and jetpack sites
-                    return mSiteStore.getWPComAndJetpackSites();
+                    return mSiteStore.getSitesAccessedViaWPComRest();
                 }
             } else {
                 if (mShowSelfHostedSites) {
-                    // all self-hosted sites plus visible wp.com and jetpack sites
-                    List<SiteModel> out = mSiteStore.getVisibleWPComAndJetpackSites();
-                    out.addAll(mSiteStore.getSelfHostedSites());
+                    List<SiteModel> out = mSiteStore.getVisibleSitesAccessedViaWPCom();
+                    out.addAll(mSiteStore.getSitesAccessedViaXMLRPC());
                     return out;
                 } else {
-                    // only visible wp.com and jetpack sites
-                    return mSiteStore.getVisibleWPComAndJetpackSites();
+                    return mSiteStore.getVisibleSitesAccessedViaWPCom();
                 }
             }
         }
@@ -250,8 +245,8 @@ public class StatsWidgetConfigureAdapter extends RecyclerView.Adapter<StatsWidge
             blogName = SiteUtils.getSiteNameOrHomeURL(site);
             homeURL = SiteUtils.getHomeURLOrHostName(site);
             url = site.getUrl();
-            blavatarUrl = GravatarUtils.blavatarFromUrl(url, mBlavatarSz);
-            isDotComOrJetpack = SiteUtils.isAccessibleViaWPComAPI(site);
+            blavatarUrl = SiteUtils.getSiteIconUrl(site, mBlavatarSz);
+            isDotComOrJetpack = SiteUtils.isAccessedViaWPComRest(site);
             isHidden = !site.isVisible();
         }
 

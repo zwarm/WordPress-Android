@@ -13,7 +13,7 @@ import com.helpshift.exceptions.InstallException;
 import com.helpshift.support.Support;
 import com.helpshift.support.Support.Delegate;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.wordpress.android.BuildConfig;
 import org.wordpress.android.analytics.AnalyticsTracker;
 import org.wordpress.android.analytics.AnalyticsTracker.Stat;
@@ -30,10 +30,14 @@ import java.util.Set;
 
 public class HelpshiftHelper {
     public static String ORIGIN_KEY = "ORIGIN_KEY";
+    public static String EXTRA_TAGS_KEY = "EXTRA_TAGS_KEY";
     private static String HELPSHIFT_SCREEN_KEY = "helpshift_screen";
     private static String HELPSHIFT_ORIGIN_KEY = "origin";
     private static HelpshiftHelper mInstance = null;
     private static HashMap<String, Object> mMetadata = new HashMap<String, Object>();
+
+    public static final String ENTERED_URL_KEY = "ENTERED_URL_KEY";
+    public static final String ENTERED_USERNAME_KEY = "ENTERED_USERNAME_KEY";
 
     public enum MetadataKey {
         USER_ENTERED_URL("user-entered-url"),
@@ -57,8 +61,16 @@ public class HelpshiftHelper {
         ORIGIN_LOGIN_SCREEN_JETPACK("origin:jetpack-login-screen"),
         ORIGIN_SIGNUP_SCREEN("origin:signup-screen"),
         ORIGIN_ME_SCREEN_HELP("origin:me-screen-help"),
-        ORIGIN_START_OVER("origin:start-over"),
-        ORIGIN_DELETE_SITE("origin:delete-site");
+        ORIGIN_DELETE_SITE("origin:delete-site"),
+        ORIGIN_FEEDBACK_AZTEC("origin:aztec-feedback"),
+        ORIGIN_LOGIN_EMAIL("origin:login-email"),
+        ORIGIN_LOGIN_MAGIC_LINK("origin:login-magic-link"),
+        ORIGIN_LOGIN_EMAIL_PASSWORD("origin:login-wpcom-password"),
+        ORIGIN_LOGIN_2FA("origin:login-2fa"),
+        ORIGIN_LOGIN_SITE_ADDRESS("origin:login-site-address"),
+        ORIGIN_LOGIN_SOCIAL("origin:login-social"),
+        ORIGIN_LOGIN_USERNAME_PASSWORD("origin:login-username-password"),
+        CONNECTING_JETPACK("connecting_jetpack");
 
         private final String mStringValue;
 
@@ -76,7 +88,7 @@ public class HelpshiftHelper {
             }
             String[] res = new String[tags.length];
             for (int i = 0; i < res.length; i++) {
-                res[0] = tags[0].toString();
+                res[i] = tags[i].toString();
             }
             return res;
         }
@@ -105,6 +117,10 @@ public class HelpshiftHelper {
             AppLog.e(T.UTILS, e);
         }
         Support.setDelegate(new Delegate() {
+            @Override
+            public void conversationEnded() {
+            }
+
             @Override
             public void sessionBegan() {
             }
@@ -157,16 +173,26 @@ public class HelpshiftHelper {
      * Automatically add default metadata to this conversation
      */
     public void showConversation(Activity activity, SiteStore siteStore, Tag origin, String wpComUsername) {
+        showConversation(activity, siteStore, origin, wpComUsername, null);
+    }
+
+    public void showConversation(Activity activity, SiteStore siteStore, Tag origin, String wpComUsername, Tag[] extraTags) {
         if (origin == null) {
             origin = Tag.ORIGIN_UNKNOWN;
         }
+
         // track origin and helpshift screen in analytics
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put(HELPSHIFT_SCREEN_KEY, "conversation");
         properties.put(HELPSHIFT_ORIGIN_KEY, origin.toString());
         AnalyticsTracker.track(Stat.SUPPORT_OPENED_HELPSHIFT_SCREEN, properties);
+
         // Add tags to Helpshift metadata
-        addTags(new Tag[]{origin});
+        if (extraTags == null) {
+            extraTags = new Tag[]{};
+        }
+        extraTags = ArrayUtils.add(extraTags, origin);
+        addTags(extraTags);
         HashMap config = getHelpshiftConfig(activity, siteStore, wpComUsername);
         Support.showConversation(activity, config);
     }
@@ -175,17 +201,23 @@ public class HelpshiftHelper {
      * Show FAQ activity
      * Automatically add default metadata to this conversation (users can start a conversation from FAQ screen).
      */
-    public void showFAQ(Activity activity, SiteStore siteStore, Tag origin, String wpComUsername) {
+    public void showFAQ(Activity activity, SiteStore siteStore, Tag origin, String wpComUsername, Tag[] extraTags) {
         if (origin == null) {
             origin = Tag.ORIGIN_UNKNOWN;
         }
+
         // track origin and helpshift screen in analytics
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put(HELPSHIFT_SCREEN_KEY, "faq");
         properties.put(HELPSHIFT_ORIGIN_KEY, origin.toString());
         AnalyticsTracker.track(Stat.SUPPORT_OPENED_HELPSHIFT_SCREEN, properties);
+
         // Add tags to Helpshift metadata
-        addTags(new Tag[]{origin});
+        if (extraTags == null) {
+            extraTags = new Tag[]{};
+        }
+        extraTags = ArrayUtils.add(extraTags, origin);
+        addTags(extraTags);
         HashMap config = getHelpshiftConfig(activity, siteStore, wpComUsername);
         Support.showFAQs(activity, config);
     }
@@ -263,20 +295,45 @@ public class HelpshiftHelper {
         return mMetadata.get(key.toString());
     }
 
+
+    private String getJetpackMetadataString(SiteModel site) {
+        StringBuffer sb = new StringBuffer();
+        if (site.isJetpackConnected()) {
+            sb.append("🚀✅ Jetpack connected with site ID: ");
+            sb.append(site.getSiteId());
+        } else {
+            sb.append("🚀❌ Jetpack not connected");
+            if (site.isJetpackInstalled()) {
+                sb.append(" but ✅ installed");
+            } else {
+                sb.append(" and ❌ not installed");
+            }
+        }
+        return sb.toString();
+    }
     private void addDefaultMetaData(Context context, SiteStore siteStore, String wpComUsername) {
         // Use plain text log (unfortunately Helpshift can't display this correctly)
         mMetadata.put("log", AppLog.toPlainText(context));
 
         // List blogs name and url
         int counter = 1;
-        for (SiteModel site: siteStore.getSites()) {
+        for (SiteModel site : siteStore.getSites()) {
             mMetadata.put("blog-name-" + counter, site.getName());
             mMetadata.put("blog-url-" + counter, site.getUrl());
             mMetadata.put("blog-plan-" + counter, site.getPlanId());
             if (site.isAutomatedTransfer()) {
                 mMetadata.put("is-automated-transfer-" + counter, "true");
             }
+            if (!site.isWPCom()) {
+                mMetadata.put("blog-jetpack-infos-" + counter, getJetpackMetadataString(site));
+            }
             counter += 1;
+        }
+
+        if (AnalyticsUtils.isJetpackUser(siteStore)) {
+            mMetadata.put("jetpack-user", true);
+        } else {
+            mMetadata.put("jetpack-user", false);
         }
 
         // wpcom user
@@ -303,6 +360,8 @@ public class HelpshiftHelper {
         return config;
     }
 
+    // Deprecated. Used by the old login activities and may be removed with the old code.
+    // 2017.07.30 - Aerych
     public static Tag chooseHelpshiftLoginTag(boolean isJetpackAuth, boolean isWPComMode) {
         // Tag assignment:
         //  ORIGIN_LOGIN_SCREEN_JETPACK when trying to view stats on a Jetpack site and need to login with WPCOM

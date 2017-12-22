@@ -1,25 +1,35 @@
 package org.wordpress.android.ui.posts;
 
+import android.app.Activity;
+import android.app.FragmentManager;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.wordpress.android.WordPress;
 import org.wordpress.android.analytics.AnalyticsTracker;
+import org.wordpress.android.fluxc.model.MediaModel;
 import org.wordpress.android.fluxc.model.PostModel;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.model.post.PostLocation;
 import org.wordpress.android.fluxc.model.post.PostStatus;
+import org.wordpress.android.fluxc.store.PostStore;
+import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.util.AnalyticsUtils;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.DateTimeUtils;
 import org.wordpress.android.util.HtmlUtils;
+import org.wordpress.android.widgets.WPAlertDialogFragment;
 
 import java.text.BreakIterator;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -101,25 +111,31 @@ public class PostUtils {
 
     public static void trackSavePostAnalytics(PostModel post, SiteModel site) {
         PostStatus status = PostStatus.fromPost(post);
+        Map<String, Object> properties = new HashMap<>();
         switch (status) {
             case PUBLISHED:
                 if (!post.isLocalDraft()) {
-                    AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.EDITOR_UPDATED_POST, site);
+                    properties.put("post_id", post.getRemotePostId());
+                    AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.EDITOR_UPDATED_POST, site, properties);
                 } else {
-                    // Analytics for the event EDITOR_PUBLISHED_POST are tracked in PostUploadService
+                    // Analytics for the event EDITOR_PUBLISHED_POST are tracked in PostUploadHandler
                 }
                 break;
             case SCHEDULED:
                 if (!post.isLocalDraft()) {
-                    AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.EDITOR_UPDATED_POST, site);
+                    properties.put("post_id", post.getRemotePostId());
+                    AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.EDITOR_UPDATED_POST, site, properties);
                 } else {
-                    Map<String, Object> properties = new HashMap<>();
                     properties.put("word_count", AnalyticsUtils.getWordCount(post.getContent()));
+                    properties.put("editor_source", AppPrefs.isAztecEditorEnabled() ? "aztec" :
+                            AppPrefs.isVisualEditorEnabled() ? "hybrid" : "legacy");
+
                     AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.EDITOR_SCHEDULED_POST, site,
                             properties);
                 }
                 break;
             case DRAFT:
+                properties.put("post_id", post.getRemotePostId());
                 AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.EDITOR_SAVED_DRAFT, site);
                 break;
             default:
@@ -127,8 +143,22 @@ public class PostUtils {
         }
     }
 
+    public static void showCustomDialog(Activity activity, String title, String message,
+                                        String positiveButton, String negativeButton, String tag) {
+        FragmentManager fm = activity.getFragmentManager();
+        WPAlertDialogFragment saveDialog = (WPAlertDialogFragment) fm.findFragmentByTag(tag);
+        if (saveDialog == null) {
+
+            saveDialog = WPAlertDialogFragment.newCustomDialog(title, message, positiveButton, negativeButton);
+        }
+        if (!saveDialog.isAdded()) {
+            saveDialog.show(fm, tag);
+        }
+    }
+
     public static boolean isPublishable(PostModel post) {
-        return !(post.getContent().isEmpty() && post.getExcerpt().isEmpty() && post.getTitle().isEmpty());
+        return post != null
+                && !(post.getContent().isEmpty() && post.getExcerpt().isEmpty() && post.getTitle().isEmpty());
     }
 
     public static boolean hasEmptyContentFields(PostModel post) {
@@ -250,15 +280,73 @@ public class PostUtils {
         return -1;
     }
 
-    public static int indexOfFeaturedMediaIdInList(final long mediaId, List<PostModel> posts) {
+    public static @NotNull List<Integer> indexesOfFeaturedMediaIdInList(final long mediaId, List<PostModel> posts) {
+        List<Integer> list = new ArrayList<>();
         if (mediaId == 0) {
-            return -1;
+            return list;
         }
         for (int i = 0; i < posts.size(); i++) {
             if (posts.get(i).getFeaturedImageId() == mediaId) {
-                return i;
+                list.add(i);
             }
         }
-        return -1;
+        return list;
+    }
+
+    static boolean shouldPublishImmediately(PostModel postModel) {
+        if (!shouldPublishImmediatelyOptionBeAvailable(postModel)) {
+            return false;
+        }
+        Date pubDate = DateTimeUtils.dateFromIso8601(postModel.getDateCreated());
+        Date now = new Date();
+        // Publish immediately for posts that don't have any date set yet and drafts with publish dates in the past
+        return pubDate == null || !pubDate.after(now);
+    }
+
+    // Only drafts should have the option to publish immediately to avoid user confusion
+    static boolean shouldPublishImmediatelyOptionBeAvailable(PostModel postModel) {
+        return PostStatus.fromPost(postModel) == PostStatus.DRAFT;
+    }
+
+    public static void updatePublishDateIfShouldBePublishedImmediately(PostModel postModel) {
+        if (shouldPublishImmediately(postModel)) {
+            postModel.setDateCreated(DateTimeUtils.iso8601FromDate(new Date()));
+        }
+    }
+
+    static boolean updatePostTitleIfDifferent(PostModel post, String newTitle) {
+        if (post.getTitle().compareTo(newTitle) != 0) {
+            post.setTitle(newTitle);
+            return true;
+        }
+        return false;
+    }
+
+    static boolean updatePostContentIfDifferent(PostModel post, String newContent) {
+        if (post.getContent().compareTo(newContent) != 0) {
+            post.setContent(newContent);
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isFirstTimePublish(PostModel post) {
+        return PostStatus.fromPost(post) == PostStatus.DRAFT
+                || (PostStatus.fromPost(post) == PostStatus.PUBLISHED && post.isLocalDraft());
+    }
+
+    public static Set<PostModel> getPostsThatIncludeThisMedia(PostStore postStore, List<MediaModel> mediaModelList) {
+        // if there' a Post to which the retried media belongs, clear their status
+        HashSet<PostModel> postsThatContainListedMedia = new HashSet<>();
+        for (MediaModel media : mediaModelList) {
+            if (media.getLocalPostId() > 0) {
+                PostModel post = postStore.getPostByLocalPostId(media.getLocalPostId());
+                if (post != null) {
+                    postsThatContainListedMedia.add(post);
+                }
+            }
+        }
+
+        return postsThatContainListedMedia;
     }
 }

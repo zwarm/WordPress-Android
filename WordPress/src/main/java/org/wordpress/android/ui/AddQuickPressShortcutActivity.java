@@ -20,19 +20,19 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.volley.toolbox.NetworkImageView;
 
+import org.apache.commons.text.StringEscapeUtils;
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.store.SiteStore;
+import org.wordpress.android.fluxc.tools.FluxCImageLoader;
 import org.wordpress.android.ui.accounts.SignInActivity;
 import org.wordpress.android.ui.posts.EditPostActivity;
-import org.wordpress.android.util.GravatarUtils;
 import org.wordpress.android.util.SiteUtils;
-import org.wordpress.android.util.StringUtils;
+import org.wordpress.android.util.ToastUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +49,7 @@ public class AddQuickPressShortcutActivity extends ListActivity {
     public List<String> accountNames = new ArrayList<>();
 
     @Inject SiteStore mSiteStore;
+    @Inject FluxCImageLoader mImageLoader;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -91,7 +92,7 @@ public class AddQuickPressShortcutActivity extends ListActivity {
                 accountUsers[i] = site.getUsername();
                 siteIds[i] = site.getId();
                 if (site.getUrl() != null) {
-                    blavatars[i] = GravatarUtils.blavatarFromUrl(site.getUrl(), 60);
+                    blavatars[i] = SiteUtils.getSiteIconUrl(site, 60);
                 } else {
                     blavatars[i] = "";
                 }
@@ -122,14 +123,14 @@ public class AddQuickPressShortcutActivity extends ListActivity {
         dialogBuilder.setTitle(R.string.quickpress_add_alert_title);
 
         final EditText quickPressShortcutName = new EditText(AddQuickPressShortcutActivity.this);
-        quickPressShortcutName.setText("QP " + StringUtils.unescapeHTML(accountNames.get(position)));
+        quickPressShortcutName.setText("QP " + StringEscapeUtils.unescapeHtml4(accountNames.get(position)));
         dialogBuilder.setView(quickPressShortcutName);
 
         dialogBuilder.setPositiveButton(R.string.add, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 if (TextUtils.isEmpty(quickPressShortcutName.getText())) {
-                    Toast t = Toast.makeText(AddQuickPressShortcutActivity.this, R.string.quickpress_add_error, Toast.LENGTH_LONG);
-                    t.show();
+                    ToastUtils.showToast(AddQuickPressShortcutActivity.this, R.string.quickpress_add_error,
+                            ToastUtils.Duration.LONG);
                 } else {
                     Intent shortcutIntent = new Intent(getApplicationContext(), EditPostActivity.class);
                     shortcutIntent.setAction(Intent.ACTION_MAIN);
@@ -207,11 +208,11 @@ public class AddQuickPressShortcutActivity extends ListActivity {
             NetworkImageView blavatar = (NetworkImageView)view.findViewById(R.id.blavatar);
 
             blogName.setText(
-                    StringUtils.unescapeHTML(blogNames[position]));
+                    StringEscapeUtils.unescapeHtml4(blogNames[position]));
             blogUsername.setText(
-                    StringUtils.unescapeHTML(username));
-            blavatar.setErrorImageResId(R.drawable.blavatar_placeholder);
-            blavatar.setImageUrl(blavatars[position], WordPress.sImageLoader);
+                    StringEscapeUtils.unescapeHtml4(username));
+            blavatar.setErrorImageResId(R.drawable.ic_placeholder_blavatar_grey_lighten_20_40dp);
+            blavatar.setImageUrl(blavatars[position], mImageLoader);
 
             return view;
 

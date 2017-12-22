@@ -1,10 +1,11 @@
 package org.wordpress.android.ui.prefs;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.Html;
 import android.text.TextUtils;
 
@@ -20,6 +21,7 @@ import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.store.SiteStore;
 import org.wordpress.android.fluxc.store.SiteStore.OnPostFormatsChanged;
 import org.wordpress.android.models.CategoryModel;
+import org.wordpress.android.models.JetpackSettingsModel;
 import org.wordpress.android.models.SiteSettingsModel;
 import org.wordpress.android.util.LanguageUtils;
 import org.wordpress.android.util.SiteUtils;
@@ -44,8 +46,6 @@ import javax.inject.Inject;
  * - Language
  * - Username (.org only)
  * - Password (.org only)
- * - Location (local device setting, not saved remotely)
- * - Optimized Image (local device setting, not saved remotely)
  * - Default Category
  * - Default Format
  * - Related Posts
@@ -66,7 +66,7 @@ import javax.inject.Inject;
  * This class is marked abstract. This is due to the fact that .org (self-hosted) and .com sites
  * expose different API's to query and edit their respective settings (even though the options
  * offered by each is roughly the same). To get an instance of this interface class use the
- * {@link SiteSettingsInterface#getInterface(Activity, SiteModel, SiteSettingsListener)} method.
+ * {@link SiteSettingsInterface#getInterface(Context, SiteModel, SiteSettingsListener)} method.
  */
 
 public abstract class SiteSettingsInterface {
@@ -74,42 +74,47 @@ public abstract class SiteSettingsInterface {
     /**
      * Name of the {@link SharedPreferences} that is used to store local settings.
      */
-    public static final String SITE_SETTINGS_PREFS = "site-settings-prefs";
+    private static final String SITE_SETTINGS_PREFS = "site-settings-prefs";
 
     /**
      * Key used to access the language preference stored in {@link SharedPreferences}.
      */
-    public static final String LANGUAGE_PREF_KEY = "site-settings-language-pref";
+    private static final String LANGUAGE_PREF_KEY = "site-settings-language-pref";
 
     /**
      * Key used to access the default category preference stored in {@link SharedPreferences}.
      */
-    public static final String DEF_CATEGORY_PREF_KEY = "site-settings-category-pref";
+    private static final String DEF_CATEGORY_PREF_KEY = "site-settings-category-pref";
 
     /**
      * Key used to access the default post format preference stored in {@link SharedPreferences}.
      */
-    public static final String DEF_FORMAT_PREF_KEY = "site-settings-format-pref";
+    private static final String DEF_FORMAT_PREF_KEY = "site-settings-format-pref";
 
     /**
      * Identifies an Ascending (oldest to newest) sort order.
      */
-    public static final int ASCENDING_SORT = 0;
+    static final int ASCENDING_SORT = 0;
 
     /**
      * Identifies an Descending (newest to oldest) sort order.
      */
-    public static final int DESCENDING_SORT = 1;
+    static final int DESCENDING_SORT = 1;
 
     /**
      * Used to prefix keys in an analytics property list.
      */
-    protected static final String SAVED_ITEM_PREFIX = "item_saved_";
+    static final String SAVED_ITEM_PREFIX = "item_saved_";
 
     /**
      * Key for the Standard post format. Used as default if post format is not set/known.
      */
-    private static final String STANDARD_POST_FORMAT_KEY = "standard";
+    static final String STANDARD_POST_FORMAT_KEY = "standard";
+
+    /**
+     * Standard sharing button style value. Used as default value if button style is unknown.
+     */
+    private static final String STANDARD_SHARING_BUTTON_STYLE = "icon-text";
 
     /**
      * Standard post format value. Used as default display value if post format is unknown.
@@ -119,14 +124,15 @@ public abstract class SiteSettingsInterface {
     /**
      * Instantiates the appropriate (self-hosted or .com) SiteSettingsInterface.
      */
-    public static SiteSettingsInterface getInterface(Activity host, SiteModel site, SiteSettingsListener listener) {
+    @Nullable
+    public static SiteSettingsInterface getInterface(Context host, SiteModel site, SiteSettingsListener listener) {
         if (host == null || site == null) return null;
 
-        if (SiteUtils.isAccessibleViaWPComAPI(site)) {
+        if (SiteUtils.isAccessedViaWPComRest(site)) {
             return new DotComSiteSettings(host, site, listener);
         }
-        // Not implemented for self hosted sites
-        return null;
+
+        return new DotOrgSiteSettings(host, site, listener);
     }
 
     /**
@@ -137,17 +143,10 @@ public abstract class SiteSettingsInterface {
     }
 
     /**
-     * Gets the geo-tagging value
-     */
-    public boolean getGeotagging() {
-        return mSettings.location;
-    }
-
-    /**
      * Gets the default category value stored in {@link SharedPreferences}, 0 by default.
      */
     public static int getDefaultCategory(Context context) {
-        return siteSettingsPreferences(context).getInt(DEF_CATEGORY_PREF_KEY, 0);
+        return siteSettingsPreferences(context).getInt(DEF_CATEGORY_PREF_KEY, 1);
     }
 
     /**
@@ -166,21 +165,18 @@ public abstract class SiteSettingsInterface {
      * Interface callbacks for settings events.
      */
     public interface SiteSettingsListener {
+        void onSaveError(Exception error);
+        void onFetchError(Exception error);
+
         /**
          * Called when settings have been updated with remote changes.
-         *
-         * @param error
-         * null if successful
          */
-        void onSettingsUpdated(Exception error);
+        void onSettingsUpdated();
 
         /**
          * Called when attempt to update remote settings is finished.
-         *
-         * @param error
-         * null if successful
          */
-        void onSettingsSaved(Exception error);
+        void onSettingsSaved();
 
         /**
          * Called when a request to validate current credentials has completed.
@@ -197,24 +193,28 @@ public abstract class SiteSettingsInterface {
      */
     protected abstract void fetchRemoteData();
 
-    protected final Activity mActivity;
+    protected final Context mContext;
     protected final SiteModel mSite;
     protected final SiteSettingsListener mListener;
     protected final SiteSettingsModel mSettings;
     protected final SiteSettingsModel mRemoteSettings;
+    protected final JetpackSettingsModel mJpSettings;
+    protected final JetpackSettingsModel mRemoteJpSettings;
     private final Map<String, String> mLanguageCodes;
 
     @Inject SiteStore mSiteStore;
     @Inject Dispatcher mDispatcher;
 
-    protected SiteSettingsInterface(Activity host, SiteModel site, SiteSettingsListener listener) {
+    protected SiteSettingsInterface(Context host, SiteModel site, SiteSettingsListener listener) {
         ((WordPress) host.getApplicationContext()).component().inject(this);
         mDispatcher.register(this);
-        mActivity = host;
+        mContext = host;
         mSite = site;
         mListener = listener;
         mSettings = new SiteSettingsModel();
         mRemoteSettings = new SiteSettingsModel();
+        mJpSettings = new JetpackSettingsModel();
+        mRemoteJpSettings = new JetpackSettingsModel();
         mLanguageCodes = WPPrefUtils.generateLanguageMap(host);
     }
 
@@ -226,9 +226,11 @@ public abstract class SiteSettingsInterface {
 
     public void saveSettings() {
         SiteSettingsTable.saveSettings(mSettings);
-        siteSettingsPreferences(mActivity).edit().putString(LANGUAGE_PREF_KEY, mSettings.language).apply();
-        siteSettingsPreferences(mActivity).edit().putInt(DEF_CATEGORY_PREF_KEY, mSettings.defaultCategory).apply();
-        siteSettingsPreferences(mActivity).edit().putString(DEF_FORMAT_PREF_KEY, mSettings.defaultPostFormat).apply();
+        siteSettingsPreferences(mContext).edit()
+                .putString(LANGUAGE_PREF_KEY, mSettings.language)
+                .putInt(DEF_CATEGORY_PREF_KEY, mSettings.defaultCategory)
+                .putString(DEF_FORMAT_PREF_KEY, mSettings.defaultPostFormat)
+                .apply();
     }
 
     public @NonNull String getTitle() {
@@ -248,14 +250,14 @@ public abstract class SiteSettingsInterface {
     }
 
     public @NonNull String getPrivacyDescription() {
-        if (mActivity != null) {
+        if (mContext != null) {
             switch (getPrivacy()) {
                 case -1:
-                    return mActivity.getString(R.string.site_settings_privacy_private_summary);
+                    return mContext.getString(R.string.site_settings_privacy_private_summary);
                 case 0:
-                    return mActivity.getString(R.string.site_settings_privacy_hidden_summary);
+                    return mContext.getString(R.string.site_settings_privacy_hidden_summary);
                 case 1:
-                    return mActivity.getString(R.string.site_settings_privacy_public_summary);
+                    return mContext.getString(R.string.site_settings_privacy_public_summary);
             }
         }
         return "";
@@ -273,18 +275,10 @@ public abstract class SiteSettingsInterface {
         return mSettings.password == null ? "" : mSettings.password;
     }
 
-    public boolean getLocation() {
-        return mSettings.location;
-    }
-
-    public boolean getOptimizedImage() {
-        return mSettings.optimizedImage;
-    }
-
     public @NonNull Map<String, String> getFormats() {
         mSettings.postFormats = new HashMap<>();
-        String[] postFormatDisplayNames = mActivity.getResources().getStringArray(R.array.post_format_display_names);
-        String[] postFormatKeys = mActivity.getResources().getStringArray(R.array.post_format_keys);
+        String[] postFormatDisplayNames = mContext.getResources().getStringArray(R.array.post_format_display_names);
+        String[] postFormatKeys = mContext.getResources().getStringArray(R.array.post_format_keys);
         // Add standard post format (only for .com)
         mSettings.postFormats.put(STANDARD_POST_FORMAT_KEY, STANDARD_POST_FORMAT);
         // Add default post formats
@@ -358,8 +352,8 @@ public abstract class SiteSettingsInterface {
     }
 
     public @NonNull String getRelatedPostsDescription() {
-        if (mActivity == null) return "";
-        String desc = mActivity.getString(getShowRelatedPosts() ? R.string.on : R.string.off);
+        if (mContext == null) return "";
+        String desc = mContext.getString(getShowRelatedPosts() ? R.string.on : R.string.off);
         return StringUtils.capitalize(desc);
     }
 
@@ -396,11 +390,11 @@ public abstract class SiteSettingsInterface {
     }
 
     public @NonNull String getCloseAfterDescriptionForPeriod(int period) {
-        if (mActivity == null) return "";
+        if (mContext == null) return "";
 
-        if (!getShouldCloseAfter()) return mActivity.getString(R.string.never);
+        if (!getShouldCloseAfter()) return mContext.getString(R.string.never);
 
-        return StringUtils.getQuantityString(mActivity, R.string.never, R.string.days_quantity_one,
+        return StringUtils.getQuantityString(mContext, R.string.never, R.string.days_quantity_one,
                 R.string.days_quantity_other, period);
     }
 
@@ -409,16 +403,16 @@ public abstract class SiteSettingsInterface {
     }
 
     public @NonNull String getSortingDescription() {
-        if (mActivity == null) return "";
+        if (mContext == null) return "";
 
         int order = getCommentSorting();
         switch (order) {
             case SiteSettingsInterface.ASCENDING_SORT:
-                return mActivity.getString(R.string.oldest_first);
+                return mContext.getString(R.string.oldest_first);
             case SiteSettingsInterface.DESCENDING_SORT:
-                return mActivity.getString(R.string.newest_first);
+                return mContext.getString(R.string.newest_first);
             default:
-                return mActivity.getString(R.string.unknown);
+                return mContext.getString(R.string.unknown);
         }
     }
 
@@ -439,10 +433,10 @@ public abstract class SiteSettingsInterface {
     }
 
     public @NonNull String getThreadingDescriptionForLevel(int level) {
-        if (mActivity == null) return "";
+        if (mContext == null) return "";
 
-        if (level <= 1) return mActivity.getString(R.string.none);
-        return String.format(mActivity.getString(R.string.site_settings_threading_summary), level);
+        if (level <= 1) return mContext.getString(R.string.none);
+        return String.format(mContext.getString(R.string.site_settings_threading_summary), level);
     }
 
     public boolean getShouldPageComments() {
@@ -458,14 +452,14 @@ public abstract class SiteSettingsInterface {
     }
 
     public @NonNull String getPagingDescription() {
-        if (mActivity == null) return "";
+        if (mContext == null) return "";
 
         if (!getShouldPageComments()) {
-            return mActivity.getString(R.string.disabled);
+            return mContext.getString(R.string.disabled);
         }
 
         int count = getPagingCountForDescription();
-        return StringUtils.getQuantityString(mActivity, R.string.none, R.string.site_settings_paging_summary_one,
+        return StringUtils.getQuantityString(mContext, R.string.none, R.string.site_settings_paging_summary_one,
                 R.string.site_settings_paging_summary_other, count);
     }
 
@@ -507,13 +501,149 @@ public abstract class SiteSettingsInterface {
         return getKeysDescription(getBlacklistKeys().size());
     }
 
-    public @NonNull String getKeysDescription(int count) {
-        if (mActivity == null) return "";
+    public @NonNull String getJetpackProtectWhitelistSummary() {
+        return getKeysDescription(getJetpackWhitelistKeys().size());
+    }
 
-        return StringUtils.getQuantityString(mActivity, R.string.site_settings_list_editor_no_items_text,
+    public String getSharingLabel() {
+        return mSettings.sharingLabel;
+    }
+
+    public @NonNull String getSharingButtonStyle(Context context) {
+        if (TextUtils.isEmpty(mSettings.sharingButtonStyle)) {
+            mSettings.sharingButtonStyle = context.getResources().getStringArray(R.array.sharing_button_style_array)[0];
+        }
+
+        return mSettings.sharingButtonStyle;
+    }
+
+    public @NonNull String getSharingButtonStyleDisplayText(Context context) {
+        String sharingButtonStyle = getSharingButtonStyle(context);
+        String[] styleArray = context.getResources().getStringArray(R.array.sharing_button_style_array);
+        String[] styleDisplayArray = context.getResources().getStringArray(R.array.sharing_button_style_display_array);
+        for (int i = 0; i < styleArray.length; i++) {
+            if (sharingButtonStyle.equals(styleArray[i])) {
+                return styleDisplayArray[i];
+            }
+        }
+
+        return styleDisplayArray[0];
+    }
+
+    public boolean getAllowReblogButton() {
+        return mSettings.allowReblogButton;
+    }
+
+    public boolean getAllowLikeButton() {
+        return mSettings.allowLikeButton;
+    }
+
+    public boolean getAllowCommentLikes() {
+        return mSettings.allowCommentLikes;
+    }
+
+    public @NonNull String getTwitterUsername() {
+        if (mSettings.twitterUsername == null) {
+            mSettings.twitterUsername = "";
+        }
+        return mSettings.twitterUsername;
+    }
+
+    public @NonNull String getKeysDescription(int count) {
+        if (mContext == null) return "";
+
+        return StringUtils.getQuantityString(mContext, R.string.site_settings_list_editor_no_items_text,
                 R.string.site_settings_list_editor_summary_one,
                 R.string.site_settings_list_editor_summary_other, count);
+    }
 
+    public String getStartOfWeek() {
+        return mSettings.startOfWeek;
+    }
+
+    public void setStartOfWeek(String startOfWeek) {
+        mSettings.startOfWeek = startOfWeek;
+    }
+
+    public String getDateFormat() {
+        return mSettings.dateFormat;
+    }
+
+    public void setDateFormat(String dateFormat) {
+        mSettings.dateFormat = dateFormat;
+    }
+
+    public String getTimeFormat() {
+        return mSettings.timeFormat;
+    }
+
+    public void setTimeFormat(String timeFormat) {
+        mSettings.timeFormat = timeFormat;
+    }
+
+    public boolean isJetpackMonitorEnabled() {
+        return mJpSettings.monitorActive;
+    }
+
+    public boolean shouldSendJetpackMonitorEmailNotifications() {
+        return mJpSettings.emailNotifications;
+    }
+
+    public boolean shouldSendJetpackMonitorWpNotifications() {
+        return mJpSettings.wpNotifications;
+    }
+
+    public void enableJetpackMonitor(boolean monitorActive) {
+        mJpSettings.monitorActive = monitorActive;
+    }
+
+    public void enableJetpackMonitorEmailNotifications(boolean emailNotifications) {
+        mJpSettings.emailNotifications = emailNotifications;
+    }
+
+    public void enableJetpackMonitorWpNotifications(boolean wpNotifications) {
+        mJpSettings.wpNotifications = wpNotifications;
+    }
+
+    public boolean isJetpackProtectEnabled() {
+        return mJpSettings.jetpackProtectEnabled;
+    }
+
+    public void enableJetpackProtect(boolean enabled) {
+        mJpSettings.jetpackProtectEnabled = enabled;
+    }
+
+    public @NonNull List<String> getJetpackWhitelistKeys() {
+        return mJpSettings.jetpackProtectWhitelist;
+    }
+
+    public void setJetpackWhitelistKeys(@NonNull List<String> whitelistKeys) {
+        mJpSettings.jetpackProtectWhitelist.clear();
+        mJpSettings.jetpackProtectWhitelist.addAll(whitelistKeys);
+    }
+
+    public void enableJetpackSsoMatchEmail(boolean enabled) {
+        mJpSettings.ssoMatchEmail = enabled;
+    }
+
+    public void enableJetpackSso(boolean enabled) {
+        mJpSettings.ssoActive = enabled;
+    }
+
+    public boolean isJetpackSsoEnabled() {
+        return mJpSettings.ssoActive;
+    }
+
+    public boolean isJetpackSsoMatchEmailEnabled() {
+        return mJpSettings.ssoMatchEmail;
+    }
+
+    public void enableJetpackSsoTwoFactor(boolean enabled) {
+        mJpSettings.ssoRequireTwoFactor = enabled;
+    }
+
+    public boolean isJetpackSsoTwoFactorEnabled() {
+        return mJpSettings.ssoRequireTwoFactor;
     }
 
     public void setTitle(String title) {
@@ -554,14 +684,6 @@ public abstract class SiteSettingsInterface {
 
     public void setPassword(String password) {
         mSettings.password = password;
-    }
-
-    public void setLocation(boolean location) {
-        mSettings.location = location;
-    }
-
-    public void setOptimizedImage(boolean optimizeImage) {
-        mSettings.optimizedImage = optimizeImage;
     }
 
     public void setAllowComments(boolean allowComments) {
@@ -630,6 +752,34 @@ public abstract class SiteSettingsInterface {
 
     public void setBlacklistKeys(List<String> keys) {
         mSettings.blacklist = keys;
+    }
+
+    public void setSharingLabel(String sharingLabel) {
+        mSettings.sharingLabel = sharingLabel;
+    }
+
+    public void setSharingButtonStyle(String sharingButtonStyle) {
+        if (TextUtils.isEmpty(sharingButtonStyle)) {
+            mSettings.sharingButtonStyle = STANDARD_SHARING_BUTTON_STYLE;
+        } else {
+            mSettings.sharingButtonStyle = sharingButtonStyle.toLowerCase();
+        }
+    }
+
+    public void setAllowReblogButton(boolean allowReblogButton) {
+        mSettings.allowReblogButton = allowReblogButton;
+    }
+
+    public void setAllowLikeButton(boolean allowLikeButton) {
+        mSettings.allowLikeButton = allowLikeButton;
+    }
+
+    public void setAllowCommentLikes(boolean allowCommentLikes) {
+        mSettings.allowCommentLikes = allowCommentLikes;
+    }
+
+    public void setTwitterUsername(String twitterUsername) {
+        mSettings.twitterUsername = twitterUsername;
     }
 
     public void setDefaultCategory(int category) {
@@ -769,7 +919,8 @@ public abstract class SiteSettingsInterface {
     private void loadCachedSettings() {
         Cursor localSettings = SiteSettingsTable.getSettings(mSite.getId());
 
-        if (localSettings != null) {
+        if (localSettings != null && localSettings.getCount() > 0) {
+            mSettings.isInLocalTable = true;
             Map<Integer, CategoryModel> cachedModels = SiteSettingsTable.getAllCategories();
             mSettings.deserializeOptionsDatabaseCursor(localSettings, cachedModels);
             mSettings.language = languageIdToLanguageCode(Integer.toString(mSettings.languageId));
@@ -778,16 +929,24 @@ public abstract class SiteSettingsInterface {
             }
             mRemoteSettings.language = mSettings.language;
             mRemoteSettings.languageId = mSettings.languageId;
-            mRemoteSettings.location = mSettings.location;
-            mRemoteSettings.optimizedImage = mSettings.optimizedImage;
-            localSettings.close();
-            notifyUpdatedOnUiThread(null);
+            notifyUpdatedOnUiThread();
         } else {
             mSettings.isInLocalTable = false;
+            mSettings.localTableId = mSite.getId();
             setAddress(mSite.getUrl());
             setUsername(mSite.getUsername());
             setPassword(mSite.getPassword());
             setTitle(mSite.getName());
+        }
+
+        // Self hosted always read account data from the main table
+        if (!SiteUtils.isAccessedViaWPComRest(mSite)) {
+            setUsername(mSite.getUsername());
+            setPassword(mSite.getPassword());
+        }
+
+        if (localSettings != null) {
+            localSettings.close();
         }
     }
 
@@ -795,9 +954,9 @@ public abstract class SiteSettingsInterface {
      * Notifies listener that credentials have been validated or are incorrect.
      */
     private void notifyCredentialsVerifiedOnUiThread(final Exception error) {
-        if (mActivity == null || mListener == null) return;
+        if (mContext == null || mListener == null) return;
 
-        mActivity.runOnUiThread(new Runnable() {
+        new Handler().post(new Runnable() {
             @Override
             public void run() {
                 mListener.onCredentialsValidated(error);
@@ -805,16 +964,44 @@ public abstract class SiteSettingsInterface {
         });
     }
 
+    protected void notifyFetchErrorOnUiThread(final Exception error) {
+        if (mListener == null) {
+            return;
+        }
+
+        new Handler().post(new Runnable() {
+            @Override
+            public void run() {
+                mListener.onFetchError(error);
+            }
+        });
+    }
+
+    protected void notifySaveErrorOnUiThread(final Exception error) {
+        if (mListener == null) {
+            return;
+        }
+
+        new Handler().post(new Runnable() {
+            @Override
+            public void run() {
+                mListener.onSaveError(error);
+            }
+        });
+    }
+
     /**
      * Notifies listener that settings have been updated with the latest remote data.
      */
-    protected void notifyUpdatedOnUiThread(final Exception error) {
-        if (mActivity == null || mActivity.isFinishing() || mListener == null) return;
+    protected void notifyUpdatedOnUiThread() {
+        if (mListener == null) {
+            return;
+        }
 
-        mActivity.runOnUiThread(new Runnable() {
+        new Handler().post(new Runnable() {
             @Override
             public void run() {
-                mListener.onSettingsUpdated(error);
+                mListener.onSettingsUpdated();
             }
         });
     }
@@ -822,13 +1009,15 @@ public abstract class SiteSettingsInterface {
     /**
      * Notifies listener that settings have been saved or an error occurred while saving.
      */
-    protected void notifySavedOnUiThread(final Exception error) {
-        if (mActivity == null || mListener == null) return;
+    protected void notifySavedOnUiThread() {
+        if (mListener == null) {
+            return;
+        }
 
-        mActivity.runOnUiThread(new Runnable() {
+        new Handler().post(new Runnable() {
             @Override
             public void run() {
-                mListener.onSettingsSaved(error);
+                mListener.onSettingsSaved();
             }
         });
     }
@@ -841,6 +1030,6 @@ public abstract class SiteSettingsInterface {
         if (event.isError()) {
             return;
         }
-        notifyUpdatedOnUiThread(null);
+        notifyUpdatedOnUiThread();
     }
 }

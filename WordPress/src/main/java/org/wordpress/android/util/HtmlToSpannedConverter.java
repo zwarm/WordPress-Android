@@ -349,7 +349,7 @@ public class HtmlToSpannedConverter implements ContentHandler {
                 }
             }
         } catch (OutOfMemoryError e) {
-            CrashlyticsUtils.logException(e, CrashlyticsUtils.ExceptionType.SPECIFIC, AppLog.T.UTILS);
+            CrashlyticsUtils.logException(e, AppLog.T.UTILS);
         }
 
         if (resizedBitmap != null) {
@@ -365,7 +365,7 @@ public class HtmlToSpannedConverter implements ContentHandler {
             WPImageSpan is = new WPImageSpan(mContext, resizedBitmap, curStream);
 
             // Get the MediaFile data from db
-            MediaModel mediaModel = mMediaStore.getPostMediaWithPath(mPost.getId(), src);
+            MediaModel mediaModel = mMediaStore.getMediaForPostWithPath(mPost, src);
             MediaFile mediaFile = FluxCUtils.mediaFileFromMediaModel(mediaModel);
 
             if (mediaFile != null) {

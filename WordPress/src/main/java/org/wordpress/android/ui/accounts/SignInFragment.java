@@ -10,7 +10,6 @@ import android.content.res.Configuration;
 import android.graphics.drawable.TransitionDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentTransaction;
 import android.text.Editable;
@@ -70,7 +69,6 @@ import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.AppLog.T;
 import org.wordpress.android.util.EditTextUtils;
 import org.wordpress.android.util.HelpshiftHelper;
-import org.wordpress.android.util.HtmlUtils;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.SelfSignedSSLUtils;
 import org.wordpress.android.util.SelfSignedSSLUtils.Callback;
@@ -104,9 +102,6 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
             Pattern.compile("^(?:admin|administrator|invite|main|root|web|www|[^@]*wordpress[^@]*)$");
     private static final Pattern TWO_STEP_AUTH_CODE = Pattern.compile("^[0-9]{6}");
     private static final Pattern WPCOM_DOMAIN = Pattern.compile("[a-z0-9]+\\.wordpress\\.com");
-
-    public static final String ENTERED_URL_KEY = "ENTERED_URL_KEY";
-    public static final String ENTERED_USERNAME_KEY = "ENTERED_USERNAME_KEY";
 
     private static final String XMLRPC_BLOCKED_HELPSHIFT_FAQ_SECTION = "10";
     private static final String XMLRPC_BLOCKED_HELPSHIFT_FAQ_ID = "102";
@@ -158,10 +153,6 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
     protected @Inject Dispatcher mDispatcher;
     protected @Inject HTTPAuthManager mHTTPAuthManager;
     protected @Inject MemorizingTrustManager mMemorizingTrustManager;
-
-    protected boolean mSitesFetched = false;
-    protected boolean mAccountSettingsFetched = false;
-    protected boolean mAccountFetched = false;
 
     private final Matcher mReservedNameMatcher = DOT_COM_RESERVED_NAMES.matcher("");
     private final Matcher mTwoStepAuthCodeMatcher = TWO_STEP_AUTH_CODE.matcher("");
@@ -412,6 +403,7 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
             mForgotPassword.setVisibility(View.VISIBLE);
             if (!mSelfHosted) {
                 mPasswordEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+                showWPComLogoType(true);
             }
             mSignInButton.setText(R.string.sign_in);
         }
@@ -440,6 +432,7 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
         mAddSelfHostedButton.setText(getString(R.string.nux_add_selfhosted_blog));
         switchToDotOrgIcon(false);
         switchBackgroundToDotOrg(false, false);
+        showWPComLogoType(false);
     }
 
     protected void showSelfHostedSignInForm(){
@@ -456,24 +449,18 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
         if (mIconSwitcher.getDisplayedChild() == 0) {
             if (showDotOrg) {
                 mIconSwitcher.showNext();
-                mWpcomLogotype.setVisibility(View.GONE);
             }
+            showWPComLogoType(false);
         } else {
             if (!showDotOrg) {
                 mIconSwitcher.showPrevious();
-
-                // reinstate the logotype into the layout so the switcher can compute sizes
-                mWpcomLogotype.setVisibility(View.INVISIBLE);
-
-                // delay the actual appearance of the logotype for smoother coordination with the rest of animations
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        mWpcomLogotype.setVisibility(View.VISIBLE);
-                    }
-                }, 300);
             }
         }
+    }
+
+    private void showWPComLogoType(boolean show) {
+        int visibility = show ? View.VISIBLE : View.GONE;
+        mWpcomLogotype.setVisibility(visibility);
     }
 
     private void switchBackgroundToDotOrg(boolean useDotOrg, boolean noFading) {
@@ -503,8 +490,8 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
             public void onClick(View v) {
                 Intent intent = new Intent(getActivity(), HelpActivity.class);
                 // Used to pass data to an eventual support service
-                intent.putExtra(ENTERED_URL_KEY, EditTextUtils.getText(mUrlEditText));
-                intent.putExtra(ENTERED_USERNAME_KEY, EditTextUtils.getText(mUsernameEditText));
+                intent.putExtra(HelpshiftHelper.ENTERED_URL_KEY, EditTextUtils.getText(mUrlEditText));
+                intent.putExtra(HelpshiftHelper.ENTERED_USERNAME_KEY, EditTextUtils.getText(mUsernameEditText));
                 intent.putExtra(HelpshiftHelper.ORIGIN_KEY, HelpshiftHelper.chooseHelpshiftLoginTag
                         (mJetpackCallbacks.isJetpackAuth(), isWPComLogin() && !mSelfHosted));
                 startActivity(intent);
@@ -650,7 +637,6 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
             mJetpackAuthLabel.setVisibility(View.VISIBLE);
             mAddSelfHostedButton.setVisibility(View.GONE);
             mCreateAccountButton.setVisibility(View.GONE);
-            mUsernameEditText.setText("");
         }
     }
 
@@ -729,7 +715,7 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
         // mUsername and mPassword are null when the user log in with a magic link
         if (smartLockHelper != null && mUsername != null && mPassword != null) {
             smartLockHelper.saveCredentialsInSmartLock(mUsername, mPassword,
-                    HtmlUtils.fastUnescapeHtml(mAccountStore.getAccount().getDisplayName()),
+                    mAccountStore.getAccount().getDisplayName(),
                     Uri.parse(mAccountStore.getAccount().getAvatarUrl()));
         }
     }
@@ -842,6 +828,7 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
     private void signInAndFetchBlogListWPOrg() {
         startProgress(getString(R.string.signing_in));
         String url = EditTextUtils.getText(mUrlEditText).trim();
+        url = url.replaceAll("\r|\n", "");
         // Self Hosted don't have any "Authentication" request, try to list sites with user/password
         mDispatcher.dispatch(AuthenticationActionBuilder.newDiscoverEndpointAction(url));
     }
@@ -852,7 +839,7 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
             SignInDialogFragment nuxAlert;
             nuxAlert = SignInDialogFragment.newInstance(getString(R.string.no_network_title),
                     getString(R.string.no_network_message),
-                    R.drawable.noticon_alert_big,
+                    R.drawable.ic_notice_white_64dp,
                     getString(R.string.cancel));
             ft.add(nuxAlert, "alert");
             ft.commitAllowingStateLoss();
@@ -1105,7 +1092,7 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
         // create a 3 buttons dialog ("Contact us", "Forget your password?" and "Cancel")
         nuxAlert = SignInDialogFragment.newInstance(getString(org.wordpress.android.R.string.nux_cannot_log_in),
                 getString(org.wordpress.android.R.string.username_or_password_incorrect),
-                org.wordpress.android.R.drawable.noticon_alert_big, 3, getString(
+                org.wordpress.android.R.drawable.ic_notice_white_64dp, 3, getString(
                         org.wordpress.android.R.string.cancel), getString(
                         org.wordpress.android.R.string.forgot_password), getString(
                         org.wordpress.android.R.string.contact_us), SignInDialogFragment.ACTION_OPEN_URL,
@@ -1114,8 +1101,8 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
         // Put entered url and entered username args, that could help our support team
         Bundle bundle = nuxAlert.getArguments();
         bundle.putString(SignInDialogFragment.ARG_OPEN_URL_PARAM, getForgotPasswordURL());
-        bundle.putString(ENTERED_URL_KEY, EditTextUtils.getText(mUrlEditText));
-        bundle.putString(ENTERED_USERNAME_KEY, EditTextUtils.getText(mUsernameEditText));
+        bundle.putString(HelpshiftHelper.ENTERED_URL_KEY, EditTextUtils.getText(mUrlEditText));
+        bundle.putString(HelpshiftHelper.ENTERED_USERNAME_KEY, EditTextUtils.getText(mUsernameEditText));
         bundle.putSerializable(HelpshiftHelper.ORIGIN_KEY, HelpshiftHelper.chooseHelpshiftLoginTag
                 (mJetpackCallbacks.isJetpackAuth(), isWPComLogin() && !mSelfHosted));
         nuxAlert.setArguments(bundle);
@@ -1152,9 +1139,8 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
             thirdButtonLabel =  getString(R.string.tell_me_more);
         }
         nuxAlert = SignInDialogFragment.newInstance(getString(org.wordpress.android.R.string.nux_cannot_log_in),
-                errorMessage, R.drawable.noticon_alert_big, 3,
+                errorMessage, R.drawable.ic_notice_white_64dp, 3,
                 getString(R.string.cancel), getString(R.string.reader_title_applog), thirdButtonLabel,
-                SignInDialogFragment.ACTION_OPEN_SUPPORT_CHAT,
                 SignInDialogFragment.ACTION_OPEN_APPLICATION_LOG,
                 faqAction, faqId, faqSection);
         Bundle bundle = nuxAlert.getArguments();
@@ -1216,13 +1202,12 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
 
         AppLog.i(T.NUX, "onAccountChanged: " + event.toString());
 
-        // Success
-        mAccountSettingsFetched |= event.causeOfChange == AccountAction.FETCH_SETTINGS;
-        mAccountFetched |= event.causeOfChange == AccountAction.FETCH_ACCOUNT;
-
-        // Finish activity if sites have been fetched
-        if (mSitesFetched && mAccountSettingsFetched && mAccountFetched) {
-            finishCurrentActivity();
+        if (event.causeOfChange == AccountAction.FETCH_ACCOUNT) {
+            // The user's account info has been fetched and stored - next, fetch the user's settings
+            mDispatcher.dispatch(AccountActionBuilder.newFetchSettingsAction());
+        } else if (event.causeOfChange == AccountAction.FETCH_SETTINGS) {
+            // The user's account settings have also been fetched and stored - now we can fetch the user's sites
+            mDispatcher.dispatch(SiteActionBuilder.newFetchSitesAction());
         }
     }
 
@@ -1231,7 +1216,8 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
     public void onAuthenticationChanged(OnAuthenticationChanged event) {
         if (event.isError()) {
             AppLog.e(T.API, "onAuthenticationChanged has error: " + event.error.type + " - " + event.error.message);
-            AnalyticsTracker.track(Stat.LOGIN_FAILED);
+            AnalyticsTracker.track(Stat.LOGIN_FAILED, event.getClass().getSimpleName(), event.error.type.toString(),
+                    event.error.message);
             showAuthError(event.error.type, event.error.message);
             endProgress();
             return;
@@ -1239,14 +1225,15 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
 
         AppLog.i(T.NUX, "onAuthenticationChanged: " + event.toString());
 
-        fetchAccountSettingsAndSites();
+        if (mAccountStore.hasAccessToken()) {
+            mDispatcher.dispatch(AccountActionBuilder.newFetchAccountAction());
+            NotificationsUpdateService.startService(getActivity().getApplicationContext());
+        }
     }
 
     @SuppressWarnings("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onSiteChanged(OnSiteChanged event) {
-        AppLog.i(T.NUX, "onSiteChanged: " + event.toString());
-
         if (event.isError()) {
             AppLog.e(T.API, "onSiteChanged has error: " + event.error.type + " - " + event.error.toString());
             endProgress();
@@ -1254,19 +1241,26 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
                 return;
             }
             if (event.error.type == SiteErrorType.DUPLICATE_SITE) {
-                ToastUtils.showToast(getContext(), R.string.cannot_add_duplicate_site);
+                if (event.rowsAffected == 0) {
+                    // If there is a duplicate site and not any site has been added, show an error and
+                    // stop the sign in process
+                    ToastUtils.showToast(getContext(), R.string.cannot_add_duplicate_site);
+                    return;
+                } else {
+                    // If there is a duplicate site, notify the user something could be wrong,
+                    // but continue the sign in process
+                    ToastUtils.showToast(getContext(), R.string.duplicate_site_detected);
+                }
+            } else {
+                return;
             }
-            return;
         }
 
         // Login Successful
         trackAnalyticsSignIn();
-        mSitesFetched = true;
 
-        // Finish activity if account settings have been fetched or if it's a wporg site
-        if (((mAccountSettingsFetched && mAccountFetched) || !isWPComLogin()) && !event.isError()) {
-            finishCurrentActivity();
-        }
+        // Fetching the sites is the last step of both WP.com and self-hosted sign in - we can now finish the activity
+        finishCurrentActivity();
     }
 
     @SuppressWarnings("unused")
@@ -1275,6 +1269,8 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
         if (event.isError()) {
             AppLog.e(T.API, "onDiscoveryResponse has error: " + event.error.name() + " - " + event.error.toString());
             handleDiscoveryError(event.error, event.failedEndpoint);
+            AnalyticsTracker.track(Stat.LOGIN_FAILED, event.getClass().getSimpleName(), event.error.name(),
+                    event.error.toString());
             return;
         }
         AppLog.i(T.NUX, "Discovery succeeded, endpoint: " + event.xmlRpcEndpoint);
@@ -1449,18 +1445,6 @@ public class SignInFragment extends AbstractFragment implements TextWatcher {
                 AppLog.e(T.NUX, "Server response: " + errorMessage);
                 showGenericErrorDialog(errorMessage);
                 break;
-        }
-    }
-
-    private void fetchAccountSettingsAndSites() {
-        if (mAccountStore.hasAccessToken()) {
-            // Fetch user infos
-            mDispatcher.dispatch(AccountActionBuilder.newFetchAccountAction());
-            mDispatcher.dispatch(AccountActionBuilder.newFetchSettingsAction());
-            // Fetch sites
-            mDispatcher.dispatch(SiteActionBuilder.newFetchSitesAction());
-            // Start Notification service
-            NotificationsUpdateService.startService(getActivity().getApplicationContext());
         }
     }
 }

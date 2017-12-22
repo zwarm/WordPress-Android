@@ -1,6 +1,5 @@
 package org.wordpress.android.ui;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -18,32 +17,11 @@ public class WPLaunchActivity extends AppCompatActivity {
      * manifest to have no UI
      */
 
-    private ProgressDialog mMigrationProgressDialog;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         ProfilingUtils.split("WPLaunchActivity.onCreate");
-
-        if (WordPress.sIsMigrationInProgress) {
-            mMigrationProgressDialog = new ProgressDialog(this);
-            mMigrationProgressDialog.setMessage(this.getResources().getString(R.string.migration_message));
-            mMigrationProgressDialog.setCancelable(false);
-            mMigrationProgressDialog.show();
-            WordPress.registerMigrationListener(new WordPress.MigrationListener() {
-                @Override
-                public void onCompletion() {
-                    if (mMigrationProgressDialog != null) {
-                        mMigrationProgressDialog.dismiss();
-                        mMigrationProgressDialog = null;
-                    }
-                    launchWPMainActivity();
-                }
-            });
-        } else {
-            launchWPMainActivity();
-        }
+        launchWPMainActivity();
     }
 
     private void launchWPMainActivity() {
@@ -57,14 +35,5 @@ public class WPLaunchActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (mMigrationProgressDialog != null) {
-            mMigrationProgressDialog.dismiss();
-            mMigrationProgressDialog = null;
-        }
-        super.onDestroy();
     }
 }

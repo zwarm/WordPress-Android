@@ -38,6 +38,7 @@ import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.store.AccountStore;
 import org.wordpress.android.fluxc.store.SiteStore;
 import org.wordpress.android.fluxc.store.SiteStore.OnSiteChanged;
+import org.wordpress.android.fluxc.store.SiteStore.OnSiteRemoved;
 import org.wordpress.android.ui.ActivityId;
 import org.wordpress.android.ui.ActivityLauncher;
 import org.wordpress.android.ui.RequestCodes;
@@ -45,10 +46,13 @@ import org.wordpress.android.ui.main.SitePickerAdapter.SiteList;
 import org.wordpress.android.ui.main.SitePickerAdapter.SiteRecord;
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.ui.stats.datasets.StatsTable;
+import org.wordpress.android.util.ActivityUtils;
 import org.wordpress.android.util.AppLog;
+import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.ToastUtils;
-import org.wordpress.android.util.WPActivityUtils;
 import org.wordpress.android.util.helpers.Debouncer;
+import org.wordpress.android.util.helpers.SwipeToRefreshHelper;
+import org.wordpress.android.util.widgets.CustomSwipeRefreshLayout;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -58,6 +62,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
+import static org.wordpress.android.util.WPSwipeToRefreshHelper.buildSwipeToRefreshHelper;
+
 public class SitePickerActivity extends AppCompatActivity
         implements SitePickerAdapter.OnSiteClickListener,
         SitePickerAdapter.OnSelectedCountChangedListener,
@@ -66,9 +72,11 @@ public class SitePickerActivity extends AppCompatActivity
     public static final String KEY_LOCAL_ID = "local_id";
     private static final String KEY_IS_IN_SEARCH_MODE = "is_in_search_mode";
     private static final String KEY_LAST_SEARCH = "last_search";
+    private static final String KEY_REFRESHING = "refreshing_sites";
 
     private SitePickerAdapter mAdapter;
     private RecyclerView mRecycleView;
+    private SwipeToRefreshHelper mSwipeToRefreshHelper;
     private ActionMode mActionMode;
     private MenuItem mMenuEdit;
     private MenuItem mMenuAdd;
@@ -91,6 +99,11 @@ public class SitePickerActivity extends AppCompatActivity
         restoreSavedInstanceState(savedInstanceState);
         setupActionBar();
         setupRecycleView();
+
+        initSwipeToRefreshHelper(findViewById(android.R.id.content));
+        if (savedInstanceState != null) {
+            mSwipeToRefreshHelper.setRefreshing(savedInstanceState.getBoolean(KEY_REFRESHING, false));
+        }
     }
 
     @Override
@@ -104,6 +117,7 @@ public class SitePickerActivity extends AppCompatActivity
         outState.putInt(KEY_LOCAL_ID, mCurrentLocalId);
         outState.putBoolean(KEY_IS_IN_SEARCH_MODE, getAdapter().getIsInSearchMode());
         outState.putString(KEY_LAST_SEARCH, getAdapter().getLastSearch());
+        outState.putBoolean(KEY_REFRESHING, mSwipeToRefreshHelper.isRefreshing());
         super.onSaveInstanceState(outState);
     }
 
@@ -144,7 +158,7 @@ public class SitePickerActivity extends AppCompatActivity
             mMenuAdd.setVisible(false);
         } else {
             // don't allow editing visibility unless there are multiple wp.com and jetpack sites
-            mMenuEdit.setVisible(mSiteStore.getWPComAndJetpackSitesCount() > 1);
+            mMenuEdit.setVisible(mSiteStore.getSitesAccessedViaWPComRestCount() > 1);
             mMenuAdd.setVisible(true);
         }
 
@@ -159,9 +173,7 @@ public class SitePickerActivity extends AppCompatActivity
             onBackPressed();
             return true;
         } else if (itemId == R.id.menu_edit) {
-            mRecycleView.setItemAnimator(new DefaultItemAnimator());
-            getAdapter().setEnableEditMode(true);
-            startSupportActionMode(new ActionModeCallback());
+            startEditingVisibility();
             return true;
         } else if (itemId == R.id.menu_search) {
             mSearchView.requestFocus();
@@ -182,7 +194,7 @@ public class SitePickerActivity extends AppCompatActivity
             case RequestCodes.ADD_ACCOUNT:
             case RequestCodes.CREATE_SITE:
                 if (resultCode == RESULT_OK) {
-                    getAdapter().loadSites();
+                    debounceLoadSites();
                     setResult(resultCode, data);
                     finish();
                 }
@@ -205,14 +217,56 @@ public class SitePickerActivity extends AppCompatActivity
 
     @SuppressWarnings("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onSiteRemoved(OnSiteRemoved event) {
+        if (!event.isError()) {
+            debounceLoadSites();
+        } else {
+            // shouldn't happen
+            AppLog.e(AppLog.T.DB, "Encountered unexpected error while attempting to remove site: " + event.error);
+            ToastUtils.showToast(this, R.string.site_picker_remove_site_error);
+        }
+    }
+
+    @SuppressWarnings("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onSiteChanged(OnSiteChanged event) {
+        if (mSwipeToRefreshHelper.isRefreshing()) {
+            mSwipeToRefreshHelper.setRefreshing(false);
+        }
+        debounceLoadSites();
+    }
+
+    private void debounceLoadSites() {
         mDebouncer.debounce(Void.class, new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 if (!isFinishing()) {
                     getAdapter().loadSites();
                 }
             }
         }, 200, TimeUnit.MILLISECONDS);
+    }
+
+    private void initSwipeToRefreshHelper(View view) {
+        if (view == null) {
+            return;
+        }
+        mSwipeToRefreshHelper = buildSwipeToRefreshHelper(
+                (CustomSwipeRefreshLayout) view.findViewById(R.id.ptr_layout),
+                new SwipeToRefreshHelper.RefreshListener() {
+                    @Override
+                    public void onRefreshStarted() {
+                        if (isFinishing()) {
+                            return;
+                        }
+                        if (!NetworkUtils.checkConnection(SitePickerActivity.this)) {
+                            mSwipeToRefreshHelper.setRefreshing(false);
+                            return;
+                        }
+                        mDispatcher.dispatch(SiteActionBuilder.newFetchSitesAction());
+                    }
+                }
+        );
     }
 
     private void setupRecycleView() {
@@ -241,7 +295,7 @@ public class SitePickerActivity extends AppCompatActivity
     private void setupActionBar() {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
-            actionBar.setHomeAsUpIndicator(R.drawable.ic_close_white_24dp);
+            actionBar.setHomeAsUpIndicator(R.drawable.ic_cross_white_24dp);
             actionBar.setHomeButtonEnabled(true);
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setTitle(R.string.site_picker_title);
@@ -263,6 +317,7 @@ public class SitePickerActivity extends AppCompatActivity
     private void setNewAdapter(String lastSearch, boolean isInSearchMode) {
         mAdapter = new SitePickerAdapter(
                 this,
+                R.layout.site_picker_listitem,
                 mCurrentLocalId,
                 lastSearch,
                 isInSearchMode,
@@ -282,7 +337,13 @@ public class SitePickerActivity extends AppCompatActivity
         mAdapter.setOnSelectedCountChangedListener(this);
     }
 
-    private void saveHiddenSites(Set<SiteRecord> changeSet) {
+    private void saveSiteVisibility(SiteRecord siteRecord) {
+        Set<SiteRecord> siteRecords = new HashSet<>();
+        siteRecords.add(siteRecord);
+        saveSitesVisibility(siteRecords);
+    }
+
+    private void saveSitesVisibility(Set<SiteRecord> changeSet) {
         boolean skippedCurrentSite = false;
         String currentSiteName = null;
         SiteList hiddenSites = getAdapter().getHiddenSites();
@@ -401,7 +462,7 @@ public class SitePickerActivity extends AppCompatActivity
 
     private void hideSoftKeyboard() {
         if (!hasHardwareKeyboard()) {
-            WPActivityUtils.hideKeyboard(mSearchView);
+            ActivityUtils.hideKeyboardForced(mSearchView);
         }
     }
 
@@ -425,12 +486,34 @@ public class SitePickerActivity extends AppCompatActivity
     }
 
     @Override
+    public boolean onSiteLongClick(final SiteRecord siteRecord) {
+        final SiteModel site = mSiteStore.getSiteByLocalId(siteRecord.localId);
+        if (site == null) {
+            return false;
+        }
+        if (site.isWPCom()) {
+            if (mActionMode != null) {
+                return false;
+            }
+            startEditingVisibility();
+        } else {
+            showRemoveSelfHostedSiteDialog(site);
+        }
+        return true;
+    }
+
+    @Override
     public void onSiteClick(SiteRecord siteRecord) {
         if (mActionMode == null) {
             hideSoftKeyboard();
             AppPrefs.addRecentlyPickedSiteId(siteRecord.localId);
             setResult(RESULT_OK, new Intent().putExtra(KEY_LOCAL_ID, siteRecord.localId));
             mDidUserSelectSite = true;
+            // If the site is hidden, make sure to make it visible
+            if (siteRecord.isHidden) {
+                siteRecord.isHidden = false;
+                saveSiteVisibility(siteRecord);
+            }
             finish();
         }
     }
@@ -507,7 +590,7 @@ public class SitePickerActivity extends AppCompatActivity
         @Override
         public void onDestroyActionMode(ActionMode actionMode) {
             if (mHasChanges) {
-                saveHiddenSites(mChangeSet);
+                saveSitesVisibility(mChangeSet);
             }
             getAdapter().setEnableEditMode(false);
             mActionMode = null;
@@ -553,5 +636,25 @@ public class SitePickerActivity extends AppCompatActivity
             });
             return builder.create();
         }
+    }
+
+    private void startEditingVisibility() {
+        mRecycleView.setItemAnimator(new DefaultItemAnimator());
+        getAdapter().setEnableEditMode(true);
+        startSupportActionMode(new ActionModeCallback());
+    }
+
+    private void showRemoveSelfHostedSiteDialog(@NonNull final SiteModel site) {
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setTitle(getResources().getText(R.string.remove_account));
+        dialogBuilder.setMessage(getResources().getText(R.string.sure_to_remove_account));
+        dialogBuilder.setPositiveButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                mDispatcher.dispatch(SiteActionBuilder.newRemoveSiteAction(site));
+            }
+        });
+        dialogBuilder.setNegativeButton(getResources().getText(R.string.no), null);
+        dialogBuilder.setCancelable(false);
+        dialogBuilder.create().show();
     }
 }

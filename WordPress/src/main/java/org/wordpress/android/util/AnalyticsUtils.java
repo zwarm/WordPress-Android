@@ -1,9 +1,7 @@
 package org.wordpress.android.util;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.Uri;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.text.Html;
 import android.text.TextUtils;
@@ -11,16 +9,15 @@ import android.webkit.MimeTypeMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.wordpress.android.WordPress;
 import org.wordpress.android.analytics.AnalyticsMetadata;
 import org.wordpress.android.analytics.AnalyticsTracker;
-import org.wordpress.android.analytics.AnalyticsTrackerMixpanel;
 import org.wordpress.android.analytics.AnalyticsTrackerNosara;
 import org.wordpress.android.datasets.ReaderPostTable;
-import org.wordpress.android.models.ReaderPost;
+import org.wordpress.android.fluxc.model.CommentModel;
 import org.wordpress.android.fluxc.model.SiteModel;
 import org.wordpress.android.fluxc.store.AccountStore;
 import org.wordpress.android.fluxc.store.SiteStore;
+import org.wordpress.android.models.ReaderPost;
 
 import java.io.File;
 import java.util.HashMap;
@@ -49,17 +46,14 @@ public class AnalyticsUtils {
     private static String INTERCEPTOR_CLASSNAME = "interceptor_classname";
 
     /**
-     * Utility methods to refresh Mixpanel metadata.
+     * Utility methods to refresh metadata.
      */
     public static void refreshMetadata(AccountStore accountStore, SiteStore siteStore) {
         AnalyticsMetadata metadata = new AnalyticsMetadata();
 
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(WordPress.getContext());
-
-        metadata.setSessionCount(preferences.getInt(AnalyticsTrackerMixpanel.SESSION_COUNT, 0));
         metadata.setUserConnected(FluxCUtils.isSignedInWPComOrHasWPOrgSite(accountStore, siteStore));
         metadata.setWordPressComUser(accountStore.hasAccessToken());
-        metadata.setJetpackUser(siteStore.hasJetpackSite());
+        metadata.setJetpackUser(isJetpackUser(siteStore));
         metadata.setNumBlogs(siteStore.getSitesCount());
         metadata.setUsername(accountStore.getAccount().getUserName());
         metadata.setEmail(accountStore.getAccount().getEmail());
@@ -67,10 +61,17 @@ public class AnalyticsUtils {
         AnalyticsTracker.refreshMetadata(metadata);
     }
 
+    /**
+     * @return true if the siteStore has sites accessed via the WPCom Rest API that are not WPCom sites. This only
+     * counts Jetpack sites connected via WPCom Rest API. If there are Jetpack sites in the site store and they're
+     * all accessed via XMLRPC, this method returns false.
+     */
+    static boolean isJetpackUser(SiteStore siteStore) {
+        return siteStore.getSitesAccessedViaWPComRestCount() - siteStore.getWPComSitesCount() > 0;
+    }
+
     public static void refreshMetadataNewUser(String username, String email) {
         AnalyticsMetadata metadata = new AnalyticsMetadata();
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(WordPress.getContext());
-        metadata.setSessionCount(preferences.getInt(AnalyticsTrackerMixpanel.SESSION_COUNT, 0));
         metadata.setUserConnected(true);
         metadata.setWordPressComUser(true);
         metadata.setJetpackUser(false);
@@ -105,13 +106,13 @@ public class AnalyticsUtils {
      */
     public static void trackWithSiteDetails(AnalyticsTracker.Stat stat, SiteModel site,
                                             Map<String, Object> properties) {
-        if (site == null || !SiteUtils.isAccessibleViaWPComAPI(site)) {
+        if (site == null || !SiteUtils.isAccessedViaWPComRest(site)) {
             AppLog.w(AppLog.T.STATS, "The passed blog obj is null or it's not a wpcom or Jetpack. Tracking analytics without blog info");
             AnalyticsTracker.track(stat, properties);
             return;
         }
 
-        if (SiteUtils.isAccessibleViaWPComAPI(site)) {
+        if (SiteUtils.isAccessedViaWPComRest(site)) {
             if (properties == null) {
                 properties = new HashMap<>();
             }
@@ -125,6 +126,35 @@ public class AnalyticsUtils {
             AnalyticsTracker.track(stat, properties);
         }
     }
+
+
+    /**
+     * Bump Analytics for comment reply, and add blog and comment details into properties.
+     *
+     * @param isQuickReply Whether is a quick reply or not
+     * @param site The site object
+     * @param comment The comment object
+     */
+    public static void trackCommentReplyWithDetails(boolean isQuickReply, SiteModel site,
+                                                    CommentModel comment) {
+        AnalyticsTracker.Stat stat = isQuickReply ? AnalyticsTracker.Stat.NOTIFICATION_QUICK_ACTIONS_REPLIED_TO :
+                AnalyticsTracker.Stat.NOTIFICATION_REPLIED_TO;
+
+        if (site == null || !SiteUtils.isAccessedViaWPComRest(site)) {
+            AppLog.w(AppLog.T.STATS, "The passed blog obj is null or it's not a wpcom or Jetpack. Tracking analytics without blog info");
+            AnalyticsTracker.track(stat);
+            return;
+        }
+
+        Map<String, Object> properties = new HashMap<>();
+        properties.put(BLOG_ID_KEY, site.getSiteId());
+        properties.put(IS_JETPACK_KEY, site.isJetpackConnected());
+        properties.put(POST_ID_KEY, comment.getRemotePostId());
+        properties.put(COMMENT_ID_KEY, comment.getRemoteCommentId());
+
+        AnalyticsTracker.track(stat, properties);
+    }
+
 
     /**
      * Bump Analytics and add blog_id into properties
@@ -169,12 +199,6 @@ public class AnalyticsUtils {
         }
     }
 
-    /**
-     * Track when a railcar item has been rendered
-     *
-     * @param railcarJson The JSON string of the railcar
-     *
-     */
     public static void trackWithReaderPostDetails(AnalyticsTracker.Stat stat, long blogId, long postId) {
         trackWithReaderPostDetails(stat, ReaderPostTable.getBlogPost(blogId, postId, true));
     }
@@ -247,10 +271,11 @@ public class AnalyticsUtils {
     }
 
     /**
-     * Track when a railcar item has been rendered
-     *
-     * @param post The JSON string of the railcar
-     */
+   * Track when a railcar item has been rendered
+   *
+   * @param railcarJson The JSON string of the railcar
+   *
+   */
     public static void trackRailcarRender(String railcarJson) {
         if (TextUtils.isEmpty(railcarJson)) {
             return;
@@ -319,12 +344,7 @@ public class AnalyticsUtils {
         }
 
         if(mediaURI != null) {
-            if (mediaURI.toString().contains("content:")) {
-                path = MediaUtils.getPathFromContentUri(context, mediaURI);
-            } else {
-                // File is not in media library
-                path = mediaURI.toString().replace("file://", "");
-            }
+            path = MediaUtils.getRealPathFromURI(context, mediaURI);
         }
 
         if (TextUtils.isEmpty(path) ) {
@@ -337,6 +357,11 @@ public class AnalyticsUtils {
             if (!file.exists()) {
                 AppLog.e(AppLog.T.MEDIA, "Can't access the media file. It doesn't exists anymore!! Properties are not being tracked.");
                 return properties;
+            }
+
+            if (file.lastModified() > 0L) {
+                long ageMS = System.currentTimeMillis() - file.lastModified();
+                properties.put("age_ms", ageMS);
             }
         } catch (SecurityException e) {
             AppLog.e(AppLog.T.MEDIA, "Can't access the media file. Properties are not being tracked.", e);
@@ -357,12 +382,22 @@ public class AnalyticsUtils {
             megapixels = Math.floor(megapixels);
             properties.put("megapixels", (int) megapixels);
         } else {
-            long videoDurationMS = MediaUtils.getVideoDurationMS(context, file);
+            long videoDurationMS = VideoUtils.getVideoDurationMS(context, file);
             properties.put("duration_secs", (int)videoDurationMS/1000);
         }
 
         properties.put("bytes", file.length());
 
         return  properties;
+    }
+
+    public static void trackAnalyticsSignIn(AccountStore accountStore, SiteStore siteStore, boolean isWpcomLogin) {
+        AnalyticsUtils.refreshMetadata(accountStore, siteStore);
+        Map<String, Boolean> properties = new HashMap<>();
+        properties.put("dotcom_user", isWpcomLogin);
+        AnalyticsTracker.track(AnalyticsTracker.Stat.SIGNED_IN, properties);
+        if (!isWpcomLogin) {
+            AnalyticsTracker.track(AnalyticsTracker.Stat.ADDED_SELF_HOSTED_SITE);
+        }
     }
 }

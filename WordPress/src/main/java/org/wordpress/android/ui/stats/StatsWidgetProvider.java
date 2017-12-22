@@ -12,9 +12,8 @@ import android.widget.RemoteViews;
 
 import com.android.volley.VolleyError;
 
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -61,7 +60,7 @@ public class StatsWidgetProvider extends AppWidgetProvider {
             String name;
             if (site != null) {
                 name = context.getString(R.string.stats_widget_name_for_blog);
-                name = String.format(name, StringEscapeUtils.unescapeHtml(SiteUtils.getSiteNameOrHomeURL(site)));
+                name = String.format(name, SiteUtils.getSiteNameOrHomeURL(site));
             } else {
                 name = context.getString(R.string.stats_widget_name);
             }
@@ -97,7 +96,7 @@ public class StatsWidgetProvider extends AppWidgetProvider {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
 
         String name = context.getString(R.string.stats_widget_name_for_blog);
-        name = String.format(name, StringEscapeUtils.unescapeHtml(SiteUtils.getSiteNameOrHomeURL(site)));
+        name = String.format(name, SiteUtils.getSiteNameOrHomeURL(site));
 
         for (int widgetId : allWidgets) {
             RemoteViews remoteViews = new RemoteViews(context.getPackageName(), R.layout.stats_widget_layout);
@@ -172,7 +171,7 @@ public class StatsWidgetProvider extends AppWidgetProvider {
             }
 
             // Check if Jetpack or .com
-            if (SiteUtils.isAccessibleViaWPComAPI(site)) {
+            if (SiteUtils.isAccessedViaWPComRest(site)) {
                 // User cannot access stats for this .com blog
                 showMessage(context, widgetIDs, context.getString(R.string.stats_widget_error_no_permissions),
                         siteStore);

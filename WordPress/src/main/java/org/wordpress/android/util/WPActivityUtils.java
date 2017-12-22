@@ -22,7 +22,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 
 import org.wordpress.android.R;
@@ -63,7 +62,7 @@ public class WPActivityUtils {
         titleView.setText(title);
 
         toolbar.setTitle("");
-        toolbar.setNavigationIcon(org.wordpress.android.R.drawable.ic_arrow_back_white_24dp);
+        toolbar.setNavigationIcon(org.wordpress.android.R.drawable.ic_arrow_left_white_24dp);
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -98,11 +97,6 @@ public class WPActivityUtils {
         }
     }
 
-    public static void hideKeyboard(final View view) {
-        InputMethodManager inputMethodManager = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-        inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
-    }
-
     public static void applyLocale(Context context) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
@@ -120,7 +114,7 @@ public class WPActivityUtils {
             if (!locale.equals(contextLanguage)) {
                 Resources resources = context.getResources();
                 Configuration conf = resources.getConfiguration();
-                conf.locale = new Locale(locale);
+                conf.locale = WPPrefUtils.languageLocale(locale);
                 resources.updateConfiguration(conf, resources.getDisplayMetrics());
             }
         }
@@ -147,6 +141,13 @@ public class WPActivityUtils {
         List<ResolveInfo> emailApps = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
 
         return !emailApps.isEmpty();
+    }
+
+    public static void openEmailClient(Context context) {
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_APP_EMAIL);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
     }
 
     public static void disableComponent(Context context, Class<?> klass) {

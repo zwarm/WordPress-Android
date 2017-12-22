@@ -1,6 +1,5 @@
 package org.wordpress.android.ui.stats;
 
-import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.Context;
@@ -8,6 +7,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.AppCompatDialogFragment;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -18,9 +18,8 @@ import android.widget.BaseAdapter;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import org.wordpress.android.R;
@@ -34,7 +33,6 @@ import org.wordpress.android.fluxc.store.SiteStore;
 import org.wordpress.android.fluxc.store.SiteStore.OnSiteChanged;
 import org.wordpress.android.ui.ActivityId;
 import org.wordpress.android.ui.RequestCodes;
-import org.wordpress.android.ui.accounts.SignInActivity;
 import org.wordpress.android.ui.posts.PromoDialog;
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.util.AnalyticsUtils;
@@ -52,6 +50,8 @@ import org.wordpress.android.util.widgets.CustomSwipeRefreshLayout;
 import javax.inject.Inject;
 
 import de.greenrobot.event.EventBus;
+
+import static org.wordpress.android.util.WPSwipeToRefreshHelper.buildSwipeToRefreshHelper;
 
 /**
  * The native stats activity
@@ -107,7 +107,7 @@ public class StatsActivity extends AppCompatActivity
         ((WordPress) getApplication()).component().inject(this);
 
         if (WordPress.wpDB == null) {
-            Toast.makeText(this, R.string.fatal_db_error, Toast.LENGTH_LONG).show();
+            ToastUtils.showToast(this, R.string.fatal_db_error, ToastUtils.Duration.LONG);
             finish();
             return;
         }
@@ -137,7 +137,8 @@ public class StatsActivity extends AppCompatActivity
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
 
-        mSwipeToRefreshHelper = new SwipeToRefreshHelper(this, (CustomSwipeRefreshLayout) findViewById(R.id.ptr_layout),
+        mSwipeToRefreshHelper = buildSwipeToRefreshHelper(
+                (CustomSwipeRefreshLayout) findViewById(R.id.ptr_layout),
                 new RefreshListener() {
                     @Override
                     public void onRefreshStarted() {
@@ -148,7 +149,8 @@ public class StatsActivity extends AppCompatActivity
 
                         refreshStatsFromCurrentDate();
                     }
-                });
+                }
+        );
 
         setTitle(R.string.stats);
 
@@ -189,11 +191,6 @@ public class StatsActivity extends AppCompatActivity
             }
         }
 
-        if (!mAccountStore.hasAccessToken()) {
-            // If the user is not connected to WordPress.com, ask him to connect first.
-            startWPComLoginActivity();
-            return;
-        }
         checkIfSiteHasAccessibleStats(mSite);
 
         // create the fragments without forcing the re-creation. If the activity is restarted fragments can already
@@ -280,7 +277,7 @@ public class StatsActivity extends AppCompatActivity
 
     private boolean checkIfSiteHasAccessibleStats(SiteModel site) {
         // If the site is not accessible via wpcom (Jetpack included), then show a dialog to the user.
-        if (!SiteUtils.isAccessibleViaWPComAPI(mSite)) {
+        if (!SiteUtils.isAccessedViaWPComRest(mSite)) {
             if (!site.isJetpackInstalled()) {
                 JetpackUtils.showInstallJetpackAlert(this, site);
                 return false;
@@ -293,16 +290,6 @@ public class StatsActivity extends AppCompatActivity
             // TODO: if Jetpack site, we should check the stats option is enabled
         }
         return true;
-    }
-
-    private void startWPComLoginActivity() {
-        mResultCode = RESULT_CANCELED;
-        Intent signInIntent = new Intent(this, SignInActivity.class);
-        signInIntent.putExtra(SignInActivity.EXTRA_JETPACK_SITE_AUTH, mSite.getId());
-        signInIntent.putExtra(SignInActivity.EXTRA_JETPACK_MESSAGE_AUTH,
-                getString(R.string.stats_sign_in_jetpack_different_com_account)
-        );
-        startActivityForResult(signInIntent, SignInActivity.REQUEST_CODE);
     }
 
     private void trackStatsAnalytics() {
@@ -551,11 +538,6 @@ public class StatsActivity extends AppCompatActivity
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == SignInActivity.REQUEST_CODE) {
-            if (resultCode == RESULT_CANCELED) {
-                finish();
-            }
-        }
         if (requestCode == RequestCodes.REQUEST_JETPACK) {
             // Refresh the site in case we're back from Jetpack install Webview
             mDispatcher.dispatch(SiteActionBuilder.newFetchSiteAction(mSite));
@@ -566,7 +548,7 @@ public class StatsActivity extends AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem item) {
         int i = item.getItemId();
         if (i == android.R.id.home) {
-            onBackPressed();
+            finish();
             return true;
         }
 
@@ -620,7 +602,7 @@ public class StatsActivity extends AppCompatActivity
         mTabToSelectOnGraph = newItem;
     }
 
-    private void bumpPromoAnaylticsAndShowPromoDialogIfNecessary() {
+    private void bumpPromoAnalyticsAndShowPromoDialogIfNecessary() {
         if (mIsUpdatingStats || mThereWasAnErrorLoadingStats) {
             // Do nothing in case of errors or when it's still loading
             return;
@@ -637,10 +619,13 @@ public class StatsActivity extends AppCompatActivity
         // Should we display the widget promo?
         int counter = AppPrefs.getAnalyticsForStatsWidgetPromo();
         if (counter == 3 || counter == 1000 || counter == 10000) {
-            DialogFragment newFragment = PromoDialog.newInstance(R.drawable.stats_widget_promo_header,
-                    R.string.stats_widget_promo_title, R.string.stats_widget_promo_desc,
-                    R.string.stats_widget_promo_ok_btn_label);
-            newFragment.show(getFragmentManager(), "promote_widget_dialog");
+            AppCompatDialogFragment newFragment = new PromoDialog.Builder(
+                    R.drawable.stats_widget_promo_header,
+                    R.string.stats_widget_promo_title,
+                    R.string.stats_widget_promo_desc,
+                    R.string.stats_widget_promo_ok_btn_label)
+                    .build();
+            newFragment.show(getSupportFragmentManager(), "promote_widget_dialog");
         }
     }
 
@@ -654,7 +639,7 @@ public class StatsActivity extends AppCompatActivity
 
         if (!mIsUpdatingStats && !mThereWasAnErrorLoadingStats) {
             // Do not bump promo analytics or show the dialog in case of errors or when it's still loading
-            bumpPromoAnaylticsAndShowPromoDialogIfNecessary();
+            bumpPromoAnalyticsAndShowPromoDialogIfNecessary();
         }
     }
 
