@@ -40,7 +40,7 @@ android {
         versionName "alpha-90"
         versionCode 507
         minSdkVersion 16
-        targetSdkVersion 25
+        targetSdkVersion 26
 
         multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
