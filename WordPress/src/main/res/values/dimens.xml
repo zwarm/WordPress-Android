@@ -313,4 +313,5 @@
     <dimen name="add_avatar_button_size">24dp</dimen>
 
     <dimen name="padding_input_row_start">60dp</dimen>
+    <dimen name="content_width">match_parent</dimen>
 </resources>
