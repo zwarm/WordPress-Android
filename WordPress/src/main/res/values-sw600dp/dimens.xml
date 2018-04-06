@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Max width for tablet-sized screens -->
-    <dimen name="match_parent_with_max_width">600dp</dimen>
-
     <dimen name="default_dialog_width">480dp</dimen>
 
     <dimen name="reader_featured_image_height">@dimen/reader_featured_image_height_tablet</dimen>
