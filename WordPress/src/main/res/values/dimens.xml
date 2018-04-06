@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Max width for phone-sized screens (-1 is the equivalent as match_parent)-->
+    <dimen name="match_parent_with_max_width">-1</dimen>
+    
     <dimen name="min_touch_target_sz">48dp</dimen>
 
     <dimen name="category_row_height">48dp</dimen>
@@ -313,5 +316,4 @@
     <dimen name="add_avatar_button_size">24dp</dimen>
 
     <dimen name="padding_input_row_start">60dp</dimen>
-    <dimen name="content_width">match_parent</dimen>
 </resources>
