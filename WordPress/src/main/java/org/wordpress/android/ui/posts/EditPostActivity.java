@@ -241,6 +241,7 @@ public class EditPostActivity extends AppCompatActivity implements
 
     private EditorFragmentAbstract mEditorFragment;
     private EditPostSettingsFragment mEditPostSettingsFragment;
+    private long mFeaturedImageMediaIdToSet;
     private EditPostPreviewFragment mEditPostPreviewFragment;
 
     private EditorMediaUploadListener mEditorMediaUploadListener;
@@ -1819,6 +1820,7 @@ public class EditPostActivity extends AppCompatActivity implements
                     break;
                 case 1:
                     mEditPostSettingsFragment = (EditPostSettingsFragment) fragment;
+                    updateImageFeaturedOnSettingsFragment();
                     break;
                 case 2:
                     mEditPostPreviewFragment = (EditPostPreviewFragment) fragment;
@@ -1830,6 +1832,12 @@ public class EditPostActivity extends AppCompatActivity implements
         @Override
         public int getCount() {
             return NUM_PAGES_EDITOR;
+        }
+    }
+
+    private void updateImageFeaturedOnSettingsFragment() {
+        if (mFeaturedImageMediaIdToSet != 0 && mEditPostSettingsFragment != null) {
+            mEditPostSettingsFragment.updateFeaturedImage(mFeaturedImageMediaIdToSet);
         }
     }
 
@@ -2545,15 +2553,9 @@ public class EditPostActivity extends AppCompatActivity implements
         if (mEditPostSettingsFragment != null) {
             mEditPostSettingsFragment.updateFeaturedImage(mediaId);
         } else {
-            // fragment may not exist if device was rotated while choosing featured image, so try again
-            // after a brief delay
-            new Handler().postDelayed(new Runnable() {
-                @Override public void run() {
-                    if (!isFinishing() && mEditPostSettingsFragment != null) {
-                        mEditPostSettingsFragment.updateFeaturedImage(mediaId);
-                    }
-                }
-            }, 250);
+            // fragment may not exist if device was rotated while choosing featured image, so remember the id
+            // and it'll be set as soon as the fragment instance becomes available again.
+            mFeaturedImageMediaIdToSet = mediaId;
         }
     }
 
