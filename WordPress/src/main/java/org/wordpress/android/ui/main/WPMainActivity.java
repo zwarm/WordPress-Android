@@ -554,7 +554,15 @@ public class WPMainActivity extends AppCompatActivity {
                 return;
             }
         }
+
+        if (isTaskRoot() && isAppRuntimeForChrome()) {
+            return; // don't close app in Main Activity
+        }
         super.onBackPressed();
+    }
+
+    private boolean isAppRuntimeForChrome() {
+        return getApplicationContext().getPackageManager().hasSystemFeature("org.chromium.arc.device_management");
     }
 
     private Fragment getActiveFragment() {
