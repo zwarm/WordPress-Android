@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     implementation 'com.automattic:tracks:1.1.4'
-    implementation 'org.wordpress:utils:1.19.0'
+    implementation 'org.wordpress:utils:1.21.0'
 
     lintChecks 'org.wordpress:lint:1.0.1'
 }
