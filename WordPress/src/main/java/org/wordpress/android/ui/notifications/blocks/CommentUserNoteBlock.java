@@ -78,8 +78,8 @@ public class CommentUserNoteBlock extends UserNoteBlock {
         }
 
         boolean isPingback = hasMetaSiteUrl && !hasMetaHomeTitle;
-        noteBlockHolder.mBtnReadSource.setVisibility(isPingback ? View.VISIBLE : View.GONE);
-        noteBlockHolder.mBtnSourceDividerView.setVisibility(isPingback ? View.VISIBLE : View.GONE);
+//        noteBlockHolder.mBtnReadSource.setVisibility(isPingback ? View.VISIBLE : View.GONE);
+//        noteBlockHolder.mBtnSourceDividerView.setVisibility(isPingback ? View.VISIBLE : View.GONE);
 
         noteBlockHolder.mSiteTextView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
 
@@ -195,8 +195,8 @@ public class CommentUserNoteBlock extends UserNoteBlock {
         private final TextView mSiteTextView;
         private final TextView mCommentTextView;
         private final View mDividerView;
-        private final View mBtnReadSource;
-        private final View mBtnSourceDividerView;
+//        private final View mBtnReadSource;
+//        private final View mBtnSourceDividerView;
 
         CommentUserNoteBlockHolder(View view) {
             mNameTextView = (TextView) view.findViewById(R.id.user_name);
@@ -208,8 +208,8 @@ public class CommentUserNoteBlock extends UserNoteBlock {
             mCommentTextView.setMovementMethod(new NoteBlockLinkMovementMethod());
             mAvatarImageView = (WPNetworkImageView) view.findViewById(R.id.user_avatar);
             mDividerView = view.findViewById(R.id.divider_view);
-            mBtnSourceDividerView = view.findViewById(R.id.btn_source_divider_view);
-            mBtnReadSource = view.findViewById(R.id.btn_read_source_post);
+//            mBtnSourceDividerView = view.findViewById(R.id.btn_source_divider_view);
+//            mBtnReadSource = view.findViewById(R.id.btn_read_source_post);
 
             OnClickListener sourceListener = new OnClickListener() {
                 @Override
@@ -219,7 +219,7 @@ public class CommentUserNoteBlock extends UserNoteBlock {
                     }
                 }
             };
-            mBtnReadSource.setOnClickListener(sourceListener);
+//            mBtnReadSource.setOnClickListener(sourceListener);
             mSiteTextView.setOnClickListener(sourceListener);
 
             // show all comments on this post when user clicks the comment text
