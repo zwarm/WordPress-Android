@@ -328,6 +328,14 @@
                 <data
                     android:host="viewpost"
                     android:scheme="wordpress" />
+
+                <data
+                    android:host="viewstats"
+                    android:scheme="wordpress" />
+
+                <data
+                    android:host="editpost"
+                    android:scheme="wordpress" />
             </intent-filter>
         </activity>
 
