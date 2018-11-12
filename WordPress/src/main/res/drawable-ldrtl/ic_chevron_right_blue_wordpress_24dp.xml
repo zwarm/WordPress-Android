@@ -9,7 +9,7 @@
         android:pivotY="12"
         android:scaleX="-1">
         <path
-            android:fillColor="@color/blue_wordpress"
+            android:fillColor="#ff0087be"
             android:pathData="M10,20l8,-8l-8,-8L8.6,5.4l6.6,6.6l-6.6,6.6"></path>
     </group>
 
