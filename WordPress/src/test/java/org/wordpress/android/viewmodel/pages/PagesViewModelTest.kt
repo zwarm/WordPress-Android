@@ -3,7 +3,7 @@ package org.wordpress.android.viewmodel.pages
 import android.arch.core.executor.testing.InstantTaskExecutorRule
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.whenever
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule

@@ -1,9 +1,9 @@
 package org.wordpress.android.util.coroutines
 
-import kotlinx.coroutines.experimental.suspendCancellableCoroutine
-import kotlinx.coroutines.experimental.withTimeoutOrNull
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import kotlin.coroutines.experimental.Continuation
+import kotlin.coroutines.Continuation
 
 suspend inline fun <T> suspendCoroutineWithTimeout(
     timeout: Long,

@@ -12,7 +12,8 @@ import org.wordpress.android.viewmodel.pages.ActionPerformer.PageAction.EventTyp
 import org.wordpress.android.viewmodel.pages.ActionPerformer.PageAction.EventType.DELETE
 import org.wordpress.android.viewmodel.pages.ActionPerformer.PageAction.EventType.UPDATE
 import org.wordpress.android.viewmodel.pages.ActionPerformer.PageAction.EventType.UPLOAD
-import kotlin.coroutines.experimental.Continuation
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
 
 class ActionPerformer
 @Inject constructor(private val dispatcher: Dispatcher) {

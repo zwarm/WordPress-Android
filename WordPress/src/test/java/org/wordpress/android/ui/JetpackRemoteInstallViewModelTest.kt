@@ -9,7 +9,7 @@ import com.nhaarman.mockito_kotlin.whenever
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertTrue
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test

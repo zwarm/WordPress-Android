@@ -4,12 +4,12 @@ import android.arch.lifecycle.LiveData
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import android.support.annotation.StringRes
-import kotlinx.coroutines.experimental.CoroutineScope
-import kotlinx.coroutines.experimental.Job
-import kotlinx.coroutines.experimental.delay
-import kotlinx.coroutines.experimental.isActive
-import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.withContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.wordpress.android.R.string
@@ -45,8 +45,9 @@ import java.util.Date
 import java.util.SortedMap
 import javax.inject.Inject
 import javax.inject.Named
-import kotlin.coroutines.experimental.Continuation
-import kotlin.coroutines.experimental.suspendCoroutine
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.suspendCoroutine
+import kotlin.coroutines.resume
 
 private const val ACTION_DELAY = 100
 private const val SEARCH_DELAY = 200
