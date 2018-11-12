@@ -34,7 +34,7 @@ android {
 }
 
 dependencies {
-    implementation project(":WordPressEditor");
+    implementation project(":WordPressEditor")
 
     // Test libraries
     testImplementation 'junit:junit:4.11'
