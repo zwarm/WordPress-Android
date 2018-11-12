@@ -64,7 +64,7 @@ class WPMainNavigationView @JvmOverloads constructor(
 
         navAdapter = NavAdapter()
         assignNavigationListeners(true)
-        disableShiftMode()
+//        disableShiftMode()
 
         // overlay each item with our custom view
         val menuView = getChildAt(0) as BottomNavigationMenuView
@@ -98,28 +98,27 @@ class WPMainNavigationView @JvmOverloads constructor(
     /*
      * uses reflection to disable "shift mode" so the item are equal width
      */
-    @SuppressLint("RestrictedApi")
-    private fun disableShiftMode() {
-        val menuView = getChildAt(0) as BottomNavigationMenuView
-        try {
-            menuView.javaClass.getDeclaredField("mShiftingMode").apply {
-                isAccessible = true
-                setBoolean(menuView, false)
-                isAccessible = false
-            }
-            for (i in 0 until menuView.childCount) {
-                (menuView.getChildAt(i) as BottomNavigationItemView).apply {
-                    setShiftingMode(false)
-                    // force the view to update
-                    setChecked(itemData.isChecked)
-                }
-            }
-        } catch (e: NoSuchFieldException) {
-            AppLog.e(T.MAIN, "Unable to disable shift mode", e)
-        } catch (e: IllegalAccessException) {
-            AppLog.e(T.MAIN, "Unable to disable shift mode", e)
-        }
-    }
+//    @SuppressLint("RestrictedApi")
+//    private fun disableShiftMode() {
+//        val menuView = getChildAt(0) as BottomNavigationMenuView
+//        try {
+//            menuView.javaClass.getDeclaredField("mShiftingMode").apply {
+//                isAccessible = true
+//                setBoolean(menuView, false)
+//                isAccessible = false
+//            }
+//            for (i in 0 until menuView.childCount) {
+//                (menuView.getChildAt(i) as BottomNavigationItemView).apply {
+//                    // force the view to update
+//                    setChecked(itemData.isChecked)
+//                }
+//            }
+//        } catch (e: NoSuchFieldException) {
+//            AppLog.e(T.MAIN, "Unable to disable shift mode", e)
+//        } catch (e: IllegalAccessException) {
+//            AppLog.e(T.MAIN, "Unable to disable shift mode", e)
+//        }
+//    }
 
     private fun assignNavigationListeners(assign: Boolean) {
         setOnNavigationItemSelectedListener(if (assign) this else null)
