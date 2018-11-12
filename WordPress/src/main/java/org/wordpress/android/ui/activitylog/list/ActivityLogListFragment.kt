@@ -65,7 +65,7 @@ class ActivityLogListFragment : Fragment() {
 
         log_list_view.setEmptyView(actionable_empty_view)
         log_list_view.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView?, dx: Int, dy: Int) {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 if (!recyclerView!!.canScrollVertically(1) && dy != 0) {
                     viewModel.onScrolledToBottom()
                 }
