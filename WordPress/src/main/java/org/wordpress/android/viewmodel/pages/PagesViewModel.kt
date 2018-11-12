@@ -216,7 +216,7 @@ class PagesViewModel
         searchJob?.cancel()
         if (searchQuery.isNotEmpty()) {
             searchJob = uiScope.launch {
-                delay(delay)
+                delay(delay.toLong())
                 searchJob = null
                 if (isActive) {
                     _lastSearchQuery = searchQuery
@@ -278,7 +278,7 @@ class PagesViewModel
         clearSearch()
 
         uiScope.launch {
-            delay(SEARCH_COLLAPSE_DELAY)
+            delay(SEARCH_COLLAPSE_DELAY.toLong())
             checkIfNewPageButtonShouldBeVisible()
         }
         return true
@@ -346,7 +346,7 @@ class PagesViewModel
             defaultScope.launch {
                 reloadPages()
 
-                delay(ACTION_DELAY)
+                delay(ACTION_DELAY.toLong())
                 _showSnackbarMessage.postValue(
                         SnackbarMessageHolder(string.page_parent_changed, string.undo, action.undo)
                 )
@@ -387,7 +387,7 @@ class PagesViewModel
         }
         action.onSuccess = {
             defaultScope.launch {
-                delay(ACTION_DELAY)
+                delay(ACTION_DELAY.toLong())
                 reloadPages()
 
                 _showSnackbarMessage.postValue(SnackbarMessageHolder(string.page_permanently_deleted))
@@ -429,7 +429,7 @@ class PagesViewModel
             }
             action.onSuccess = {
                 defaultScope.launch {
-                    delay(ACTION_DELAY)
+                    delay(ACTION_DELAY.toLong())
                     reloadPages()
 
                     val message = prepareStatusChangeSnackbar(status, action.undo)
