@@ -4,13 +4,13 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.novoda:bintray-release:0.8.1'
+//        classpath 'com.novoda:bintray-release:0.8.1'
         classpath 'com.android.tools.build:gradle:3.2.1'
     }
 }
 
 apply plugin: 'com.android.library'
-apply plugin: 'com.novoda.bintray-release'
+//apply plugin: 'com.novoda.bintray-release'
 
 repositories {
     google()
@@ -57,15 +57,15 @@ android.libraryVariants.all { variant ->
     }
 }
 
-publish {
-    artifactId = 'utils'
-    userOrg = 'wordpress-mobile'
-    groupId = 'org.wordpress'
-    uploadName = 'utils'
-    desc = 'Utils library for Android'
-    publishVersion = android.defaultConfig.versionName
-    licences = ['MIT', 'GPL']
-    website = 'https://github.com/wordpress-mobile/WordPress-Utils-Android/'
-    dryRun = 'false'
-    autoPublish = 'true'
-}
+//publish {
+//    artifactId = 'utils'
+//    userOrg = 'wordpress-mobile'
+//    groupId = 'org.wordpress'
+//    uploadName = 'utils'
+//    desc = 'Utils library for Android'
+//    publishVersion = android.defaultConfig.versionName
+//    licences = ['MIT', 'GPL']
+//    website = 'https://github.com/wordpress-mobile/WordPress-Utils-Android/'
+//    dryRun = 'false'
+//    autoPublish = 'true'
+//}
