@@ -457,10 +457,14 @@ public class EditPostActivity extends AppCompatActivity implements
             return;
         }
 
+        if (savedInstanceState == null) {
+            // Bump the stat the first time the editor is opened.
+            PostUtils.trackOpenPostAnalytics(mPost, mSite);
+        }
+
         if (mIsNewPost) {
             trackEditorCreatedPost(action, getIntent());
         } else {
-            PostUtils.trackOpenPostAnalytics(mPost, mSite);
             // if we are opening a Post for which an error notification exists, we need to remove
             // it from the dashboard to prevent the user from tapping RETRY on a Post that is
             // being currently edited
@@ -3602,5 +3606,11 @@ public class EditPostActivity extends AppCompatActivity implements
     @Override
     public SiteModel getSite() {
         return mSite;
+    }
+
+
+    // External Access to the Image Loader
+    public AztecImageLoader getAztecImageLoader() {
+        return mAztecImageLoader;
     }
 }
