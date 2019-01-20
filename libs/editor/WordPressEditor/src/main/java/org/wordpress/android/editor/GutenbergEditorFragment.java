@@ -63,15 +63,17 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
     private boolean mIsNewPost;
 
     public GutenbergEditorFragment() {
-        mWPAndroidGlueCode = new WPAndroidGlueCode();
+//        mWPAndroidGlueCode = new WPAndroidGlueCode();
     }
 
-    public static GutenbergEditorFragment newInstance(String title,
+    public static GutenbergEditorFragment newInstance(WPAndroidGlueCode wpAndroidGlueCode,
+                                                      String title,
                                                       String content,
                                                       boolean isExpanded,
                                                       boolean isNewPost) {
         mIsToolbarExpanded = isExpanded;
         GutenbergEditorFragment fragment = new GutenbergEditorFragment();
+        fragment.mWPAndroidGlueCode = wpAndroidGlueCode;
         Bundle args = new Bundle();
         args.putString(ARG_PARAM_TITLE, title);
         args.putString(ARG_PARAM_CONTENT, content);
@@ -84,7 +86,7 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mWPAndroidGlueCode.onCreate(getContext());
+//        mWPAndroidGlueCode.onCreate(getContext());
 
         ProfilingUtils.start("Visual Editor Startup");
         ProfilingUtils.split("EditorFragment.onCreate");
@@ -104,18 +106,22 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
             mIsNewPost = getArguments().getBoolean(ARG_IS_NEW_POST);
         }
 
-        mWPAndroidGlueCode.onCreateView(
-                view.findViewById(R.id.gutenberg),
-                mHtmlModeEnabled,
-                new OnMediaLibraryButtonListener() {
-                    @Override public void onMediaLibraryButtonClick() {
-                        onToolbarMediaButtonClicked();
-                    }
-                },
-                getActivity().getApplication(),
-                BuildConfig.DEBUG,
-                BuildConfig.BUILD_GUTENBERG_FROM_SOURCE,
-                mIsNewPost);
+        ViewGroup gutenbergContainer = view.findViewById(R.id.gutenberg_container);
+        mWPAndroidGlueCode.attachToContainer(gutenbergContainer);
+
+//        mWPAndroidGlueCode.onCreateView(
+//                view.findViewById(R.id.gutenberg),
+//                mHtmlModeEnabled,
+//                new OnMediaLibraryButtonListener() {
+//                    @Override public void onMediaLibraryButtonClick() {
+//                        onToolbarMediaButtonClicked();
+//                    }
+//                },
+//                getActivity().getApplication(),
+//                BuildConfig.DEBUG,
+//                BuildConfig.BUILD_GUTENBERG_FROM_SOURCE,
+//                mIsNewPost);
+
         mSource = view.findViewById(R.id.source);
 
         mTitle.addTextChangedListener(mTextWatcher);
@@ -236,7 +242,7 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mWPAndroidGlueCode.onDestroy(getActivity());
+//        mWPAndroidGlueCode.onDestroy(getActivity());
     }
 
     @Override

@@ -192,6 +192,8 @@ public class WPMainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
 
+        ((WordPress) getApplication()).initGB(this);
+
         mBottomNav = findViewById(R.id.bottom_navigation);
         mBottomNav.init(getSupportFragmentManager(), this);
 

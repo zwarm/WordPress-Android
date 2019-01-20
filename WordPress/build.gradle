@@ -58,6 +58,7 @@ android {
         testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
 
         buildConfigField "boolean", "REVISIONS_ENABLED", "false"
+        buildConfigField "boolean", "BUILD_GUTENBERG_FROM_SOURCE", rootProject.ext.buildGutenbergFromSource.toString()
     }
 
     flavorDimensions "buildType"
@@ -218,6 +219,7 @@ dependencies {
     implementation project(path:':libs:networking:WordPressNetworking')
     implementation project(path:':libs:analytics:WordPressAnalytics')
     implementation project(path:':libs:editor:WordPressEditor')
+    implementation project(':react-native-gutenberg-bridge')
     implementation (project(path:':libs:login:WordPressLoginFlow')) {
         exclude group: "com.github.wordpress-mobile.WordPress-FluxC-Android", module: "fluxc"
         exclude group: 'com.github.bumptech.glide'

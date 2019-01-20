@@ -90,6 +90,7 @@ import org.wordpress.android.util.PackageUtils;
 import org.wordpress.android.util.ProfilingUtils;
 import org.wordpress.android.util.RateLimitedTask;
 import org.wordpress.android.util.VolleyUtils;
+import org.wordpress.mobile.WPAndroidGlue.WPAndroidGlueCode;
 
 import java.io.File;
 import java.io.IOException;
@@ -151,6 +152,26 @@ public class WordPress extends MultiDexApplication implements HasServiceInjector
 
     public AppComponent component() {
         return mAppComponent;
+    }
+
+    private WPAndroidGlueCode mWPAndroidGlueCode;
+
+    public WPAndroidGlueCode getWPAndroidGlueCode() {
+        return mWPAndroidGlueCode;
+    }
+
+    public void initGB(Context initContext) {
+        mWPAndroidGlueCode = new WPAndroidGlueCode();
+        mWPAndroidGlueCode.onCreate(initContext);
+
+        mWPAndroidGlueCode.onCreateView(
+                initContext,
+                false,
+                null,
+                this,
+                BuildConfig.DEBUG,
+                true,
+                true);
     }
 
     /**
