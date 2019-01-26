@@ -540,6 +540,20 @@ public class EditPostActivity extends AppCompatActivity implements
         ActivityId.trackLastActivity(ActivityId.POST_EDITOR);
     }
 
+    private Spanned mCachedSpannedContent = new SpannableStringBuilder("");
+    private int mCachedSpannedContentPostHashCode = 0;
+
+    private @NonNull Spanned parsePostContent(Context context) {
+        if (mPost.hashCode() == mCachedSpannedContentPostHashCode) {
+            return mCachedSpannedContent;
+        }
+
+        mCachedSpannedContent = AztecEditorFragment.parseContent(context, mPost.getContent());
+        mCachedSpannedContentPostHashCode = mPost.hashCode();
+
+        return mCachedSpannedContent;
+    }
+
     private void initializePostObject() {
         if (mPost != null) {
             mOriginalPost = mPost.clone();
@@ -547,7 +561,7 @@ public class EditPostActivity extends AppCompatActivity implements
             updatePostVar(UploadService.updatePostWithCurrentlyCompletedUploads(mPost));
             if (mShowAztecEditor) {
                 mMediaMarkedUploadingOnStartIds =
-                        AztecEditorFragment.getMediaMarkedUploadingInPostContent(this, mPost.getContent());
+                        AztecEditorFragment.getMediaMarkedUploadingInPostContent(parsePostContent(this));
                 Collections.sort(mMediaMarkedUploadingOnStartIds);
             }
             mIsPage = mPost.isPage();
@@ -607,9 +621,9 @@ public class EditPostActivity extends AppCompatActivity implements
         }
 
         String oldContent = mPost.getContent();
-        if (!AztecEditorFragment.hasMediaItemsMarkedUploading(this, oldContent)
+        if (!AztecEditorFragment.hasMediaItemsMarkedUploading(AztecEditorFragment.parseContent(this, oldContent))
             // we need to make sure items marked failed are still failed or not as well
-            && !AztecEditorFragment.hasMediaItemsMarkedFailed(this, oldContent)) {
+            && !AztecEditorFragment.hasMediaItemsMarkedFailed(AztecEditorFragment.parseContent(this, oldContent))) {
             return;
         }
 
@@ -1654,7 +1668,7 @@ public class EditPostActivity extends AppCompatActivity implements
         if (mShowAztecEditor) {
             // update the list of uploading ids
             mMediaMarkedUploadingOnStartIds =
-                    AztecEditorFragment.getMediaMarkedUploadingInPostContent(this, mPost.getContent());
+                    AztecEditorFragment.getMediaMarkedUploadingInPostContent(parsePostContent(this));
         }
     }
 
@@ -2483,7 +2497,8 @@ public class EditPostActivity extends AppCompatActivity implements
         if (!mShowAztecEditor) {
             return false;
         }
-        List<String> currentUploadingMedia = AztecEditorFragment.getMediaMarkedUploadingInPostContent(this, newContent);
+        List<String> currentUploadingMedia = AztecEditorFragment.getMediaMarkedUploadingInPostContent(
+                AztecEditorFragment.parseContent(this, newContent));
         Collections.sort(currentUploadingMedia);
         return !mMediaMarkedUploadingOnStartIds.equals(currentUploadingMedia);
     }
@@ -3392,7 +3407,8 @@ public class EditPostActivity extends AppCompatActivity implements
 
         List<MediaModel> currentlyUploadingMedia = UploadService.getPendingOrInProgressMediaUploadsForPost(mPost);
         List<String> mediaMarkedUploading =
-                AztecEditorFragment.getMediaMarkedUploadingInPostContent(EditPostActivity.this, undoedContent);
+                AztecEditorFragment.getMediaMarkedUploadingInPostContent(
+                        AztecEditorFragment.parseContent(EditPostActivity.this, undoedContent));
 
         // go through the list of items marked UPLOADING within the Post content, and look in the UploadService
         // to see whether they're really being uploaded or not. If an item is not really being uploaded,
