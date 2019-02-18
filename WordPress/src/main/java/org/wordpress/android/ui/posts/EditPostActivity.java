@@ -492,12 +492,12 @@ public class EditPostActivity extends AppCompatActivity implements
         } else {
             restartEditorOptionName = savedInstanceState.getString(EXTRA_RESTART_EDITOR);
         }
-        RestartEditorOptions restartEditorOption =
+        mRestartEditorOption =
                 restartEditorOptionName == null ? RestartEditorOptions.RESTART_DONT_SUPPRESS_GUTENBERG
                         : RestartEditorOptions.valueOf(restartEditorOptionName);
 
         mShowGutenbergEditor = PostUtils.shouldShowGutenbergEditor(mIsNewPost, mPost)
-                               && restartEditorOption != RestartEditorOptions.RESTART_SUPPRESS_GUTENBERG;
+                               && mRestartEditorOption != RestartEditorOptions.RESTART_SUPPRESS_GUTENBERG;
 
         // Ensure we have a valid post
         if (mPost == null) {
@@ -774,6 +774,7 @@ public class EditPostActivity extends AppCompatActivity implements
         outState.putBoolean(STATE_KEY_IS_NEW_POST, mIsNewPost);
         outState.putBoolean(STATE_KEY_IS_PHOTO_PICKER_VISIBLE, isPhotoPickerShowing());
         outState.putBoolean(STATE_KEY_HTML_MODE_ON, mHtmlModeMenuStateOn);
+        outState.putString(EXTRA_RESTART_EDITOR, mRestartEditorOption.name());
         outState.putSerializable(WordPress.SITE, mSite);
         outState.putParcelable(STATE_KEY_REVISION, mRevision);
 
