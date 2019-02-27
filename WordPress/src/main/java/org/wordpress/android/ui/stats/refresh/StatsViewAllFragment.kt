@@ -22,8 +22,9 @@ import org.wordpress.android.fluxc.model.SiteModel
 import org.wordpress.android.fluxc.network.utils.StatsGranularity
 import org.wordpress.android.ui.stats.StatsAbstractFragment
 import org.wordpress.android.ui.stats.StatsViewType
-import org.wordpress.android.ui.stats.refresh.lists.StatsBlock
-import org.wordpress.android.ui.stats.refresh.lists.StatsBlockAdapter
+import org.wordpress.android.ui.stats.refresh.lists.BlockList
+import org.wordpress.android.ui.stats.refresh.lists.Loading
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListAdapter
 import org.wordpress.android.ui.stats.refresh.utils.StatsDateFormatter
 import org.wordpress.android.ui.stats.refresh.utils.StatsNavigator
 import org.wordpress.android.util.WPSwipeToRefreshHelper
@@ -57,12 +58,16 @@ class StatsViewAllFragment : DaggerFragment() {
                 outState.putSerializable(WordPress.SITE, intent.getSerializableExtra(WordPress.SITE))
             }
             if (intent.hasExtra(StatsAbstractFragment.ARGS_VIEW_TYPE)) {
-                outState.putSerializable(StatsAbstractFragment.ARGS_VIEW_TYPE,
-                        intent.getSerializableExtra(StatsAbstractFragment.ARGS_VIEW_TYPE))
+                outState.putSerializable(
+                        StatsAbstractFragment.ARGS_VIEW_TYPE,
+                        intent.getSerializableExtra(StatsAbstractFragment.ARGS_VIEW_TYPE)
+                )
             }
             if (intent.hasExtra(StatsAbstractFragment.ARGS_TIMEFRAME)) {
-                outState.putSerializable(StatsAbstractFragment.ARGS_TIMEFRAME,
-                        intent.getSerializableExtra(StatsAbstractFragment.ARGS_TIMEFRAME))
+                outState.putSerializable(
+                        StatsAbstractFragment.ARGS_TIMEFRAME,
+                        intent.getSerializableExtra(StatsAbstractFragment.ARGS_TIMEFRAME)
+                )
             }
         }
 
@@ -148,7 +153,10 @@ class StatsViewAllFragment : DaggerFragment() {
 
         viewModel.data.observe(this, Observer {
             if (it != null) {
-                updateInsights(it)
+                when(it) {
+                    is BlockList -> updateInsights(it)
+                    is Loading -> updateInsights(it)
+                }
             }
         })
 
@@ -178,17 +186,35 @@ class StatsViewAllFragment : DaggerFragment() {
         })
     }
 
-    private fun updateInsights(statsState: List<StatsBlock>) {
-        val adapter: StatsBlockAdapter
+    private fun updateInsights(statsState: BlockList) {
+        shimmerContainer.visibility = View.GONE
+        recyclerView.visibility = View.VISIBLE
+        val adapter: BlockListAdapter
         if (recyclerView.adapter == null) {
-            adapter = StatsBlockAdapter(imageManager)
+            adapter = BlockListAdapter(imageManager)
             recyclerView.adapter = adapter
         } else {
-            adapter = recyclerView.adapter as StatsBlockAdapter
+            adapter = recyclerView.adapter as BlockListAdapter
         }
 
         val recyclerViewState = recyclerView?.layoutManager?.onSaveInstanceState()
-        adapter.update(statsState)
+        adapter.update(statsState.items)
         recyclerView?.layoutManager?.onRestoreInstanceState(recyclerViewState)
+    }
+
+    private fun updateInsights(statsState: Loading) {
+        recyclerView.visibility = View.GONE
+        shimmerContainer.visibility = View.VISIBLE
+        val adapter: BlockListAdapter
+        if (loadingRecyclerView.adapter == null) {
+            adapter = BlockListAdapter(imageManager)
+            loadingRecyclerView.adapter = adapter
+        } else {
+            adapter = loadingRecyclerView.adapter as BlockListAdapter
+        }
+
+        val recyclerViewState = loadingRecyclerView?.layoutManager?.onSaveInstanceState()
+        adapter.update(statsState.items)
+        loadingRecyclerView?.layoutManager?.onRestoreInstanceState(recyclerViewState)
     }
 }

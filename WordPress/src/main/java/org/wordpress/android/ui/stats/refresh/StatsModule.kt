@@ -11,13 +11,10 @@ import org.wordpress.android.fluxc.network.utils.StatsGranularity.MONTHS
 import org.wordpress.android.fluxc.network.utils.StatsGranularity.WEEKS
 import org.wordpress.android.fluxc.network.utils.StatsGranularity.YEARS
 import org.wordpress.android.fluxc.store.StatsStore
-import org.wordpress.android.fluxc.store.StatsStore.InsightsTypes.COMMENTS
-import org.wordpress.android.fluxc.store.StatsStore.InsightsTypes.FOLLOWERS
-import org.wordpress.android.fluxc.store.StatsStore.InsightsTypes.TAGS_AND_CATEGORIES
-import org.wordpress.android.fluxc.store.StatsStore.TimeStatsTypes.POSTS_AND_PAGES
 import org.wordpress.android.modules.BG_THREAD
 import org.wordpress.android.modules.UI_THREAD
 import org.wordpress.android.ui.stats.refresh.lists.BaseListUseCase
+import org.wordpress.android.ui.stats.refresh.lists.BaseViewAllUseCase
 import org.wordpress.android.ui.stats.refresh.lists.sections.BaseStatsUseCase
 import org.wordpress.android.ui.stats.refresh.lists.sections.BaseStatsUseCase.UseCaseMode
 import org.wordpress.android.ui.stats.refresh.lists.sections.BaseStatsUseCase.UseCaseMode.BLOCK
@@ -148,16 +145,12 @@ class StatsModule {
     @Named(VIEW_ALL_FOLLOWERS_USE_CASE)
     fun provideViewAllFollowersUseCase(
         @Named(BG_THREAD) bgDispatcher: CoroutineDispatcher,
-        @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
         followersUseCaseFactory: FollowersUseCaseFactory
-    ): BaseListUseCase {
-        return BaseListUseCase(
+    ): BaseViewAllUseCase {
+        return BaseViewAllUseCase(
                 bgDispatcher,
-                mainDispatcher,
-                listOf(followersUseCaseFactory.build(UseCaseMode.VIEW_ALL))
-        ) {
-            listOf(FOLLOWERS)
-        }
+                followersUseCaseFactory.build(UseCaseMode.VIEW_ALL)
+        )
     }
 
     /**
@@ -169,16 +162,12 @@ class StatsModule {
     @Named(VIEW_ALL_COMMENTS_USE_CASE)
     fun provideViewAllCommentsUseCase(
         @Named(BG_THREAD) bgDispatcher: CoroutineDispatcher,
-        @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
         commentsUseCaseFactory: CommentsUseCaseFactory
-    ): BaseListUseCase {
-        return BaseListUseCase(
+    ): BaseViewAllUseCase {
+        return BaseViewAllUseCase(
                 bgDispatcher,
-                mainDispatcher,
-                listOf(commentsUseCaseFactory.build(UseCaseMode.VIEW_ALL))
-        ) {
-            listOf(COMMENTS)
-        }
+                commentsUseCaseFactory.build(UseCaseMode.VIEW_ALL)
+        )
     }
 
     /**
@@ -190,16 +179,12 @@ class StatsModule {
     @Named(VIEW_ALL_TAGS_AND_CATEGORIES_USE_CASE)
     fun provideViewAllTagsAndCategoriesUseCase(
         @Named(BG_THREAD) bgDispatcher: CoroutineDispatcher,
-        @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
         tagsAndCategoriesUseCaseFactory: TagsAndCategoriesUseCaseFactory
-    ): BaseListUseCase {
-        return BaseListUseCase(
+    ): BaseViewAllUseCase {
+        return BaseViewAllUseCase(
                 bgDispatcher,
-                mainDispatcher,
-                listOf(tagsAndCategoriesUseCaseFactory.build(UseCaseMode.VIEW_ALL))
-        ) {
-            listOf(TAGS_AND_CATEGORIES)
-        }
+                tagsAndCategoriesUseCaseFactory.build(UseCaseMode.VIEW_ALL)
+        )
     }
 
     /**
@@ -211,16 +196,12 @@ class StatsModule {
     @Named(DAILY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE)
     fun provideDailyViewAllPostsAndPagesUseCase(
         @Named(BG_THREAD) bgDispatcher: CoroutineDispatcher,
-        @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
         postsAndPagesUseCaseFactory: PostsAndPagesUseCaseFactory
-    ): BaseListUseCase {
-        return BaseListUseCase(
+    ): BaseViewAllUseCase {
+        return BaseViewAllUseCase(
                 bgDispatcher,
-                mainDispatcher,
-                listOf(postsAndPagesUseCaseFactory.build(DAYS, UseCaseMode.VIEW_ALL))
-        ) {
-            listOf(POSTS_AND_PAGES)
-        }
+                postsAndPagesUseCaseFactory.build(DAYS, UseCaseMode.VIEW_ALL)
+        )
     }
 
     /**
@@ -232,16 +213,12 @@ class StatsModule {
     @Named(WEEKLY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE)
     fun provideWeeklyViewAllPostsAndPagesUseCase(
         @Named(BG_THREAD) bgDispatcher: CoroutineDispatcher,
-        @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
         postsAndPagesUseCaseFactory: PostsAndPagesUseCaseFactory
-    ): BaseListUseCase {
-        return BaseListUseCase(
+    ): BaseViewAllUseCase {
+        return BaseViewAllUseCase(
                 bgDispatcher,
-                mainDispatcher,
-                listOf(postsAndPagesUseCaseFactory.build(WEEKS, UseCaseMode.VIEW_ALL))
-        ) {
-            listOf(POSTS_AND_PAGES)
-        }
+                postsAndPagesUseCaseFactory.build(WEEKS, UseCaseMode.VIEW_ALL)
+        )
     }
 
     /**
@@ -253,16 +230,12 @@ class StatsModule {
     @Named(MONTHLY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE)
     fun provideMonthlyViewAllPostsAndPagesUseCase(
         @Named(BG_THREAD) bgDispatcher: CoroutineDispatcher,
-        @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
         postsAndPagesUseCaseFactory: PostsAndPagesUseCaseFactory
-    ): BaseListUseCase {
-        return BaseListUseCase(
+    ): BaseViewAllUseCase {
+        return BaseViewAllUseCase(
                 bgDispatcher,
-                mainDispatcher,
-                listOf(postsAndPagesUseCaseFactory.build(MONTHS, UseCaseMode.VIEW_ALL))
-        ) {
-            listOf(POSTS_AND_PAGES)
-        }
+                postsAndPagesUseCaseFactory.build(MONTHS, UseCaseMode.VIEW_ALL)
+        )
     }
 
     /**
@@ -274,16 +247,12 @@ class StatsModule {
     @Named(YEARLY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE)
     fun provideYearlyViewAllPostsAndPagesUseCase(
         @Named(BG_THREAD) bgDispatcher: CoroutineDispatcher,
-        @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
         postsAndPagesUseCaseFactory: PostsAndPagesUseCaseFactory
-    ): BaseListUseCase {
-        return BaseListUseCase(
+    ): BaseViewAllUseCase {
+        return BaseViewAllUseCase(
                 bgDispatcher,
-                mainDispatcher,
-                listOf(postsAndPagesUseCaseFactory.build(YEARS, UseCaseMode.VIEW_ALL))
-        ) {
-            listOf(POSTS_AND_PAGES)
-        }
+                postsAndPagesUseCaseFactory.build(YEARS, UseCaseMode.VIEW_ALL)
+        )
     }
 
     /**

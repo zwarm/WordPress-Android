@@ -16,20 +16,22 @@ import org.wordpress.android.fluxc.network.utils.StatsGranularity.WEEKS
 import org.wordpress.android.fluxc.network.utils.StatsGranularity.YEARS
 import org.wordpress.android.modules.UI_THREAD
 import org.wordpress.android.ui.stats.StatsViewType
-import org.wordpress.android.ui.stats.refresh.lists.sections.granular.DateSelectorViewModel.DateSelectorUiModel
-import org.wordpress.android.ui.stats.refresh.lists.BaseListUseCase
-import org.wordpress.android.ui.stats.refresh.lists.StatsListViewModel
+import org.wordpress.android.ui.stats.refresh.lists.BaseViewAllUseCase
+import org.wordpress.android.ui.stats.refresh.lists.StatsBlock
 import org.wordpress.android.ui.stats.refresh.lists.sections.granular.DateSelectorViewModel
+import org.wordpress.android.ui.stats.refresh.lists.sections.granular.DateSelectorViewModel.DateSelectorUiModel
+import org.wordpress.android.util.throttle
+import org.wordpress.android.viewmodel.ScopedViewModel
 import java.security.InvalidParameterException
 import javax.inject.Inject
 import javax.inject.Named
 
 abstract class StatsViewAllViewModel(
     mainDispatcher: CoroutineDispatcher,
-    protected val useCase: BaseListUseCase,
+    protected val useCase: BaseViewAllUseCase,
     private val dateSelectorViewModel: DateSelectorViewModel,
     @StringRes val title: Int
-) : StatsListViewModel(mainDispatcher, useCase) {
+) : ScopedViewModel(mainDispatcher) {
     companion object {
         fun get(type: StatsViewType, granularity: StatsGranularity?): Class<out StatsViewAllViewModel> {
             return when (granularity) {
@@ -98,6 +100,10 @@ abstract class StatsViewAllViewModel(
         }
     }
 
+    val navigationTarget: LiveData<NavigationTarget> = useCase.navigationTarget
+
+    val data: LiveData<StatsBlock> by lazy { useCase.data.throttle(this) }
+
     val selectedDateChanged = dateSelectorViewModel.selectedDateChanged
 
     private val _isRefreshing = MutableLiveData<Boolean>()
@@ -154,26 +160,31 @@ abstract class StatsViewAllViewModel(
             }
         }
     }
+
+    override fun onCleared() {
+        useCase.onCleared()
+        super.onCleared()
+    }
 }
 
 class StatsViewAllCommentsViewModel
 @Inject constructor(
     @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
-    @Named(VIEW_ALL_COMMENTS_USE_CASE) useCase: BaseListUseCase,
+    @Named(VIEW_ALL_COMMENTS_USE_CASE) useCase: BaseViewAllUseCase,
     dateSelectorViewModel: DateSelectorViewModel
 ) : StatsViewAllViewModel(mainDispatcher, useCase, dateSelectorViewModel, R.string.stats_view_comments)
 
 class StatsViewAllFollowersViewModel
 @Inject constructor(
     @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
-    @Named(VIEW_ALL_FOLLOWERS_USE_CASE) useCase: BaseListUseCase,
+    @Named(VIEW_ALL_FOLLOWERS_USE_CASE) useCase: BaseViewAllUseCase,
     dateSelectorViewModel: DateSelectorViewModel
 ) : StatsViewAllViewModel(mainDispatcher, useCase, dateSelectorViewModel, R.string.stats_view_followers)
 
 class StatsViewAllTagsAndCategoriesViewModel
 @Inject constructor(
     @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
-    @Named(VIEW_ALL_TAGS_AND_CATEGORIES_USE_CASE) useCase: BaseListUseCase,
+    @Named(VIEW_ALL_TAGS_AND_CATEGORIES_USE_CASE) useCase: BaseViewAllUseCase,
     dateSelectorViewModel: DateSelectorViewModel
 ) : StatsViewAllViewModel(mainDispatcher, useCase, dateSelectorViewModel, R.string.stats_view_tags_and_categories)
 
@@ -181,28 +192,28 @@ class StatsViewAllTagsAndCategoriesViewModel
 class DailyViewAllPostsAndPagesViewModel
 @Inject constructor(
     @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
-    @Named(DAILY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE) useCase: BaseListUseCase,
+    @Named(DAILY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE) useCase: BaseViewAllUseCase,
     dateSelectorViewModel: DateSelectorViewModel
 ) : StatsViewAllViewModel(mainDispatcher, useCase, dateSelectorViewModel, R.string.stats_view_top_posts_and_pages)
 
 class WeeklyViewAllPostsAndPagesViewModel
 @Inject constructor(
     @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
-    @Named(WEEKLY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE) useCase: BaseListUseCase,
+    @Named(WEEKLY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE) useCase: BaseViewAllUseCase,
     dateSelectorViewModel: DateSelectorViewModel
 ) : StatsViewAllViewModel(mainDispatcher, useCase, dateSelectorViewModel, R.string.stats_view_top_posts_and_pages)
 
 class MonthlyViewAllPostsAndPagesViewModel
 @Inject constructor(
     @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
-    @Named(MONTHLY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE) useCase: BaseListUseCase,
+    @Named(MONTHLY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE) useCase: BaseViewAllUseCase,
     dateSelectorViewModel: DateSelectorViewModel
 ) : StatsViewAllViewModel(mainDispatcher, useCase, dateSelectorViewModel, R.string.stats_view_top_posts_and_pages)
 
 class YearlyViewAllPostsAndPagesViewModel
 @Inject constructor(
     @Named(UI_THREAD) mainDispatcher: CoroutineDispatcher,
-    @Named(YEARLY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE) useCase: BaseListUseCase,
+    @Named(YEARLY_VIEW_ALL_POSTS_AND_PAGES_USE_CASE) useCase: BaseViewAllUseCase,
     dateSelectorViewModel: DateSelectorViewModel
 ) : StatsViewAllViewModel(mainDispatcher, useCase, dateSelectorViewModel, R.string.stats_view_top_posts_and_pages)
 // endregion
