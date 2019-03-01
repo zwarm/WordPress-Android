@@ -4,7 +4,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.2.1'
+        classpath 'com.android.tools.build:gradle:3.3.1'
     }
 }
 
@@ -31,6 +31,8 @@ android {
 dependencies {
     implementation 'org.wordpress:utils:1.18.1'
     implementation 'com.automattic:rest:1.0.7'
+
+    api 'com.mcxiaoke.volley:library:+'
 
     lintChecks 'org.wordpress:lint:1.0.1'
 }
