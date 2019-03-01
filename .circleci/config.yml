@@ -27,7 +27,7 @@ jobs:
       - <<: *copy_gradle_properties
       - run:
           name: Test
-          command: $GRADLEW testVanillaRelease
+          command: $GRADLEW testVanillaDebug
       - android/save-gradle-cache:
           cache-prefix: test-cache
       - android/save-test-results
@@ -46,7 +46,7 @@ jobs:
           command: $GRADLEW ktlint
       - run:
           name: Lint
-          command: $GRADLEW lintVanillaRelease || (grep -A20 -B2 'severity="Error"' -r --include="*.xml" WordPress libs; exit 1)
+          command: $GRADLEW lintVanillaDebug || (grep -A20 -B2 'severity="Error"' -r --include="*.xml" WordPress libs; exit 1)
       - android/save-gradle-cache:
           cache-prefix: lint-cache
       - store_artifacts:
