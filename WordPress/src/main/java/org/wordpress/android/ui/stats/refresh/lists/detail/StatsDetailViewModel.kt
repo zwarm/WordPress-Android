@@ -70,7 +70,6 @@ class StatsDetailViewModel
         super.onCleared()
         dateSelector.clear()
         detailUseCase.onCleared()
-        statsPostProvider.clear()
     }
 
     fun onPullToRefresh() {
