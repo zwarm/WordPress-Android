@@ -365,7 +365,7 @@ class PostListViewModel @Inject constructor(
         when (buttonType) {
             BUTTON_EDIT -> editPostButtonAction(site, post)
             BUTTON_RETRY -> _postListAction.postValue(RetryUpload(post))
-            BUTTON_RESTORE -> TODO()
+            BUTTON_RESTORE -> dispatcher.dispatch(PostActionBuilder.newRestorePostAction(RemotePostPayload(post, site)))
             BUTTON_SUBMIT, BUTTON_SYNC, BUTTON_PUBLISH -> {
                 showPublishConfirmationDialog(post)
             }
