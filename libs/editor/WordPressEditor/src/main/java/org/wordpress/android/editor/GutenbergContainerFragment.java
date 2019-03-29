@@ -1,7 +1,11 @@
 package org.wordpress.android.editor;
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import org.wordpress.mobile.WPAndroidGlue.WPAndroidGlueCode;
@@ -67,6 +71,12 @@ public class GutenbergContainerFragment extends Fragment {
 
         // clear the content initialization flag since a new ReactRootView has been created;
         mHasReceivedAnyContent = false;
+    }
+
+    @Nullable @Override public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                                                 @Nullable Bundle savedInstanceState) {
+        mWPAndroidGlueCode.respondToImportantConfigurationChanges(inflater.getContext().getResources().getConfiguration());
+        return super.onCreateView(inflater, container, savedInstanceState);
     }
 
     @Override
