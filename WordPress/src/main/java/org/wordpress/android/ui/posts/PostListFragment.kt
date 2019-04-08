@@ -6,6 +6,9 @@ import android.arch.lifecycle.ViewModelProvider
 import android.arch.lifecycle.ViewModelProviders
 import android.content.Intent
 import android.os.Bundle
+import android.os.StrictMode
+import android.os.StrictMode.ThreadPolicy
+import android.os.StrictMode.VmPolicy
 import android.support.design.widget.Snackbar
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
@@ -144,6 +147,24 @@ class PostListFragment : Fragment() {
                 recyclerView?.scrollToPosition(index)
             }
         })
+        StrictMode.setThreadPolicy(
+                ThreadPolicy.Builder()
+                        .detectDiskReads()
+                        .detectDiskWrites()
+                        .detectNetwork()   // or .detectAll() for all detectable problems
+                        .penaltyLog()
+                        .penaltyDialog()
+                        .build()
+        )
+        StrictMode.setVmPolicy(
+                VmPolicy.Builder()
+                        .detectLeakedSqlLiteObjects()
+                        .detectLeakedClosableObjects()
+                        .penaltyLog()
+                        .penaltyDeath()
+                        .penaltyDeath()
+                        .build()
+        )
     }
 
     private fun showSnackBar(holder: SnackbarMessageHolder) {
