@@ -1016,11 +1016,11 @@
     <string name="stats_insights_year">Year</string>
     <string name="stats_insights_posts">Posts</string>
     <string name="stats_insights_total_comments">Total comments</string>
-    <string name="stats_insights_average_comments">Avg comments/post</string>
+    <string name="stats_insights_average_comments">Avg. comments/post</string>
     <string name="stats_insights_total_likes">Total likes</string>
-    <string name="stats_insights_average_likes">Avg likes/post</string>
+    <string name="stats_insights_average_likes">Avg. likes/post</string>
     <string name="stats_insights_total_words">Total words</string>
-    <string name="stats_insights_average_words">Avg words/post</string>
+    <string name="stats_insights_average_words">Avg. words/post</string>
     <string name="stats_insights_best_day">Best Day</string>
     <string name="stats_insights_best_hour">Best Hour</string>
     <string name="stats_insights_most_popular_day">Most popular day</string>
