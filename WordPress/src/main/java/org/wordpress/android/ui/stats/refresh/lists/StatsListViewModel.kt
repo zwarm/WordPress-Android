@@ -74,7 +74,7 @@ abstract class StatsListViewModel(
         it ?: DateSelectorUiModel(false)
     }
 
-    val typeMoved = popupMenuHandler?.typeMoved
+    val typesChanged = popupMenuHandler?.typeMoved
 
     override fun onCleared() {
         statsUseCase.onCleared()
@@ -139,7 +139,7 @@ abstract class StatsListViewModel(
         object Empty : UiModel()
     }
 
-    fun onTypeMoved() {
+    fun onTypesChanged() {
         launch {
             statsUseCase.refreshTypes()
         }

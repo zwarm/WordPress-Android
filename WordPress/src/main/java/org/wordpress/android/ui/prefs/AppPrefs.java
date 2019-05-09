@@ -192,7 +192,10 @@ public class AppPrefs {
         IS_GUTENBERG_WARNING_DIALOG_DISABLED,
 
         // used to indicate that user dont want to see the Gutenberg informative dialog anymore
-        IS_GUTENBERG_INFORMATIVE_DIALOG_DISABLED
+        IS_GUTENBERG_INFORMATIVE_DIALOG_DISABLED,
+
+        // used to indicate that user has already seen the Insights Management introduction dialog
+        HAS_INSIGHTS_MANAGEMENT_INTRODUCTION_SHOWN
     }
 
     private static SharedPreferences prefs() {

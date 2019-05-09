@@ -2,6 +2,7 @@ package org.wordpress.android.ui.prefs
 
 import org.wordpress.android.ui.posts.AuthorFilterSelection
 import org.wordpress.android.ui.posts.PostListViewLayoutType
+import org.wordpress.android.ui.prefs.AppPrefs.UndeletablePrefKey
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,4 +38,8 @@ class AppPrefsWrapper @Inject constructor() {
     var postListViewLayoutType: PostListViewLayoutType
         get() = AppPrefs.getPostsListViewLayoutType()
         set(value) = AppPrefs.setPostsListViewLayoutType(value)
+
+    var hasShownInsightsManagementNewsCard: Boolean
+        get() = AppPrefs.getBoolean(UndeletablePrefKey.HAS_INSIGHTS_MANAGEMENT_INTRODUCTION_SHOWN, false)
+        set(value) = AppPrefs.setBoolean(UndeletablePrefKey.HAS_INSIGHTS_MANAGEMENT_INTRODUCTION_SHOWN, value)
 }

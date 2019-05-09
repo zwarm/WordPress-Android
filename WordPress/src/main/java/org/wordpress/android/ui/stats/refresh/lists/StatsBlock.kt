@@ -1,7 +1,6 @@
 package org.wordpress.android.ui.stats.refresh.lists
 
 import org.wordpress.android.fluxc.store.StatsStore.StatsType
-import org.wordpress.android.ui.stats.refresh.lists.StatsBlock.Type.CONTROL
 import org.wordpress.android.ui.stats.refresh.lists.StatsBlock.Type.EMPTY
 import org.wordpress.android.ui.stats.refresh.lists.StatsBlock.Type.ERROR
 import org.wordpress.android.ui.stats.refresh.lists.StatsBlock.Type.LOADING
@@ -13,8 +12,7 @@ sealed class StatsBlock(val type: Type, open val data: List<BlockListItem>) {
         SUCCESS,
         ERROR,
         EMPTY,
-        LOADING,
-        CONTROL
+        LOADING
     }
 
     data class Success(
@@ -36,8 +34,4 @@ sealed class StatsBlock(val type: Type, open val data: List<BlockListItem>) {
         val statsType: StatsType,
         override val data: List<BlockListItem>
     ) : StatsBlock(LOADING, data)
-
-    data class Control(
-        override val data: List<BlockListItem>
-    ) : StatsBlock(CONTROL, data)
 }

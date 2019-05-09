@@ -197,9 +197,9 @@ class StatsListFragment : DaggerFragment() {
             viewModel.onListSelected()
         })
 
-        viewModel.typeMoved?.observe(this, Observer { event ->
+        viewModel.typesChanged?.observe(this, Observer { event ->
             event?.getContentIfNotHandled()?.let {
-                viewModel.onTypeMoved()
+                viewModel.onTypesChanged()
             }
         })
     }

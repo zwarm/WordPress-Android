@@ -13,8 +13,10 @@ import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Expan
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.TabsItem
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.ACTIVITY_ITEM
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.BAR_CHART
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.BIG_TITLE
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.CHART_LEGEND
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.COLUMNS
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.DIALOG_BUTTONS
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.DIVIDER
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.EMPTY
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.EXPANDABLE_ITEM
@@ -26,8 +28,8 @@ import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.LIST_ITEM_WITH_ICON
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.LOADING_ITEM
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.MAP
-import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.REFERRED_ITEM
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.QUICK_SCAN_ITEM
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.REFERRED_ITEM
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.TABS
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.TEXT
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.TITLE
@@ -58,6 +60,7 @@ class BlockDiffCallback(
                 INFO,
                 HEADER,
                 TITLE,
+                BIG_TITLE,
                 VALUE_ITEM,
                 DIVIDER,
                 LOADING_ITEM,
@@ -66,6 +69,7 @@ class BlockDiffCallback(
                 REFERRED_ITEM,
                 QUICK_SCAN_ITEM,
                 LINK_BUTTON,
+                DIALOG_BUTTONS,
                 EMPTY -> oldItem == newItem
             }
         } else {

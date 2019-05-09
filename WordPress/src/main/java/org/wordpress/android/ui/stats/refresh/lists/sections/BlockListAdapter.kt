@@ -9,8 +9,10 @@ import org.wordpress.android.ui.stats.refresh.BlockDiffCallback.BlockListPayload
 import org.wordpress.android.ui.stats.refresh.BlockDiffCallback.BlockListPayload.TAB_CHANGED
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.ActivityItem
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.BarChartItem
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.BigTitle
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.ChartLegend
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Columns
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.DialogButtons
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Empty
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.ExpandableItem
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Header
@@ -28,8 +30,10 @@ import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Text
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Title
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.ACTIVITY_ITEM
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.BAR_CHART
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.BIG_TITLE
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.CHART_LEGEND
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.COLUMNS
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.DIALOG_BUTTONS
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.DIVIDER
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.EMPTY
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.EXPANDABLE_ITEM
@@ -51,8 +55,10 @@ import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.ValueItem
 import org.wordpress.android.ui.stats.refresh.lists.sections.viewholders.ActivityViewHolder
 import org.wordpress.android.ui.stats.refresh.lists.sections.viewholders.BarChartViewHolder
+import org.wordpress.android.ui.stats.refresh.lists.sections.viewholders.BigTitleViewHolder
 import org.wordpress.android.ui.stats.refresh.lists.sections.viewholders.BlockListItemViewHolder
 import org.wordpress.android.ui.stats.refresh.lists.sections.viewholders.ChartLegendViewHolder
+import org.wordpress.android.ui.stats.refresh.lists.sections.viewholders.DialogButtonsViewHolder
 import org.wordpress.android.ui.stats.refresh.lists.sections.viewholders.DividerViewHolder
 import org.wordpress.android.ui.stats.refresh.lists.sections.viewholders.EmptyViewHolder
 import org.wordpress.android.ui.stats.refresh.lists.sections.viewholders.ExpandableItemViewHolder
@@ -105,6 +111,7 @@ class BlockListAdapter(val imageManager: ImageManager) : Adapter<BlockListItemVi
     override fun onCreateViewHolder(parent: ViewGroup, itemType: Int): BlockListItemViewHolder {
         return when (values()[itemType]) {
             TITLE -> TitleViewHolder(parent)
+            BIG_TITLE -> BigTitleViewHolder(parent)
             LIST_ITEM_WITH_ICON -> ListItemWithIconViewHolder(parent, imageManager)
             LIST_ITEM -> ListItemViewHolder(parent)
             EMPTY -> EmptyViewHolder(parent)
@@ -125,6 +132,7 @@ class BlockListAdapter(val imageManager: ImageManager) : Adapter<BlockListItemVi
             REFERRED_ITEM -> ReferredItemViewHolder(parent)
             QUICK_SCAN_ITEM -> QuickScanItemViewHolder(parent)
             LINK_BUTTON -> LinkButtonViewHolder(parent)
+            DIALOG_BUTTONS -> DialogButtonsViewHolder(parent)
         }
     }
 
@@ -138,6 +146,7 @@ class BlockListAdapter(val imageManager: ImageManager) : Adapter<BlockListItemVi
         val item = items[position]
         when (holder) {
             is TitleViewHolder -> holder.bind(item as Title)
+            is BigTitleViewHolder -> holder.bind(item as BigTitle)
             is ValueViewHolder -> holder.bind(item as ValueItem)
             is ListItemWithIconViewHolder -> holder.bind(item as ListItemWithIcon)
             is ListItemViewHolder -> holder.bind(item as ListItem)
@@ -160,6 +169,7 @@ class BlockListAdapter(val imageManager: ImageManager) : Adapter<BlockListItemVi
             is ReferredItemViewHolder -> holder.bind(item as ReferredItem)
             is QuickScanItemViewHolder -> holder.bind(item as QuickScanItem)
             is LinkButtonViewHolder -> holder.bind(item as LinkButton)
+            is DialogButtonsViewHolder -> holder.bind(item as DialogButtons)
         }
     }
 
