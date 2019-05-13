@@ -2,12 +2,12 @@ package org.wordpress.android.ui.stats.refresh.utils
 
 import android.arch.lifecycle.LiveData
 import android.arch.lifecycle.MutableLiveData
-import android.view.View
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.wordpress.android.fluxc.store.StatsStore
-import org.wordpress.android.fluxc.store.StatsStore.InsightType
+import org.wordpress.android.fluxc.store.StatsStore.ManagementType
 import org.wordpress.android.fluxc.store.StatsStore.StatsType
-import org.wordpress.android.modules.BG_THREAD
 import org.wordpress.android.modules.UI_THREAD
 import org.wordpress.android.viewmodel.Event
 import javax.inject.Inject
@@ -17,18 +17,28 @@ import javax.inject.Singleton
 @Singleton
 class NewsCardHandler
 @Inject constructor(
-    @Named(BG_THREAD) private val bgDispatcher: CoroutineDispatcher,
     @Named(UI_THREAD) private val mainDispatcher: CoroutineDispatcher,
-    private val statsStore: StatsStore,
-    private val statsSiteProvider: StatsSiteProvider
+    private val statsStore: StatsStore
 ) {
-    private val mutableCardDismissed = MutableLiveData<Event<InsightType>>()
-    val cardDismissed: LiveData<Event<InsightType>> = mutableCardDismissed
+    private val mutableCardDismissed = MutableLiveData<Event<StatsType>>()
+    val cardDismissed: LiveData<Event<StatsType>> = mutableCardDismissed
 
-    fun onMenuClick(view: View, statsType: StatsType) {
+    private val mutableScrollTo = MutableLiveData<Event<StatsType>>()
+    val scrollTo: LiveData<Event<StatsType>> = mutableScrollTo
+
+    private val mutableHideToolbar = MutableLiveData<Event<Boolean>>()
+    val hideToolbar: LiveData<Event<Boolean>> = mutableHideToolbar
+
+    fun dismiss() = GlobalScope.launch(mainDispatcher) {
+        if (statsStore.isInsightsManagementNewsCardShowing()) {
+            statsStore.hideInsightsManagementNewsCard()
+            mutableCardDismissed.value = Event(ManagementType.NEWS_CARD)
+        }
     }
 
-    enum class NewsCardAction {
-        DISMISS, GO_TO_EDIT
+    fun goToEdit() {
+        mutableCardDismissed.value = Event(ManagementType.NEWS_CARD)
+        mutableScrollTo.value = Event(ManagementType.CONTROL)
+        mutableHideToolbar.value = Event(true)
     }
 }

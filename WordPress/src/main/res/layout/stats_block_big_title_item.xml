@@ -4,7 +4,7 @@
              android:layout_height="wrap_content"
              android:layout_marginBottom="@dimen/margin_medium"
              android:layout_marginStart="@dimen/margin_extra_large"
-             android:layout_marginTop="@dimen/margin_extra_large">
+             android:layout_marginTop="@dimen/margin_medium">
 
     <TextView
         android:id="@+id/text"

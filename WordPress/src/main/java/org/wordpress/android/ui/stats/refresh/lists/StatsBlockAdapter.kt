@@ -3,10 +3,7 @@ package org.wordpress.android.ui.stats.refresh.lists
 import android.support.v7.util.DiffUtil
 import android.support.v7.widget.RecyclerView.Adapter
 import android.view.ViewGroup
-import org.wordpress.android.ui.stats.refresh.lists.StatsBlock.EmptyBlock
-import org.wordpress.android.ui.stats.refresh.lists.StatsBlock.Error
-import org.wordpress.android.ui.stats.refresh.lists.StatsBlock.Loading
-import org.wordpress.android.ui.stats.refresh.lists.StatsBlock.Success
+import org.wordpress.android.fluxc.store.StatsStore.StatsType
 import org.wordpress.android.ui.stats.refresh.lists.StatsBlock.Type.EMPTY
 import org.wordpress.android.ui.stats.refresh.lists.StatsBlock.Type.ERROR
 import org.wordpress.android.ui.stats.refresh.lists.StatsBlock.Type.LOADING
@@ -44,19 +41,13 @@ class StatsBlockAdapter(val imageManager: ImageManager) : Adapter<BaseStatsViewH
 
     override fun getItemCount() = items.size
 
+    fun positionOf(statsType: StatsType): Int {
+        return items.indexOfFirst { it.statsType == statsType }
+    }
+
     override fun onBindViewHolder(holder: BaseStatsViewHolder, position: Int, payloads: List<Any>) {
         val item = items[position]
-        when (holder) {
-            is BlockListViewHolder,
-            is LoadingViewHolder -> {
-                when (item) {
-                    is Success -> holder.bind(item.statsType, item.data)
-                    is Loading -> holder.bind(item.statsType, item.data)
-                    is EmptyBlock -> holder.bind(item.statsType, item.data)
-                    is Error -> holder.bind(item.statsType, item.data)
-                }
-            }
-        }
+        holder.bind(item.statsType, item.data)
     }
 
     override fun onBindViewHolder(holder: BaseStatsViewHolder, position: Int) {

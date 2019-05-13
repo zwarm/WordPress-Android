@@ -837,6 +837,7 @@
     <string name="stats_management_edit_insights">Edit Insights</string>
     <string name="stats_management_dismiss_insights_news_card">Dismiss</string>
     <string name="stats_management_edit">Edit</string>
+    <string name="stats_management_new">New</string>
 
     <!-- Jetpack install -->
     <string name="jetpack">Jetpack</string>
