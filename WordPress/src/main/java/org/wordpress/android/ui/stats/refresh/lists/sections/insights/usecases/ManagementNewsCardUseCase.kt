@@ -33,7 +33,7 @@ class ManagementNewsCardUseCase
         val editText = resourceProvider.getString(R.string.stats_management_edit)
         val newsCardMessage = resourceProvider.getString(R.string.stats_management_news_card_message, editText)
         return listOf(
-                ImageItem(R.drawable.insights_management_feature_image),
+                ImageItem(R.drawable.insights_management_feature_resource),
                 Tag(R.string.stats_management_new),
                 BigTitle(R.string.stats_manage_your_stats),
                 Text(text = newsCardMessage, bolds = listOf(editText)),
