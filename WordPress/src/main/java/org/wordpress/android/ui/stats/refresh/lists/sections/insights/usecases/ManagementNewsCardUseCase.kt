@@ -8,6 +8,7 @@ import org.wordpress.android.ui.stats.refresh.lists.sections.BaseStatsUseCase.St
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.BigTitle
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.DialogButtons
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.ImageItem
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.NavigationAction
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Tag
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Text
@@ -32,11 +33,12 @@ class ManagementNewsCardUseCase
         val editText = resourceProvider.getString(R.string.stats_management_edit)
         val newsCardMessage = resourceProvider.getString(R.string.stats_management_news_card_message, editText)
         return listOf(
+                ImageItem(R.drawable.insights_management_feature_image),
                 Tag(R.string.stats_management_new),
                 BigTitle(R.string.stats_manage_your_stats),
                 Text(text = newsCardMessage, bolds = listOf(editText)),
                 DialogButtons(
-                        R.string.stats_management_edit_insights,
+                        R.string.stats_management_try_it_now,
                         NavigationAction.create(this::onEditInsights),
                         R.string.stats_management_dismiss_insights_news_card,
                         NavigationAction.create(this::onDismiss)

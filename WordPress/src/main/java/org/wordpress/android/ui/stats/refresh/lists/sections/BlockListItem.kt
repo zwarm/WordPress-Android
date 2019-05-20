@@ -14,6 +14,7 @@ import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.EMPTY
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.EXPANDABLE_ITEM
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.HEADER
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.IMAGE_ITEM
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.INFO
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.LINK
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.LINK_BUTTON
@@ -24,7 +25,7 @@ import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.QUICK_SCAN_ITEM
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.REFERRED_ITEM
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.TABS
-import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.TAG
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.TAG_ITEM
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.TEXT
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.TITLE
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Type.VALUE_ITEM
@@ -40,7 +41,8 @@ sealed class BlockListItem(val type: Type) {
     enum class Type {
         TITLE,
         BIG_TITLE,
-        TAG,
+        TAG_ITEM,
+        IMAGE_ITEM,
         VALUE_ITEM,
         LIST_ITEM,
         LIST_ITEM_WITH_ICON,
@@ -76,7 +78,11 @@ sealed class BlockListItem(val type: Type) {
 
     data class Tag(
         @StringRes val textResource: Int
-    ) : BlockListItem(TAG)
+    ) : BlockListItem(TAG_ITEM)
+
+    data class ImageItem(
+        @DrawableRes val imageResource: Int
+    ) : BlockListItem(IMAGE_ITEM)
 
     data class ReferredItem(
         @StringRes val label: Int,
