@@ -5,7 +5,6 @@ import android.widget.TextView
 import org.wordpress.android.R.id
 import org.wordpress.android.R.layout
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.BigTitle
-import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Title
 
 class BigTitleViewHolder(parent: ViewGroup) : BlockListItemViewHolder(
         parent,

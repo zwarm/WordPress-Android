@@ -37,7 +37,6 @@ class NewsCardHandler
     }
 
     fun goToEdit() {
-        mutableCardDismissed.value = Event(ManagementType.NEWS_CARD)
         mutableScrollTo.value = Event(ManagementType.CONTROL)
         mutableHideToolbar.value = Event(true)
     }
