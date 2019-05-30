@@ -114,5 +114,12 @@ public class EditorTests extends BaseTest {
                 .chooseAppSettings()
                 .toggleBlockEditor();
 
+        pressBack();
+
+        new MySitesPage()
+                .startNewPost(E2E_WP_COM_USER_SITE_ADDRESS);
+
+        EditorPage editorPage = new EditorPage();
+
     }
 }
