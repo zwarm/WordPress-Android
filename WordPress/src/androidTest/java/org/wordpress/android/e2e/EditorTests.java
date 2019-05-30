@@ -10,9 +10,11 @@ import org.junit.Test;
 import org.wordpress.android.R;
 import org.wordpress.android.e2e.components.MasterbarComponent;
 import org.wordpress.android.e2e.pages.EditorPage;
+import org.wordpress.android.e2e.pages.MePage;
 import org.wordpress.android.e2e.pages.MySitesPage;
 import org.wordpress.android.support.BaseTest;
 import org.wordpress.android.ui.WPLaunchActivity;
+import org.wordpress.android.ui.posts.AuthorFilterListItemUIState.Me;
 
 import java.time.Instant;
 
@@ -103,5 +105,14 @@ public class EditorTests extends BaseTest {
         // publish
         boolean isPublished = editorPage.publishPost();
         assertTrue(isPublished);
+    }
+
+    @Test
+    public void testPublishBlockEditor() {
+        new MePage()
+                .go()
+                .chooseAppSettings()
+                .toggleBlockEditor();
+
     }
 }
