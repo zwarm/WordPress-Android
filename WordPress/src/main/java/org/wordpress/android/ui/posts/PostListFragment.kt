@@ -1,6 +1,8 @@
 package org.wordpress.android.ui.posts
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.android.synthetic.main.post_list_fragment.*
 import org.wordpress.android.R
 import org.wordpress.android.WordPress
 import org.wordpress.android.fluxc.model.SiteModel
@@ -143,6 +146,18 @@ class PostListFragment : Fragment() {
         viewModel.scrollToPosition.observe(this, Observer {
             it?.let { index ->
                 recyclerView?.scrollToPosition(index)
+            }
+        })
+
+        dummy_search.addTextChangedListener(object: TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                viewModel.search(s.toString())
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             }
         })
     }

@@ -13,6 +13,8 @@ import org.wordpress.android.fluxc.Dispatcher
 import org.wordpress.android.fluxc.model.LocalOrRemoteId.LocalId
 import org.wordpress.android.fluxc.model.PostModel
 import org.wordpress.android.fluxc.model.list.AuthorFilter
+import org.wordpress.android.fluxc.model.list.AuthorFilter.Everyone
+import org.wordpress.android.fluxc.model.list.AuthorFilter.SpecificAuthor
 import org.wordpress.android.fluxc.model.list.PagedListWrapper
 import org.wordpress.android.fluxc.model.list.PostListDescriptor
 import org.wordpress.android.fluxc.model.list.PostListDescriptor.PostListDescriptorForRestSite
@@ -39,9 +41,9 @@ typealias PagedPostList = PagedList<PostListItemType>
 
 @SuppressLint("UseSparseArrays")
 class PostListViewModel @Inject constructor(
-    private val dispatcher: Dispatcher,
+    dispatcher: Dispatcher,
     private val listStore: ListStore,
-    private val postStore: PostStore,
+    postStore: PostStore,
     private val accountStore: AccountStore,
     private val listItemUiStateHelper: PostListItemUiStateHelper,
     private val networkUtilsWrapper: NetworkUtilsWrapper,
@@ -52,7 +54,7 @@ class PostListViewModel @Inject constructor(
         SiteUtils.isAccessedViaWPComRest(connector.site) && connector.site.hasCapabilityViewStats
     }
     private var isStarted: Boolean = false
-    private var listDescriptor: PostListDescriptor? = null
+
     private lateinit var connector: PostListViewModelConnector
 
     private var scrollToLocalPostId: LocalPostId? = null
@@ -60,51 +62,10 @@ class PostListViewModel @Inject constructor(
     private val _scrollToPosition = SingleLiveEvent<Int>()
     val scrollToPosition: LiveData<Int> = _scrollToPosition
 
-    private val pagedListWrapper: PagedListWrapper<PostListItemType> by lazy {
-        val listDescriptor = requireNotNull(listDescriptor) {
-            "ListDescriptor needs to be initialized before this is observed!"
-        }
-        val dataSource = PostListItemDataSource(
-                dispatcher = dispatcher,
-                postStore = postStore,
-                postFetcher = connector.postFetcher,
-                transform = this::transformPostModelToPostListItemUiState
-        )
-        listStore.getList(listDescriptor, dataSource, lifecycle)
-    }
-
-    val isFetchingFirstPage: LiveData<Boolean> by lazy { pagedListWrapper.isFetchingFirstPage }
-    val isLoadingMore: LiveData<Boolean> by lazy { pagedListWrapper.isLoadingMore }
-    val pagedListData: LiveData<PagedPostList> by lazy {
-        val result = MediatorLiveData<PagedPostList>()
-        result.addSource(pagedListWrapper.data) { pagedPostList ->
-            pagedPostList?.let {
-                onDataUpdated(it)
-                result.value = it
-            }
-        }
-        result
-    }
-
-    val emptyViewState: LiveData<PostListEmptyUiState> by lazy {
-        val result = MediatorLiveData<PostListEmptyUiState>()
-        val update = {
-            createEmptyUiState(
-                    postListType = connector.postListType,
-                    isNetworkAvailable = networkUtilsWrapper.isNetworkAvailable(),
-                    isLoadingData = pagedListWrapper.isFetchingFirstPage.value ?: false ||
-                            pagedListWrapper.data.value == null,
-                    isListEmpty = pagedListWrapper.isEmpty.value ?: true,
-                    error = pagedListWrapper.listError.value,
-                    fetchFirstPage = this::fetchFirstPage,
-                    newPost = connector.postActionHandler::newPost
-            )
-        }
-        result.addSource(pagedListWrapper.isEmpty) { result.value = update() }
-        result.addSource(pagedListWrapper.isFetchingFirstPage) { result.value = update() }
-        result.addSource(pagedListWrapper.listError) { result.value = update() }
-        result
-    }
+    val pagedListData: LiveData<PagedPostList> = MediatorLiveData<PagedPostList>()
+    val emptyViewState: LiveData<PostListEmptyUiState> = MediatorLiveData<PostListEmptyUiState>()
+    val isLoadingMore: LiveData<Boolean> = MediatorLiveData<Boolean>()
+    val isFetchingFirstPage: LiveData<Boolean> = MediatorLiveData<Boolean>()
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     override fun getLifecycle(): Lifecycle = lifecycleRegistry
@@ -122,20 +83,7 @@ class PostListViewModel @Inject constructor(
         }
         connector = postListViewModelConnector
 
-        this.listDescriptor = if (connector.site.isUsingWpComRestApi) {
-            val author: AuthorFilter = when (postListViewModelConnector.authorFilter) {
-                ME -> AuthorFilter.SpecificAuthor(accountStore.account.userId)
-                EVERYONE -> AuthorFilter.Everyone
-            }
-
-            PostListDescriptorForRestSite(
-                    site = connector.site,
-                    statusList = connector.postListType.postStatuses,
-                    author = author
-            )
-        } else {
-            PostListDescriptorForXmlRpcSite(site = connector.site, statusList = connector.postListType.postStatuses)
-        }
+        initList(null, dataSource, lifecycle)
 
         isStarted = true
         lifecycleRegistry.markState(Lifecycle.State.STARTED)
@@ -145,6 +93,11 @@ class PostListViewModel @Inject constructor(
     override fun onCleared() {
         lifecycleRegistry.markState(Lifecycle.State.DESTROYED)
         super.onCleared()
+    }
+
+    fun search(query: String) {
+        initList(query, dataSource, lifecycle)
+        fetchFirstPage()
     }
 
     // Public Methods
@@ -167,7 +120,7 @@ class PostListViewModel @Inject constructor(
     // Utils
 
     private fun fetchFirstPage() {
-        pagedListWrapper.fetchFirstPage()
+        pagedListWrapper?.fetchFirstPage()
     }
 
     private fun onDataUpdated(data: PagedPostList) {
@@ -221,5 +174,116 @@ class PostListViewModel @Inject constructor(
         if (connectionAvailableAfterRefreshError) {
             fetchFirstPage()
         }
+    }
+    private val dataSource: PostListItemDataSource by lazy {
+        PostListItemDataSource(
+                dispatcher = dispatcher,
+                postStore = postStore,
+                postFetcher = connector.postFetcher,
+                transform = this::transformPostModelToPostListItemUiState
+        )
+    }
+
+    private var pagedListWrapper: PagedListWrapper<PostListItemType>? = null
+
+    private fun initList(searchQuery: String?, dataSource: PostListItemDataSource, lifecycle: Lifecycle) {
+        val listDescriptor: PostListDescriptor = initListDescriptor(searchQuery)
+
+
+        pagedListWrapper?.let {
+            clearPagedListData(it)
+            clearEmptyViewStateLiveData(it)
+            clearFetchingFirstPage(it)
+            clearLoadingMore(it)
+        }
+        val pagedListWrapper = listStore.getList(listDescriptor, dataSource, lifecycle)
+        listenToEmptyViewStateLiveData(pagedListWrapper)
+        listenToPagedListDate(pagedListWrapper)
+        listenToFetchingFirstPage(pagedListWrapper)
+        listenToIsLoadingMore(pagedListWrapper)
+        this.pagedListWrapper = pagedListWrapper
+    }
+
+    private fun initListDescriptor(searchQuery: String?): PostListDescriptor {
+        return if (connector.site.isUsingWpComRestApi) {
+            val author: AuthorFilter = when (connector.authorFilter) {
+                ME -> SpecificAuthor(accountStore.account.userId)
+                EVERYONE -> Everyone
+            }
+
+            PostListDescriptorForRestSite(
+                    site = connector.site,
+                    statusList = connector.postListType.postStatuses,
+                    author = author,
+                    searchQuery = searchQuery
+            )
+        } else {
+            PostListDescriptorForXmlRpcSite(site = connector.site, statusList = connector.postListType.postStatuses)
+        }
+    }
+
+    private fun listenToIsLoadingMore(pagedListWrapper: PagedListWrapper<PostListItemType>) {
+        val isLoadingMore: MediatorLiveData<Boolean> = isLoadingMore as MediatorLiveData<Boolean>
+        isLoadingMore.addSource(pagedListWrapper.isLoadingMore) {
+            this.isLoadingMore.value = it
+        }
+    }
+
+    private fun clearLoadingMore(pagedListWrapper: PagedListWrapper<PostListItemType>) {
+        val isLoadingMore: MediatorLiveData<Boolean> = isLoadingMore as MediatorLiveData<Boolean>
+        isLoadingMore.removeSource(pagedListWrapper.isLoadingMore)
+    }
+
+    private fun listenToFetchingFirstPage(pagedListWrapper: PagedListWrapper<PostListItemType>) {
+        val isFetchingFirstPage: MediatorLiveData<Boolean> = isFetchingFirstPage as MediatorLiveData<Boolean>
+        isFetchingFirstPage.addSource(pagedListWrapper.isFetchingFirstPage) {
+            this.isFetchingFirstPage.value = it
+        }
+    }
+
+    private fun clearFetchingFirstPage(pagedListWrapper: PagedListWrapper<PostListItemType>) {
+        val isFetchingFirstPage: MediatorLiveData<Boolean> = isFetchingFirstPage as MediatorLiveData<Boolean>
+        isFetchingFirstPage.removeSource(pagedListWrapper.isFetchingFirstPage)
+    }
+
+    private fun listenToPagedListDate(pagedListWrapper: PagedListWrapper<PostListItemType>) {
+        val pagedListData: MediatorLiveData<PagedPostList> = pagedListData as MediatorLiveData<PagedPostList>
+        pagedListData.addSource(pagedListWrapper.data) { pagedPostList ->
+            pagedPostList?.let {
+                onDataUpdated(it)
+                pagedListData.value = it
+            }
+        }
+    }
+
+    private fun clearPagedListData(pagedListWrapper: PagedListWrapper<PostListItemType>) {
+        val pagedListData: MediatorLiveData<PagedPostList> = pagedListData as MediatorLiveData<PagedPostList>
+        pagedListData.removeSource(pagedListWrapper.data)
+    }
+
+    private fun listenToEmptyViewStateLiveData(pagedListWrapper: PagedListWrapper<PostListItemType>) {
+        val emptyViewState: MediatorLiveData<PostListEmptyUiState> = emptyViewState as MediatorLiveData<PostListEmptyUiState>
+        val update = {
+            createEmptyUiState(
+                    postListType = connector.postListType,
+                    isNetworkAvailable = networkUtilsWrapper.isNetworkAvailable(),
+                    isLoadingData = pagedListWrapper.isFetchingFirstPage.value ?: false ||
+                            pagedListWrapper.data.value == null,
+                    isListEmpty = pagedListWrapper.isEmpty.value ?: true,
+                    error = pagedListWrapper.listError.value,
+                    fetchFirstPage = this@PostListViewModel::fetchFirstPage,
+                    newPost = connector.postActionHandler::newPost
+            )
+        }
+        emptyViewState.addSource(pagedListWrapper.isEmpty) { emptyViewState.value = update() }
+        emptyViewState.addSource(pagedListWrapper.isFetchingFirstPage) { emptyViewState.value = update() }
+        emptyViewState.addSource(pagedListWrapper.listError) { emptyViewState.value = update() }
+    }
+
+    private fun clearEmptyViewStateLiveData(pagedListWrapper: PagedListWrapper<PostListItemType>) {
+        val emptyViewState: MediatorLiveData<PostListEmptyUiState> = emptyViewState as MediatorLiveData<PostListEmptyUiState>
+        emptyViewState.removeSource(pagedListWrapper.isEmpty)
+        emptyViewState.removeSource(pagedListWrapper.isFetchingFirstPage)
+        emptyViewState.removeSource(pagedListWrapper.listError)
     }
 }

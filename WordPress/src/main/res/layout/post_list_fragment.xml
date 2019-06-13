@@ -7,8 +7,16 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
+    <EditText
+        android:id="@+id/dummy_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        />
+
 
     <org.wordpress.android.util.widgets.CustomSwipeRefreshLayout
+        android:layout_below="@+id/dummy_search"
         android:id="@+id/ptr_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
