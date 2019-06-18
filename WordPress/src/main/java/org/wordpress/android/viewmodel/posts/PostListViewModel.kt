@@ -7,7 +7,6 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModel
 import androidx.paging.PagedList
 import org.wordpress.android.fluxc.Dispatcher
 import org.wordpress.android.fluxc.model.LocalOrRemoteId.LocalId
@@ -30,7 +29,9 @@ import org.wordpress.android.ui.uploads.LocalDraftUploadStarter
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.NetworkUtilsWrapper
 import org.wordpress.android.util.SiteUtils
+import org.wordpress.android.util.ThrottleLiveData
 import org.wordpress.android.viewmodel.SingleLiveEvent
+import org.wordpress.android.viewmodel.giphy.CoroutineScopedViewModel
 import org.wordpress.android.viewmodel.helpers.ConnectionStatus
 import org.wordpress.android.viewmodel.posts.PostListEmptyUiState.RefreshError
 import org.wordpress.android.viewmodel.posts.PostListItemIdentifier.LocalPostId
@@ -49,7 +50,7 @@ class PostListViewModel @Inject constructor(
     private val networkUtilsWrapper: NetworkUtilsWrapper,
     private val localDraftUploadStarter: LocalDraftUploadStarter,
     connectionStatus: LiveData<ConnectionStatus>
-) : ViewModel(), LifecycleOwner {
+) : CoroutineScopedViewModel(), LifecycleOwner  {
     private val isStatsSupported: Boolean by lazy {
         SiteUtils.isAccessedViaWPComRest(connector.site) && connector.site.hasCapabilityViewStats
     }
@@ -63,7 +64,7 @@ class PostListViewModel @Inject constructor(
     val scrollToPosition: LiveData<Int> = _scrollToPosition
 
     val pagedListData: LiveData<PagedPostList> = MediatorLiveData<PagedPostList>()
-    val emptyViewState: LiveData<PostListEmptyUiState> = MediatorLiveData<PostListEmptyUiState>()
+    val emptyViewState: LiveData<PostListEmptyUiState> = ThrottleLiveData<PostListEmptyUiState>(coroutineScope = this)
     val isLoadingMore: LiveData<Boolean> = MediatorLiveData<Boolean>()
     val isFetchingFirstPage: LiveData<Boolean> = MediatorLiveData<Boolean>()
 
@@ -275,9 +276,9 @@ class PostListViewModel @Inject constructor(
                     newPost = connector.postActionHandler::newPost
             )
         }
-        emptyViewState.addSource(pagedListWrapper.isEmpty) { emptyViewState.value = update() }
-        emptyViewState.addSource(pagedListWrapper.isFetchingFirstPage) { emptyViewState.value = update() }
-        emptyViewState.addSource(pagedListWrapper.listError) { emptyViewState.value = update() }
+        emptyViewState.addSource(pagedListWrapper.isEmpty) { emptyViewState.postValue(update()) }
+        emptyViewState.addSource(pagedListWrapper.isFetchingFirstPage) { emptyViewState.postValue(update()) }
+        emptyViewState.addSource(pagedListWrapper.listError) { emptyViewState.postValue(update()) }
     }
 
     private fun clearEmptyViewStateLiveData(pagedListWrapper: PagedListWrapper<PostListItemType>) {
