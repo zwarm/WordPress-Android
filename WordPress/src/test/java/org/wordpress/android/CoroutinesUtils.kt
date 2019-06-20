@@ -16,7 +16,7 @@ fun <T> test(context: CoroutineContext = EmptyCoroutineContext, block: suspend C
     runBlocking(context, block)
 }
 
-@ExperimentalCoroutinesApi val TEST_SCOPE = CoroutineScope(Unconfined)
+    @ExperimentalCoroutinesApi val TEST_SCOPE = CoroutineScope(Unconfined)
 @InternalCoroutinesApi val TEST_DISPATCHER: CoroutineDispatcher = TestDispatcher()
 
 @InternalCoroutinesApi
