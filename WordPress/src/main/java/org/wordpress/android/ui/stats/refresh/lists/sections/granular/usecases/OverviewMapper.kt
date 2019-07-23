@@ -3,6 +3,7 @@ package org.wordpress.android.ui.stats.refresh.lists.sections.granular.usecases
 import org.wordpress.android.R
 import org.wordpress.android.fluxc.model.stats.time.VisitsAndViewsModel.PeriodData
 import org.wordpress.android.fluxc.network.utils.StatsGranularity
+import org.wordpress.android.fluxc.network.utils.StatsGranularity.DAYS
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.BarChartItem
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.BarChartItem.Bar
@@ -29,28 +30,18 @@ class OverviewMapper
     )
 
     fun buildTitle(
-        selectedItem: PeriodData?,
+        selectedItem: PeriodData,
         previousItem: PeriodData?,
         selectedPosition: Int,
         isLast: Boolean,
-        startValue: Int = MILLION
+        startValue: Int = MILLION,
+        statsGranularity: StatsGranularity = DAYS
     ): ValueItem {
-        val value = selectedItem?.getValue(selectedPosition) ?: 0
+        val value = selectedItem.getValue(selectedPosition) ?: 0
         val previousValue = previousItem?.getValue(selectedPosition)
         val positive = value >= (previousValue ?: 0)
-        val change = previousValue?.let {
-            val difference = value - previousValue
-            val percentage = when (previousValue) {
-                value -> "0"
-                0L -> "∞"
-                else -> (difference * 100 / previousValue).toFormattedString()
-            }
-            if (positive) {
-                resourceProvider.getString(R.string.stats_traffic_increase, difference.toFormattedString(), percentage)
-            } else {
-                resourceProvider.getString(R.string.stats_traffic_change, difference.toFormattedString(), percentage)
-            }
-        }
+        val change = buildChange(previousValue, value, positive)
+        val unformattedChange = buildChange(previousValue, value, positive) { this.toString() }
         val state = when {
             isLast -> State.NEUTRAL
             positive -> State.POSITIVE
@@ -61,8 +52,36 @@ class OverviewMapper
                 unit = units[selectedPosition],
                 isFirst = true,
                 change = change,
-                state = state
+                state = state,
+                contentDescription = resourceProvider.getString(
+                        R.string.stats_overview_content_description,
+                        value,
+                        resourceProvider.getString(units[selectedPosition]),
+                        statsDateFormatter.printGranularDate(selectedItem.period, statsGranularity),
+                        unformattedChange ?: ""
+                )
         )
+    }
+
+    private fun buildChange(
+        previousValue: Long?,
+        value: Long,
+        positive: Boolean,
+        print: Long.() -> String = { this.toFormattedString() }
+    ): String? {
+        return previousValue?.let {
+            val difference = value - previousValue
+            val percentage = when (previousValue) {
+                value -> "0"
+                0L -> "∞"
+                else -> (difference * 100 / previousValue).print()
+            }
+            if (positive) {
+                resourceProvider.getString(R.string.stats_traffic_increase, difference.print(), percentage)
+            } else {
+                resourceProvider.getString(R.string.stats_traffic_change, difference.print(), percentage)
+            }
+        }
     }
 
     private fun PeriodData.getValue(

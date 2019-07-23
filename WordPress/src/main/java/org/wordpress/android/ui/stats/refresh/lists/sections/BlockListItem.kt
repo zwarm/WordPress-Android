@@ -97,7 +97,8 @@ sealed class BlockListItem(val type: Type) {
         @StringRes val unit: Int,
         val isFirst: Boolean = false,
         val change: String? = null,
-        val state: State = POSITIVE
+        val state: State = POSITIVE,
+            val contentDescription: String
     ) : BlockListItem(VALUE_ITEM) {
         enum class State { POSITIVE, NEGATIVE, NEUTRAL }
     }

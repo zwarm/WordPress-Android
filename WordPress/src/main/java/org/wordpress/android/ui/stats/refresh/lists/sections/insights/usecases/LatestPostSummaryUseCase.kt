@@ -77,7 +77,11 @@ class LatestPostSummaryUseCase
             items.add(
                     ValueItem(
                             domainModel.postViewsCount.toFormattedString(startValue = MILLION),
-                            R.string.stats_views
+                            R.string.stats_views,
+                            contentDescription = contentDescriptionHelper.buildContentDescription(
+                                    R.string.stats_views,
+                                    domainModel.postViewsCount.toString()
+                            )
                     )
             )
             if (domainModel.dayViews.isNotEmpty()) {
