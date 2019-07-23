@@ -22,6 +22,7 @@ import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.ListI
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.NavigationAction
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Title
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.ValueItem
+import org.wordpress.android.ui.stats.refresh.utils.ContentDescriptionHelper
 import org.wordpress.android.ui.stats.refresh.utils.ItemPopupMenuHandler
 import org.wordpress.android.ui.stats.refresh.utils.MILLION
 import org.wordpress.android.ui.stats.refresh.utils.StatsSiteProvider
@@ -37,7 +38,8 @@ class LatestPostSummaryUseCase
     private val statsSiteProvider: StatsSiteProvider,
     private val latestPostSummaryMapper: LatestPostSummaryMapper,
     private val analyticsTracker: AnalyticsTrackerWrapper,
-    private val popupMenuHandler: ItemPopupMenuHandler
+    private val popupMenuHandler: ItemPopupMenuHandler,
+    private val contentDescriptionHelper: ContentDescriptionHelper
 ) : StatelessUseCase<InsightsLatestPostModel>(LATEST_POST_SUMMARY, mainDispatcher) {
     override suspend fun loadCachedData(): InsightsLatestPostModel? {
         return latestPostStore.getLatestPostInsights(statsSiteProvider.siteModel)
@@ -81,20 +83,29 @@ class LatestPostSummaryUseCase
             if (domainModel.dayViews.isNotEmpty()) {
                 items.add(latestPostSummaryMapper.buildBarChartItem(domainModel.dayViews))
             }
+            val postLikeCount = domainModel.postLikeCount.toFormattedString()
             items.add(
                     ListItemWithIcon(
                             R.drawable.ic_star_white_24dp,
                             textResource = R.string.stats_likes,
-                            value = domainModel.postLikeCount.toFormattedString(),
-                            showDivider = true
+                            value = postLikeCount,
+                            showDivider = true,
+                            contentDescription = contentDescriptionHelper.buildContentDescription(
+                                    R.string.stats_likes,
+                                    postLikeCount
+                            )
                     )
             )
+            val postCommentCount = domainModel.postCommentCount.toFormattedString()
             items.add(
                     ListItemWithIcon(
                             R.drawable.ic_comment_white_24dp,
                             textResource = R.string.stats_comments,
-                            value = domainModel.postCommentCount.toFormattedString(),
-                            showDivider = false
+                            value = postCommentCount,
+                            showDivider = false,
+                            contentDescription = contentDescriptionHelper.buildContentDescription(
+                                    R.string.stats_comments, postCommentCount
+                            )
                     )
             )
         }
