@@ -43,4 +43,12 @@ class ContentDescriptionHelper
                 key
         )
     }
+
+    fun buildContentDescription(keyLabel: Int, key: Long): String {
+        return resourceProvider.getString(
+                R.string.stats_list_item_short_description,
+                resourceProvider.getString(keyLabel),
+                key
+        )
+    }
 }

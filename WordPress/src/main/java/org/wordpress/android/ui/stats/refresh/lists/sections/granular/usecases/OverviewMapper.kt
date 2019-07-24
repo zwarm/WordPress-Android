@@ -9,8 +9,10 @@ import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.BarCh
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.BarChartItem.Bar
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.ChartLegend
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Columns
+import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.Columns.Column
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.ValueItem
 import org.wordpress.android.ui.stats.refresh.lists.sections.BlockListItem.ValueItem.State
+import org.wordpress.android.ui.stats.refresh.utils.ContentDescriptionHelper
 import org.wordpress.android.ui.stats.refresh.utils.MILLION
 import org.wordpress.android.ui.stats.refresh.utils.StatsDateFormatter
 import org.wordpress.android.ui.stats.refresh.utils.toFormattedString
@@ -20,7 +22,8 @@ import javax.inject.Inject
 class OverviewMapper
 @Inject constructor(
     private val statsDateFormatter: StatsDateFormatter,
-    private val resourceProvider: ResourceProvider
+    private val resourceProvider: ResourceProvider,
+    private val contentDescriptionHelper: ContentDescriptionHelper
 ) {
     private val units = listOf(
             R.string.stats_views,
@@ -101,13 +104,44 @@ class OverviewMapper
         onColumnSelected: (position: Int) -> Unit,
         selectedPosition: Int
     ): Columns {
+        val views = selectedItem?.views ?: 0
+        val visitors = selectedItem?.visitors ?: 0
+        val likes = selectedItem?.likes ?: 0
+        val comments = selectedItem?.comments ?: 0
         return Columns(
-                units,
                 listOf(
-                        selectedItem?.views?.toFormattedString() ?: "0",
-                        selectedItem?.visitors?.toFormattedString() ?: "0",
-                        selectedItem?.likes?.toFormattedString() ?: "0",
-                        selectedItem?.comments?.toFormattedString() ?: "0"
+                        Column(
+                                R.string.stats_views,
+                                views.toFormattedString(),
+                                contentDescriptionHelper.buildContentDescription(
+                                        R.string.stats_views,
+                                        views
+                                )
+                        ),
+                        Column(
+                                R.string.stats_visitors,
+                                visitors.toFormattedString(),
+                                contentDescriptionHelper.buildContentDescription(
+                                        R.string.stats_visitors,
+                                        visitors
+                                )
+                        ),
+                        Column(
+                                R.string.stats_likes,
+                                likes.toFormattedString(),
+                                contentDescriptionHelper.buildContentDescription(
+                                        R.string.stats_likes,
+                                        likes
+                                )
+                        ),
+                        Column(
+                                R.string.stats_comments,
+                                comments.toFormattedString(),
+                                contentDescriptionHelper.buildContentDescription(
+                                        R.string.stats_comments,
+                                        comments
+                                )
+                        )
                 ),
                 selectedPosition,
                 onColumnSelected
@@ -153,13 +187,15 @@ class OverviewMapper
         if (shouldShowVisitors) {
             result.add(ChartLegend(R.string.stats_visitors))
         }
-        result.add(BarChartItem(
-                chartItems,
-                overlappingEntries = overlappingItems,
-                selectedItem = selectedItemPeriod,
-                onBarSelected = onBarSelected,
-                onBarChartDrawn = onBarChartDrawn
-        ))
+        result.add(
+                BarChartItem(
+                        chartItems,
+                        overlappingEntries = overlappingItems,
+                        selectedItem = selectedItemPeriod,
+                        onBarSelected = onBarSelected,
+                        onBarChartDrawn = onBarChartDrawn
+                )
+        )
         return result
     }
 }

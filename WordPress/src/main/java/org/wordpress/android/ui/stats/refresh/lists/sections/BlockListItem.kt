@@ -98,7 +98,7 @@ sealed class BlockListItem(val type: Type) {
         val isFirst: Boolean = false,
         val change: String? = null,
         val state: State = POSITIVE,
-            val contentDescription: String
+        val contentDescription: String
     ) : BlockListItem(VALUE_ITEM) {
         enum class State { POSITIVE, NEGATIVE, NEUTRAL }
     }
@@ -160,13 +160,14 @@ sealed class BlockListItem(val type: Type) {
     }
 
     data class Columns(
-        val headers: List<Int>,
-        val values: List<String>,
+        val columns: List<Column>,
         val selectedColumn: Int? = null,
         val onColumnSelected: ((position: Int) -> Unit)? = null
     ) : BlockListItem(COLUMNS) {
         override val itemId: Int
-            get() = headers.hashCode()
+            get() = columns.hashCode()
+
+        data class Column(val header: Int, val value: String, val contentDescription: String)
     }
 
     data class Link(
