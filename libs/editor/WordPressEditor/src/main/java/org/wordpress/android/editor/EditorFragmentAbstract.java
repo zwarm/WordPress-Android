@@ -13,6 +13,7 @@ import com.android.volley.toolbox.ImageLoader;
 
 import org.wordpress.android.util.helpers.MediaFile;
 import org.wordpress.android.util.helpers.MediaGallery;
+import org.wordpress.aztec.util.AztecLog;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,6 +22,16 @@ import java.util.Set;
 
 public abstract class EditorFragmentAbstract extends Fragment {
     public class EditorFragmentNotAddedException extends Exception {
+    }
+
+    public static class AztecLoggingException extends Exception {
+        public AztecLoggingException(String message) {
+            super(message);
+        }
+
+        public AztecLoggingException(Throwable originalException) {
+            super(originalException);
+        }
     }
 
     public abstract void setTitle(CharSequence text);
@@ -43,7 +54,7 @@ public abstract class EditorFragmentAbstract extends Fragment {
     public abstract void setContentPlaceholder(CharSequence text);
     public abstract boolean showSavingProgressDialogIfNeeded();
     public abstract boolean hideSavingProgressDialog();
-
+    public abstract void setExternalLogger(AztecLog.ExternalLogger logger);
 
     public enum MediaType {
         IMAGE, VIDEO;

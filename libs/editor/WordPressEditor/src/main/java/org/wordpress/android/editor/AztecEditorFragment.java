@@ -121,15 +121,6 @@ public class AztecEditorFragment extends EditorFragmentAbstract implements
         EditorMediaUploadListener,
         IAztecToolbarClickListener,
         IHistoryListener {
-    public static class AztecLoggingException extends Exception {
-        public AztecLoggingException(String message) {
-            super(message);
-        }
-
-        public AztecLoggingException(Throwable originalException) {
-            super(originalException);
-        }
-    }
 
     private static final String ATTR_TAPPED_MEDIA_PREDICATE = "tapped_media_predicate";
 
@@ -2344,6 +2335,7 @@ public class AztecEditorFragment extends EditorFragmentAbstract implements
         mContent.disableCrashLogging();
     }
 
+    @Override
     public void setExternalLogger(AztecLog.ExternalLogger logger) {
         mContent.setExternalLogger(logger);
     }

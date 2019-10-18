@@ -5,6 +5,7 @@ import android.view.ViewGroup;
 
 import androidx.fragment.app.Fragment;
 
+import org.wordpress.aztec.util.AztecLog;
 import org.wordpress.mobile.WPAndroidGlue.Media;
 import org.wordpress.mobile.WPAndroidGlue.WPAndroidGlueCode;
 import org.wordpress.mobile.WPAndroidGlue.WPAndroidGlueCode.OnAuthHeaderRequestedListener;
@@ -158,5 +159,9 @@ public class GutenbergContainerFragment extends Fragment {
 
     public void clearMediaFileURL(final int mediaId) {
         mWPAndroidGlueCode.clearMediaFileURL(mediaId);
+    }
+
+    public void setExternalLogger(AztecLog.ExternalLogger logger) {
+     // Do nothing for now
     }
 }

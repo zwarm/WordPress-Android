@@ -39,6 +39,7 @@ import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.util.helpers.MediaFile;
 import org.wordpress.android.util.helpers.MediaGallery;
 import org.wordpress.aztec.IHistoryListener;
+import org.wordpress.aztec.util.AztecLog;
 import org.wordpress.mobile.WPAndroidGlue.Media;
 import org.wordpress.mobile.WPAndroidGlue.WPAndroidGlueCode.OnAuthHeaderRequestedListener;
 import org.wordpress.mobile.WPAndroidGlue.WPAndroidGlueCode.OnEditorAutosaveListener;
@@ -853,5 +854,10 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
 
     @Override
     public void onGalleryMediaUploadSucceeded(final long galleryId, long remoteMediaId, int remaining) {
+    }
+
+    @Override
+    public void setExternalLogger(AztecLog.ExternalLogger logger) {
+      // Do nothing
     }
 }
