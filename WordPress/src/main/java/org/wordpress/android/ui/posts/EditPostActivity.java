@@ -53,7 +53,7 @@ import org.wordpress.android.analytics.AnalyticsTracker;
 import org.wordpress.android.analytics.AnalyticsTracker.Stat;
 import org.wordpress.android.editor.AztecEditorFragment;
 import org.wordpress.android.editor.EditorFragmentAbstract;
-import org.wordpress.android.editor.EditorFragmentAbstract.AztecLoggingException;
+import org.wordpress.android.editor.EditorFragmentAbstract.WPEditorLoggingException;
 import org.wordpress.android.editor.EditorFragmentAbstract.EditorDragAndDropListener;
 import org.wordpress.android.editor.EditorFragmentAbstract.EditorFragmentListener;
 import org.wordpress.android.editor.EditorFragmentAbstract.EditorFragmentNotAddedException;
@@ -1779,18 +1779,18 @@ public class EditPostActivity extends AppCompatActivity implements
                 // For now, we're wrapping up the actual log into an exception to reduce possibility
                 // of information not travelling to our Crash Logging Service.
                 // For more info: http://bit.ly/2oJHMG7 and http://bit.ly/2oPOtFX
-                CrashLoggingUtils.logException(new EditorFragmentAbstract.AztecLoggingException(s), T.EDITOR);
+                CrashLoggingUtils.logException(new WPEditorLoggingException(s), T.EDITOR);
             }
 
             @Override
             public void logException(@NotNull Throwable throwable) {
-                CrashLoggingUtils.logException(new EditorFragmentAbstract.AztecLoggingException(throwable), T.EDITOR);
+                CrashLoggingUtils.logException(new WPEditorLoggingException(throwable), T.EDITOR);
             }
 
             @Override
             public void logException(@NotNull Throwable throwable, String s) {
                 CrashLoggingUtils.logException(
-                        new EditorFragmentAbstract.AztecLoggingException(throwable), T.EDITOR, s);
+                        new WPEditorLoggingException(throwable), T.EDITOR, s);
             }
         });
     }

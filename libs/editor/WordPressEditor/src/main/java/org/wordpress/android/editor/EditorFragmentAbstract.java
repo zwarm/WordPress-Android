@@ -24,12 +24,12 @@ public abstract class EditorFragmentAbstract extends Fragment {
     public class EditorFragmentNotAddedException extends Exception {
     }
 
-    public static class AztecLoggingException extends Exception {
-        public AztecLoggingException(String message) {
+    public static class WPEditorLoggingException extends Exception {
+        public WPEditorLoggingException(String message) {
             super(message);
         }
 
-        public AztecLoggingException(Throwable originalException) {
+        public WPEditorLoggingException(Throwable originalException) {
             super(originalException);
         }
     }
