@@ -858,6 +858,8 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
 
     @Override
     public void setExternalLogger(AztecLog.ExternalLogger logger) {
-      // Do nothing
+        if (mRetainedGutenbergContainerFragment != null) {
+            mRetainedGutenbergContainerFragment.setExternalLogger(logger);
+        }
     }
 }

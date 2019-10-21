@@ -162,6 +162,8 @@ public class GutenbergContainerFragment extends Fragment {
     }
 
     public void setExternalLogger(AztecLog.ExternalLogger logger) {
-     // Do nothing for now
+        if (mWPAndroidGlueCode != null) {
+            mWPAndroidGlueCode.setExternalLogger(logger);
+        }
     }
 }
