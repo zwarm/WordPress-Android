@@ -5,6 +5,7 @@ import android.view.ViewGroup;
 
 import androidx.fragment.app.Fragment;
 
+import org.wordpress.mobile.WPAndroidGlue.InitialProps;
 import org.wordpress.mobile.WPAndroidGlue.Media;
 import org.wordpress.mobile.WPAndroidGlue.WPAndroidGlueCode;
 import org.wordpress.mobile.WPAndroidGlue.WPAndroidGlueCode.OnAuthHeaderRequestedListener;
@@ -19,26 +20,16 @@ import java.util.ArrayList;
 public class GutenbergContainerFragment extends Fragment {
     public static final String TAG = "gutenberg_container_fragment_tag";
 
-    private static final String ARG_LOCALE = "param_locale";
-    private static final String ARG_TRANSLATIONS = "param_translations";
-    private static final String ARG_SITE_SLUG = "param_site_slug";
-    private static final String ARG_EXTRA_HTTP_HEADERS = "param_extra_http_headers";
+    private static final String ARG_INITIAL_PROPS = "param_initial_props";
 
     private boolean mHtmlModeEnabled;
     private boolean mHasReceivedAnyContent;
 
     private WPAndroidGlueCode mWPAndroidGlueCode;
-
-    public static GutenbergContainerFragment newInstance(String localeString,
-                                                         Bundle translations,
-                                                         String siteSlug,
-                                                         Bundle extraHttpHeaders) {
+    public static GutenbergContainerFragment newInstance(InitialProps initialProps) {
         GutenbergContainerFragment fragment = new GutenbergContainerFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_LOCALE, localeString);
-        args.putBundle(ARG_TRANSLATIONS, translations);
-        args.putString(ARG_SITE_SLUG, siteSlug);
-        args.putBundle(ARG_EXTRA_HTTP_HEADERS, extraHttpHeaders);
+        args.putParcelable(ARG_INITIAL_PROPS, initialProps);
         fragment.setArguments(args);
         return fragment;
     }
@@ -60,23 +51,17 @@ public class GutenbergContainerFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        String localeString = getArguments().getString(ARG_LOCALE);
-        Bundle translations = getArguments().getBundle(ARG_TRANSLATIONS);
-        String siteSlug = getArguments().getString(ARG_SITE_SLUG);
-        Bundle extraHttpHeaders = getArguments().getBundle(ARG_EXTRA_HTTP_HEADERS);
+        InitialProps initialProps = getArguments().getParcelable(ARG_INITIAL_PROPS);
+        initialProps.setHtmlModeEnabled(mHtmlModeEnabled);
 
         mWPAndroidGlueCode = new WPAndroidGlueCode();
         mWPAndroidGlueCode.onCreate(getContext());
         mWPAndroidGlueCode.onCreateView(
                 getContext(),
-                mHtmlModeEnabled,
                 getActivity().getApplication(),
                 BuildConfig.DEBUG,
                 BuildConfig.BUILD_GUTENBERG_FROM_SOURCE,
-                localeString,
-                translations,
-                siteSlug,
-                extraHttpHeaders);
+                initialProps);
 
         // clear the content initialization flag since a new ReactRootView has been created;
         mHasReceivedAnyContent = false;

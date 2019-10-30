@@ -39,6 +39,7 @@ import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.util.helpers.MediaFile;
 import org.wordpress.android.util.helpers.MediaGallery;
 import org.wordpress.aztec.IHistoryListener;
+import org.wordpress.mobile.WPAndroidGlue.InitialProps;
 import org.wordpress.mobile.WPAndroidGlue.Media;
 import org.wordpress.mobile.WPAndroidGlue.WPAndroidGlueCode.OnAuthHeaderRequestedListener;
 import org.wordpress.mobile.WPAndroidGlue.WPAndroidGlueCode.OnEditorAutosaveListener;
@@ -53,7 +54,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -62,10 +62,8 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
         IHistoryListener {
     private static final String KEY_HTML_MODE_ENABLED = "KEY_HTML_MODE_ENABLED";
     private static final String KEY_EDITOR_DID_MOUNT = "KEY_EDITOR_DID_MOUNT";
+    private static final String ARG_INITIAL_PROPS = "param_initial_props";
     private static final String ARG_IS_NEW_POST = "param_is_new_post";
-    private static final String ARG_LOCALE_SLUG = "param_locale_slug";
-    private static final String ARG_SITE_SLUG = "param_site_slug";
-    private static final String ARG_EXTRA_HTTP_HEADERS = "param_extra_http_headers";
 
     private static final int CAPTURE_PHOTO_PERMISSION_REQUEST_CODE = 101;
     private static final int CAPTURE_VIDEO_PERMISSION_REQUEST_CODE = 102;
@@ -91,26 +89,22 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
 
     private ProgressDialog mSavingContentProgressDialog;
 
-    public static GutenbergEditorFragment newInstance(String title,
-                                                      String content,
-                                                      boolean isNewPost,
+    public static GutenbergEditorFragment newInstance(boolean isNewPost,
                                                       String localeSlug,
                                                       String siteSlug,
                                                       Map<String, String> extraHttpHeaders) {
-        GutenbergEditorFragment fragment = new GutenbergEditorFragment();
+
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM_TITLE, title);
-        args.putString(ARG_PARAM_CONTENT, content);
+
         args.putBoolean(ARG_IS_NEW_POST, isNewPost);
-        args.putString(ARG_LOCALE_SLUG, localeSlug);
-        args.putString(ARG_SITE_SLUG, siteSlug);
 
+        InitialProps initialProps = new InitialProps();
+        initialProps.setLocale(localeSlug);
+        initialProps.setSiteSlug(siteSlug);
+        initialProps.setExtraHttpHeaders(extraHttpHeaders);
+        args.putParcelable(ARG_INITIAL_PROPS, initialProps);
 
-        Bundle extraHttpHeadersBundle = new Bundle();
-        for (Entry<String, String> entry : extraHttpHeaders.entrySet()) {
-            extraHttpHeadersBundle.putString(entry.getKey(), entry.getValue());
-        }
-        args.putBundle(ARG_EXTRA_HTTP_HEADERS, extraHttpHeadersBundle);
+        GutenbergEditorFragment fragment = new GutenbergEditorFragment();
         fragment.setArguments(args);
         return fragment;
     }
@@ -202,18 +196,14 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
         super.onCreate(savedInstanceState);
 
         if (getGutenbergContainerFragment() == null) {
-            String localeSlug = getArguments().getString(ARG_LOCALE_SLUG);
-            String siteSlug = getArguments().getString(ARG_SITE_SLUG);
-            Bundle extraHttpHeaders = getArguments().getBundle(ARG_EXTRA_HTTP_HEADERS);
+            InitialProps initialProps = getArguments().getParcelable(ARG_INITIAL_PROPS);
+            initialProps.setTranslations(getTranslations());
+
+            GutenbergContainerFragment gutenbergContainerFragment = GutenbergContainerFragment.newInstance(initialProps);
+            gutenbergContainerFragment.setRetainInstance(true);
 
             FragmentManager fragmentManager = getChildFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            GutenbergContainerFragment gutenbergContainerFragment =
-                    GutenbergContainerFragment.newInstance(localeSlug,
-                                                           this.getTranslations(),
-                                                           siteSlug,
-                                                           extraHttpHeaders);
-            gutenbergContainerFragment.setRetainInstance(true);
             fragmentTransaction.add(gutenbergContainerFragment, GutenbergContainerFragment.TAG);
             fragmentTransaction.commitNow();
         }

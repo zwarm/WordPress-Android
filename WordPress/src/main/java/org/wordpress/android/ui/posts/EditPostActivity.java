@@ -2162,9 +2162,8 @@ public class EditPostActivity extends AppCompatActivity implements
                         String wpcomLocaleSlug = languageString.replace("_", "-").toLowerCase(Locale.ENGLISH);
                         String siteSlug = Long.toString(mSite.getSiteId());
                         Map<String, String> extraHttpHeaders = mAuthenticationUtils.getAuthHeaders(mSite.getUnmappedUrl());
-                        return GutenbergEditorFragment.newInstance("",
-                                                                   "",
-                                                                   mIsNewPost,
+
+                        return GutenbergEditorFragment.newInstance(mIsNewPost,
                                                                    wpcomLocaleSlug,
                                                                    siteSlug,
                                                                    extraHttpHeaders);
