@@ -19,21 +19,26 @@ import java.util.ArrayList;
 public class GutenbergContainerFragment extends Fragment {
     public static final String TAG = "gutenberg_container_fragment_tag";
 
-    private static final String ARG_IS_NEW_POST = "param_is_new_post";
     private static final String ARG_LOCALE = "param_locale";
     private static final String ARG_TRANSLATIONS = "param_translations";
+    private static final String ARG_SITE_SLUG = "param_site_slug";
+    private static final String ARG_EXTRA_HTTP_HEADERS = "param_extra_http_headers";
 
     private boolean mHtmlModeEnabled;
     private boolean mHasReceivedAnyContent;
 
     private WPAndroidGlueCode mWPAndroidGlueCode;
 
-    public static GutenbergContainerFragment newInstance(boolean isNewPost, String localeString, Bundle translations) {
+    public static GutenbergContainerFragment newInstance(String localeString,
+                                                         Bundle translations,
+                                                         String siteSlug,
+                                                         Bundle extraHttpHeaders) {
         GutenbergContainerFragment fragment = new GutenbergContainerFragment();
         Bundle args = new Bundle();
-        args.putBoolean(ARG_IS_NEW_POST, isNewPost);
         args.putString(ARG_LOCALE, localeString);
         args.putBundle(ARG_TRANSLATIONS, translations);
+        args.putString(ARG_SITE_SLUG, siteSlug);
+        args.putBundle(ARG_EXTRA_HTTP_HEADERS, extraHttpHeaders);
         fragment.setArguments(args);
         return fragment;
     }
@@ -55,9 +60,10 @@ public class GutenbergContainerFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        boolean isNewPost = getArguments() != null && getArguments().getBoolean(ARG_IS_NEW_POST);
         String localeString = getArguments().getString(ARG_LOCALE);
         Bundle translations = getArguments().getBundle(ARG_TRANSLATIONS);
+        String siteSlug = getArguments().getString(ARG_SITE_SLUG);
+        Bundle extraHttpHeaders = getArguments().getBundle(ARG_EXTRA_HTTP_HEADERS);
 
         mWPAndroidGlueCode = new WPAndroidGlueCode();
         mWPAndroidGlueCode.onCreate(getContext());
@@ -67,9 +73,10 @@ public class GutenbergContainerFragment extends Fragment {
                 getActivity().getApplication(),
                 BuildConfig.DEBUG,
                 BuildConfig.BUILD_GUTENBERG_FROM_SOURCE,
-                isNewPost,
                 localeString,
-                translations);
+                translations,
+                siteSlug,
+                extraHttpHeaders);
 
         // clear the content initialization flag since a new ReactRootView has been created;
         mHasReceivedAnyContent = false;

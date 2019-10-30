@@ -53,6 +53,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -63,6 +64,8 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
     private static final String KEY_EDITOR_DID_MOUNT = "KEY_EDITOR_DID_MOUNT";
     private static final String ARG_IS_NEW_POST = "param_is_new_post";
     private static final String ARG_LOCALE_SLUG = "param_locale_slug";
+    private static final String ARG_SITE_SLUG = "param_site_slug";
+    private static final String ARG_EXTRA_HTTP_HEADERS = "param_extra_http_headers";
 
     private static final int CAPTURE_PHOTO_PERMISSION_REQUEST_CODE = 101;
     private static final int CAPTURE_VIDEO_PERMISSION_REQUEST_CODE = 102;
@@ -91,13 +94,23 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
     public static GutenbergEditorFragment newInstance(String title,
                                                       String content,
                                                       boolean isNewPost,
-                                                      String localeSlug) {
+                                                      String localeSlug,
+                                                      String siteSlug,
+                                                      Map<String, String> extraHttpHeaders) {
         GutenbergEditorFragment fragment = new GutenbergEditorFragment();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM_TITLE, title);
         args.putString(ARG_PARAM_CONTENT, content);
         args.putBoolean(ARG_IS_NEW_POST, isNewPost);
         args.putString(ARG_LOCALE_SLUG, localeSlug);
+        args.putString(ARG_SITE_SLUG, siteSlug);
+
+
+        Bundle extraHttpHeadersBundle = new Bundle();
+        for (Entry<String, String> entry : extraHttpHeaders.entrySet()) {
+            extraHttpHeadersBundle.putString(entry.getKey(), entry.getValue());
+        }
+        args.putBundle(ARG_EXTRA_HTTP_HEADERS, extraHttpHeadersBundle);
         fragment.setArguments(args);
         return fragment;
     }
@@ -119,7 +132,7 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
      *
      * @return Bundle a map of "english string" => [ "current locale string" ]
      */
-    public Bundle getTranslations() {
+    private Bundle getTranslations() {
         Bundle translations = new Bundle();
         Locale defaultLocale = new Locale("en");
         Resources currentResources = getActivity().getResources();
@@ -189,13 +202,17 @@ public class GutenbergEditorFragment extends EditorFragmentAbstract implements
         super.onCreate(savedInstanceState);
 
         if (getGutenbergContainerFragment() == null) {
-            boolean isNewPost = getArguments().getBoolean(ARG_IS_NEW_POST);
             String localeSlug = getArguments().getString(ARG_LOCALE_SLUG);
+            String siteSlug = getArguments().getString(ARG_SITE_SLUG);
+            Bundle extraHttpHeaders = getArguments().getBundle(ARG_EXTRA_HTTP_HEADERS);
 
             FragmentManager fragmentManager = getChildFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
             GutenbergContainerFragment gutenbergContainerFragment =
-                    GutenbergContainerFragment.newInstance(isNewPost, localeSlug, this.getTranslations());
+                    GutenbergContainerFragment.newInstance(localeSlug,
+                                                           this.getTranslations(),
+                                                           siteSlug,
+                                                           extraHttpHeaders);
             gutenbergContainerFragment.setRetainInstance(true);
             fragmentTransaction.add(gutenbergContainerFragment, GutenbergContainerFragment.TAG);
             fragmentTransaction.commitNow();

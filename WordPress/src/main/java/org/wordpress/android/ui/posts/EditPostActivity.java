@@ -127,6 +127,7 @@ import org.wordpress.android.ui.uploads.PostEvents;
 import org.wordpress.android.ui.uploads.UploadService;
 import org.wordpress.android.ui.uploads.UploadUtils;
 import org.wordpress.android.ui.uploads.VideoOptimizer;
+import org.wordpress.android.ui.utils.AuthenticationUtils;
 import org.wordpress.android.ui.utils.UiHelpers;
 import org.wordpress.android.util.ActivityUtils;
 import org.wordpress.android.util.AniUtils;
@@ -316,6 +317,7 @@ public class EditPostActivity extends AppCompatActivity implements
     @Inject RemotePreviewLogicHelper mRemotePreviewLogicHelper;
     @Inject ProgressDialogHelper mProgressDialogHelper;
     @Inject FeaturedImageHelper mFeaturedImageHelper;
+    @Inject AuthenticationUtils mAuthenticationUtils;
 
     private SiteModel mSite;
 
@@ -2158,7 +2160,14 @@ public class EditPostActivity extends AppCompatActivity implements
                         setGutenbergEnabledIfNeeded();
                         String languageString = LocaleManager.getLanguage(EditPostActivity.this);
                         String wpcomLocaleSlug = languageString.replace("_", "-").toLowerCase(Locale.ENGLISH);
-                        return GutenbergEditorFragment.newInstance("", "", mIsNewPost, wpcomLocaleSlug);
+                        String siteSlug = Long.toString(mSite.getSiteId());
+                        Map<String, String> extraHttpHeaders = mAuthenticationUtils.getAuthHeaders(mSite.getUnmappedUrl());
+                        return GutenbergEditorFragment.newInstance("",
+                                                                   "",
+                                                                   mIsNewPost,
+                                                                   wpcomLocaleSlug,
+                                                                   siteSlug,
+                                                                   extraHttpHeaders);
                     } else {
                         // If gutenberg editor is not selected, default to Aztec.
                         return AztecEditorFragment.newInstance("", "", AppPrefs.isAztecEditorToolbarExpanded());
