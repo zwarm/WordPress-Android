@@ -1,13 +1,11 @@
 package org.wordpress.android.ui;
 
-import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,11 +20,13 @@ import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
 
 import com.android.volley.toolbox.NetworkImageView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.apache.commons.text.StringEscapeUtils;
 import org.wordpress.android.R;
@@ -121,8 +121,7 @@ public class AddQuickPressShortcutActivity extends ListActivity {
     }
 
     private void buildDialog(final int position) {
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(
-                new ContextThemeWrapper(this, R.style.Calypso_Dialog_Alert));
+        AlertDialog.Builder dialogBuilder = new MaterialAlertDialogBuilder(this);
         dialogBuilder.setTitle(R.string.quickpress_add_alert_title);
 
         final EditText quickPressShortcutName = new EditText(AddQuickPressShortcutActivity.this);

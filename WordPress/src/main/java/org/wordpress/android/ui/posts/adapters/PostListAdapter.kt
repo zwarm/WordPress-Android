@@ -28,6 +28,7 @@ private const val VIEW_TYPE_POST_COMPACT = 1
 private const val VIEW_TYPE_ENDLIST_INDICATOR = 2
 private const val VIEW_TYPE_LOADING = 3
 private const val VIEW_TYPE_LOADING_COMPACT = 4
+private const val VIEW_TYPE_SEPARATOR = 5
 
 class PostListAdapter(
     context: Context,

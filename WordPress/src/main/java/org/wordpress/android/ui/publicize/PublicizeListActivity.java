@@ -60,7 +60,7 @@ public class PublicizeListActivity extends AppCompatActivity
 
         setContentView(R.layout.publicize_list_activity);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
 
         ActionBar actionBar = getSupportActionBar();

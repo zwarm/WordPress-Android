@@ -24,7 +24,7 @@
     </style>
 
     <style name="LoginTheme.Button.Secondary" parent="Widget.AppCompat.Button.Borderless.Colored">
-        <item name="android:textColor">@color/login_secondary_button_text_color</item>
+        <item name="android:textColor">?attr/coloron</item>
         <item name="android:textAppearance">@style/TextAppearance.AppCompat.Caption</item>
     </style>
 

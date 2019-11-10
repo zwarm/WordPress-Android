@@ -1,7 +1,6 @@
 package org.wordpress.android.ui.prefs;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
@@ -9,7 +8,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.ContextThemeWrapper;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -19,7 +17,10 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.widget.CompoundButtonCompat;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.wordpress.android.Constants;
 import org.wordpress.android.R;
@@ -111,8 +112,7 @@ public class SiteSettingsFormatDialog extends DialogFragment implements DialogIn
             }
         });
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(
-                new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
         builder.setPositiveButton(android.R.string.ok, this);
         builder.setNegativeButton(R.string.cancel, this);
         builder.setView(view);
@@ -126,8 +126,8 @@ public class SiteSettingsFormatDialog extends DialogFragment implements DialogIn
 
         for (int i = 0; i < mEntries.length; i++) {
             RadioButton radio = new RadioButton(getActivity());
-            CompoundButtonCompat.setButtonTintList(radio,
-                    getResources().getColorStateList(R.color.primary_40_gray_20_gray_40_selector));
+            CompoundButtonCompat.setButtonTintList(radio, AppCompatResources
+                    .getColorStateList(radio.getContext(), R.color.primary_40_gray_20_gray_40_selector));
             radio.setText(mEntries[i]);
             radio.setId(i);
             mRadioGroup.addView(radio);

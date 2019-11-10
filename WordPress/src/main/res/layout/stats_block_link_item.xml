@@ -7,7 +7,7 @@
               android:id="@+id/link_wrapper"
               android:orientation="horizontal">
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/text"
         style="@style/StatsBlockLink"
         android:drawablePadding="@dimen/margin_extra_medium_large"

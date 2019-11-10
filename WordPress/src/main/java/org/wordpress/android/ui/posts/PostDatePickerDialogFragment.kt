@@ -10,6 +10,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
 import org.wordpress.android.R
+import org.wordpress.android.R.style
 import org.wordpress.android.WordPress
 import javax.inject.Inject
 
@@ -22,7 +23,7 @@ class PostDatePickerDialogFragment : DialogFragment() {
                 .get(EditPostPublishSettingsViewModel::class.java)
 
         val datePickerDialog = DatePickerDialog(
-                ContextThemeWrapper(activity, R.style.Calypso_Dialog),
+                ContextThemeWrapper(activity, style.Calypso_Dialog),
                 null,
                 viewModel.year ?: 0,
                 viewModel.month ?: 0,

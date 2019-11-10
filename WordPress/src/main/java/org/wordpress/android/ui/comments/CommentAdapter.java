@@ -71,8 +71,6 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final int mAvatarSz;
     private final String mStatusTextSpam;
     private final String mStatusTextUnapproved;
-    private final int mSelectedColor;
-    private final int mUnselectedColor;
 
     private OnDataLoadedListener mOnDataLoadedListener;
     private OnCommentPressedListener mOnCommentPressedListener;
@@ -137,8 +135,6 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         mStatusColorSpam = ContextCompat.getColor(context, R.color.error);
         mStatusColorUnapproved = ContextCompat.getColor(context, R.color.accent);
 
-        mUnselectedColor = ContextCompat.getColor(context, android.R.color.white);
-        mSelectedColor = ContextCompat.getColor(context, R.color.gray_5);
 
         mStatusTextSpam = context.getResources().getString(R.string.comment_status_spam);
         mStatusTextUnapproved = context.getResources().getString(R.string.comment_status_unapproved);
@@ -247,12 +243,12 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (mEnableSelection && isItemSelected(position)) {
             checkmarkVisibility = View.VISIBLE;
             mImageManager.cancelRequestAndClearImageView(holder.mImgAvatar);
-            holder.mContainerView.setBackgroundColor(mSelectedColor);
+            holder.mContainerView.setSelected(true);
         } else {
             checkmarkVisibility = View.GONE;
             mImageManager.loadIntoCircle(holder.mImgAvatar, ImageType.AVATAR_WITH_BACKGROUND,
                     getAvatarForDisplay(comment, mAvatarSz));
-            holder.mContainerView.setBackgroundColor(mUnselectedColor);
+            holder.mContainerView.setSelected(false);
         }
 
         if (holder.mImgCheckmark.getVisibility() != checkmarkVisibility) {

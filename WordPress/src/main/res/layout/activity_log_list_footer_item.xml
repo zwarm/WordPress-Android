@@ -9,6 +9,6 @@
     android:layout_width="match_parent"
     android:padding="@dimen/margin_extra_large"
     android:text="@string/activity_log_limited_content_on_free_plan"
-    android:textAppearance="@style/Base.TextAppearance.AppCompat.Body1"
-    android:textColor="?attr/wpColorTextSubtle" >
+    android:textAppearance="?attr/textAppearanceBody1"
+    android:textColor="?attr/wpColorOnSurfaceMedium" >
 </org.wordpress.android.widgets.WPTextView>

@@ -188,7 +188,15 @@ class PostListFragment : Fragment() {
                 0,
                 context.resources.getDimensionPixelSize(R.dimen.list_divider_height)
         )
-        recyclerView?.layoutManager = LinearLayoutManager(context)
+
+        val layoutManager = LinearLayoutManager(context)
+
+        recyclerView?.layoutManager = layoutManager
+
+//        val dividerItemDecoration = DividerItemDecoration(view.context, layoutManager.orientation)
+//        recyclerView?.addItemDecoration(dividerItemDecoration)
+
+
         recyclerView?.adapter = postListAdapter
 
         swipeToRefreshHelper = buildSwipeToRefreshHelper(swipeRefreshLayout) {

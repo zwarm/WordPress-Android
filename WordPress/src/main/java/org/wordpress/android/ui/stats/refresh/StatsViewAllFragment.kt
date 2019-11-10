@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout.LayoutParams
+import com.google.android.material.elevation.ElevationOverlayProvider
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
 import com.google.android.material.tabs.TabLayout.Tab
@@ -36,6 +37,7 @@ import org.wordpress.android.ui.stats.refresh.utils.StatsNavigator
 import org.wordpress.android.ui.stats.refresh.utils.StatsSiteProvider
 import org.wordpress.android.ui.stats.refresh.utils.drawDateSelector
 import org.wordpress.android.util.WPSwipeToRefreshHelper
+import org.wordpress.android.util.getColorFromAttribute
 import org.wordpress.android.util.helpers.SwipeToRefreshHelper
 import org.wordpress.android.util.image.ImageManager
 import org.wordpress.android.widgets.WPSnackbar
@@ -113,6 +115,15 @@ class StatsViewAllFragment : DaggerFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val nonNullActivity = checkNotNull(activity)
+
+        val elevationOverlayProvider = ElevationOverlayProvider(view.context)
+        val appbarElevation = resources.getDimension(R.dimen.appbar_elevation)
+        val appBarColor = elevationOverlayProvider.compositeOverlayIfNeeded(
+                view.context.getColorFromAttribute(R.attr.wpColorAppBar),
+                appbarElevation
+        )
+
+        toolbar.setBackgroundColor(appBarColor)
 
         initializeViews(savedInstanceState)
         initializeViewModels(nonNullActivity, savedInstanceState)

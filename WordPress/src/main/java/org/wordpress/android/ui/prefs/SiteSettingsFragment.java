@@ -1,7 +1,6 @@
 package org.wordpress.android.ui.prefs;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.ProgressDialog;
@@ -43,10 +42,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.android.volley.VolleyError;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.wordpress.rest.RestRequest;
@@ -74,6 +75,7 @@ import org.wordpress.android.ui.plans.PlansConstants;
 import org.wordpress.android.ui.prefs.EditTextPreferenceWithValidation.ValidationType;
 import org.wordpress.android.ui.prefs.SiteSettingsFormatDialog.FormatType;
 import org.wordpress.android.util.AppLog;
+import org.wordpress.android.util.ContextUtilsKt;
 import org.wordpress.android.util.HtmlUtils;
 import org.wordpress.android.util.LocaleManager;
 import org.wordpress.android.util.NetworkUtils;
@@ -400,13 +402,13 @@ public class SiteSettingsFragment extends PreferenceFragment
                     break;
                 case PAGING_REQUEST_CODE:
                     mSiteSettings.setShouldPageComments(data.getBooleanExtra(NumberPickerDialog.SWITCH_ENABLED_KEY,
-                                                                             false));
+                            false));
                     onPreferenceChange(mPagingPref, data.getIntExtra(
                             NumberPickerDialog.CUR_VALUE_KEY, -1));
                     break;
                 case CLOSE_AFTER_REQUEST_CODE:
                     mSiteSettings.setShouldCloseAfter(data.getBooleanExtra(NumberPickerDialog.SWITCH_ENABLED_KEY,
-                                                                           false));
+                            false));
                     onPreferenceChange(mCloseAfterPref, data.getIntExtra(NumberPickerDialog.CUR_VALUE_KEY, -1));
                     break;
                 case MULTIPLE_LINKS_REQUEST_CODE:
@@ -568,15 +570,15 @@ public class SiteSettingsFragment extends PreferenceFragment
         } else if (preference == mModerationHoldPref) {
             mEditingList = mSiteSettings.getModerationKeys();
             showListEditorDialog(R.string.site_settings_moderation_hold_title,
-                                 R.string.site_settings_hold_for_moderation_description);
+                    R.string.site_settings_hold_for_moderation_description);
         } else if (preference == mBlacklistPref) {
             mEditingList = mSiteSettings.getBlacklistKeys();
             showListEditorDialog(R.string.site_settings_blacklist_title,
-                                 R.string.site_settings_blacklist_description);
+                    R.string.site_settings_blacklist_description);
         } else if (preference == mJpWhitelistPref) {
             mEditingList = mSiteSettings.getJetpackWhitelistKeys();
             showListEditorDialog(R.string.jetpack_brute_force_whitelist_title,
-                                 R.string.site_settings_jetpack_whitelist_description);
+                    R.string.site_settings_jetpack_whitelist_description);
         } else if (preference == mStartOverPref) {
             handleStartOver();
         } else if (preference == mCloseAfterPref) {
@@ -602,8 +604,7 @@ public class SiteSettingsFragment extends PreferenceFragment
     }
 
     private void disconnectFromJetpack() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(
-                new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
         builder.setMessage(R.string.jetpack_disconnect_confirmation_message);
         builder.setPositiveButton(R.string.jetpack_disconnect_confirm, new DialogInterface.OnClickListener() {
             @Override
@@ -694,15 +695,15 @@ public class SiteSettingsFragment extends PreferenceFragment
         } else if (preference == mLanguagePref) {
             if (!mSiteSettings.setLanguageCode(newValue.toString())) {
                 AppLog.w(AppLog.T.SETTINGS,
-                         "Unknown language code " + newValue.toString() + " selected in Site Settings.");
+                        "Unknown language code " + newValue.toString() + " selected in Site Settings.");
                 ToastUtils.showToast(getActivity(), R.string.site_settings_unknown_language_code_error);
             }
             changeLanguageValue(mSiteSettings.getLanguageCode());
         } else if (preference == mPrivacyPref) {
             mSiteSettings.setPrivacy(Integer.parseInt(newValue.toString()));
             setDetailListPreferenceValue(mPrivacyPref,
-                                         String.valueOf(mSiteSettings.getPrivacy()),
-                                         mSiteSettings.getPrivacyDescription());
+                    String.valueOf(mSiteSettings.getPrivacy()),
+                    mSiteSettings.getPrivacyDescription());
         } else if (preference == mAllowCommentsPref || preference == mAllowCommentsNested) {
             setAllowComments((Boolean) newValue);
         } else if (preference == mSendPingbacksPref || preference == mSendPingbacksNested) {
@@ -715,8 +716,8 @@ public class SiteSettingsFragment extends PreferenceFragment
         } else if (preference == mSortByPref) {
             mSiteSettings.setCommentSorting(Integer.parseInt(newValue.toString()));
             setDetailListPreferenceValue(mSortByPref,
-                                         newValue.toString(),
-                                         mSiteSettings.getSortingDescription());
+                    newValue.toString(),
+                    mSiteSettings.getSortingDescription());
         } else if (preference == mThreadingPref) {
             mSiteSettings.setThreadingLevels(Integer.parseInt(newValue.toString()));
             mThreadingPref.setSummary(mSiteSettings.getThreadingDescription());
@@ -732,9 +733,9 @@ public class SiteSettingsFragment extends PreferenceFragment
         } else if (preference == mMultipleLinksPref) {
             mSiteSettings.setMultipleLinks(Integer.parseInt(newValue.toString()));
             String s = StringUtils.getQuantityString(getActivity(), R.string.site_settings_multiple_links_summary_zero,
-                                                     R.string.site_settings_multiple_links_summary_one,
-                                                     R.string.site_settings_multiple_links_summary_other,
-                                                     mSiteSettings.getMultipleLinks());
+                    R.string.site_settings_multiple_links_summary_one,
+                    R.string.site_settings_multiple_links_summary_other,
+                    mSiteSettings.getMultipleLinks());
             mMultipleLinksPref.setSummary(s);
         } else if (preference == mUsernamePref) {
             mSiteSettings.setUsername(newValue.toString());
@@ -745,13 +746,13 @@ public class SiteSettingsFragment extends PreferenceFragment
         } else if (preference == mCategoryPref) {
             mSiteSettings.setDefaultCategory(Integer.parseInt(newValue.toString()));
             setDetailListPreferenceValue(mCategoryPref,
-                                         newValue.toString(),
-                                         mSiteSettings.getDefaultCategoryForDisplay());
+                    newValue.toString(),
+                    mSiteSettings.getDefaultCategoryForDisplay());
         } else if (preference == mFormatPref) {
             mSiteSettings.setDefaultFormat(newValue.toString());
             setDetailListPreferenceValue(mFormatPref,
-                                         newValue.toString(),
-                                         mSiteSettings.getDefaultPostFormatDisplay());
+                    newValue.toString(),
+                    mSiteSettings.getDefaultPostFormatDisplay());
         } else if (preference == mRelatedPostsPref) {
             mRelatedPostsPref.setSummary(newValue.toString());
         } else if (preference == mModerationHoldPref) {
@@ -810,7 +811,7 @@ public class SiteSettingsFragment extends PreferenceFragment
                     HashMap<String, Object> properties = new HashMap<>();
                     properties.put("hint_shown", hintObj.getHint());
                     AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.SITE_SETTINGS_HINT_TOAST_SHOWN, mSite,
-                                                        properties);
+                            properties);
                     ToastUtils.showToast(getActivity(), hintObj.getHint(), ToastUtils.Duration.SHORT);
                 }
                 return true;
@@ -889,7 +890,7 @@ public class SiteSettingsFragment extends PreferenceFragment
 
         // customize list dividers
         //noinspection deprecation
-        prefList.setDivider(res.getDrawable(R.drawable.bg_rectangle_divider));
+        prefList.setDivider(ContextUtilsKt.getDrawableFromAttribute(getActivity(), android.R.attr.listDivider));
         prefList.setDividerHeight(res.getDimensionPixelSize(R.dimen.site_settings_divider_height));
         // handle long clicks on preferences to display hints
         prefList.setOnItemLongClickListener(this);
@@ -1105,7 +1106,7 @@ public class SiteSettingsFragment extends PreferenceFragment
         args.putBoolean(NumberPickerDialog.SWITCH_ENABLED_KEY, mSiteSettings.getShouldThreadComments());
         args.putString(NumberPickerDialog.SWITCH_TITLE_KEY, getString(R.string.site_settings_threading_title));
         args.putString(NumberPickerDialog.SWITCH_DESC_KEY,
-                       getString(R.string.site_settings_threading_dialog_description));
+                getString(R.string.site_settings_threading_dialog_description));
         args.putString(NumberPickerDialog.TITLE_KEY, getString(R.string.site_settings_threading_title));
         args.putString(NumberPickerDialog.HEADER_TEXT_KEY, getString(R.string.site_settings_threading_dialog_header));
         args.putInt(NumberPickerDialog.MIN_VALUE_KEY, 2);
@@ -1120,8 +1121,7 @@ public class SiteSettingsFragment extends PreferenceFragment
     }
 
     private void showExportContentDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(
-                new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
         builder.setTitle(R.string.export_your_content);
         String email = mAccountStore.getAccount().getEmail();
         builder.setMessage(getString(R.string.export_your_content_message, email));
@@ -1182,7 +1182,7 @@ public class SiteSettingsFragment extends PreferenceFragment
                 if (isAdded()) {
                     ToastUtils.showToast(getActivity(), getString(R.string.purchases_request_error));
                     AppLog.e(AppLog.T.API,
-                             "Error occurred while requesting purchases for deletion check: " + error.toString());
+                            "Error occurred while requesting purchases for deletion check: " + error.toString());
                 }
             }
         });
@@ -1202,8 +1202,7 @@ public class SiteSettingsFragment extends PreferenceFragment
     }
 
     private void showPurchasesDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(
-                new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
         builder.setTitle(R.string.premium_upgrades_title);
         builder.setMessage(R.string.premium_upgrades_message);
         builder.setPositiveButton(R.string.show_purchases, new DialogInterface.OnClickListener() {
@@ -1242,8 +1241,7 @@ public class SiteSettingsFragment extends PreferenceFragment
             return;
         }
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(
-                new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
         builder.setTitle(R.string.delete_site_warning_title);
         String text = getString(R.string.delete_site_warning, "<b>" + UrlUtils.getHost(mSite.getUrl()) + "</b>")
                       + "<br><br>"
@@ -1278,9 +1276,9 @@ public class SiteSettingsFragment extends PreferenceFragment
         args.putBoolean(NumberPickerDialog.SHOW_SWITCH_KEY, true);
         args.putBoolean(NumberPickerDialog.SWITCH_ENABLED_KEY, mSiteSettings.getShouldCloseAfter());
         args.putString(NumberPickerDialog.SWITCH_TITLE_KEY,
-                       getString(R.string.site_settings_close_after_dialog_switch_text));
+                getString(R.string.site_settings_close_after_dialog_switch_text));
         args.putString(NumberPickerDialog.SWITCH_DESC_KEY,
-                       getString(R.string.site_settings_close_after_dialog_description));
+                getString(R.string.site_settings_close_after_dialog_description));
         args.putString(NumberPickerDialog.TITLE_KEY, getString(R.string.site_settings_close_after_dialog_title));
         args.putString(NumberPickerDialog.HEADER_TEXT_KEY, getString(R.string.site_settings_close_after_dialog_header));
         args.putInt(NumberPickerDialog.MIN_VALUE_KEY, 1);
@@ -1307,24 +1305,24 @@ public class SiteSettingsFragment extends PreferenceFragment
         changeEditTextPreferenceValue(mPasswordPref, mSiteSettings.getPassword());
         changeLanguageValue(mSiteSettings.getLanguageCode());
         setDetailListPreferenceValue(mPrivacyPref,
-                                     String.valueOf(mSiteSettings.getPrivacy()),
-                                     mSiteSettings.getPrivacyDescription());
+                String.valueOf(mSiteSettings.getPrivacy()),
+                mSiteSettings.getPrivacyDescription());
         setCategories();
         setPostFormats();
         setAllowComments(mSiteSettings.getAllowComments());
         setSendPingbacks(mSiteSettings.getSendPingbacks());
         setReceivePingbacks(mSiteSettings.getReceivePingbacks());
         setDetailListPreferenceValue(mSortByPref,
-                                     String.valueOf(mSiteSettings.getCommentSorting()),
-                                     mSiteSettings.getSortingDescription());
+                String.valueOf(mSiteSettings.getCommentSorting()),
+                mSiteSettings.getSortingDescription());
         int approval = mSiteSettings.getManualApproval()
                 ? mSiteSettings.getUseCommentWhitelist() ? 0
-                        : -1 : 1;
+                : -1 : 1;
         setDetailListPreferenceValue(mWhitelistPref, String.valueOf(approval), getWhitelistSummary(approval));
         String s = StringUtils.getQuantityString(getActivity(), R.string.site_settings_multiple_links_summary_zero,
-                                                 R.string.site_settings_multiple_links_summary_one,
-                                                 R.string.site_settings_multiple_links_summary_other,
-                                                 mSiteSettings.getMultipleLinks());
+                R.string.site_settings_multiple_links_summary_one,
+                R.string.site_settings_multiple_links_summary_other,
+                mSiteSettings.getMultipleLinks());
         mMultipleLinksPref.setSummary(s);
         mIdentityRequiredPreference.setChecked(mSiteSettings.getIdentityRequired());
         mUserAccountRequiredPref.setChecked(mSiteSettings.getUserAccountRequired());
@@ -1607,8 +1605,8 @@ public class SiteSettingsFragment extends PreferenceFragment
         mSiteSettings.setManualApproval(val == -1);
         mSiteSettings.setUseCommentWhitelist(val == 0);
         setDetailListPreferenceValue(mWhitelistPref,
-                                     String.valueOf(val),
-                                     getWhitelistSummary(val));
+                String.valueOf(val),
+                getWhitelistSummary(val));
     }
 
     private void handleStartOver() {
@@ -1620,7 +1618,7 @@ public class SiteSettingsFragment extends PreferenceFragment
         intent.setType(ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE);
         intent.putExtra(Intent.EXTRA_EMAIL, new String[]{"help@wordpress.com"});
         intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.start_over_email_subject,
-                                                        SiteUtils.getHomeURLOrHostName(mSite)));
+                SiteUtils.getHomeURLOrHostName(mSite)));
         intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.start_over_email_body, mSite.getUrl()));
         try {
             startActivity(Intent.createChooser(intent, getString(R.string.contact_support)));
@@ -1628,7 +1626,7 @@ public class SiteSettingsFragment extends PreferenceFragment
             ToastUtils.showToast(getActivity(), R.string.start_over_email_intent_error);
         }
         AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.SITE_SETTINGS_START_OVER_CONTACT_SUPPORT_CLICKED,
-                                            mSite);
+                mSite);
     }
 
     private void showListEditorDialog(int titleRes, int headerRes) {
@@ -1646,7 +1644,7 @@ public class SiteSettingsFragment extends PreferenceFragment
         ((TextView) view.findViewById(R.id.list_editor_header_text)).setText(headerText);
 
         mAdapter = null;
-        final EmptyViewRecyclerView list = view.findViewById(android.R.id.list);
+        final EmptyViewRecyclerView list = view.findViewById(R.id.list);
         list.setLayoutManager(
                 new SmoothScrollLinearLayoutManager(
                         getActivity(),
@@ -1654,7 +1652,7 @@ public class SiteSettingsFragment extends PreferenceFragment
                         false,
                         getResources().getInteger(android.R.integer.config_mediumAnimTime)
                 )
-                             );
+        );
         list.setAdapter(getAdapter());
         list.setEmptyView(view.findViewById(R.id.empty_view));
         list.addOnItemTouchListener(
@@ -1692,8 +1690,7 @@ public class SiteSettingsFragment extends PreferenceFragment
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(
-                                new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+                MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
                 final EditText input = new EditText(getActivity());
                 WPPrefUtils.layoutAsInput(input);
                 input.setWidth(getResources().getDimensionPixelSize(R.dimen.list_editor_input_max_width));
@@ -1721,7 +1718,7 @@ public class SiteSettingsFragment extends PreferenceFragment
                             );
                             mSiteSettings.saveSettings();
                             AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.SITE_SETTINGS_ADDED_LIST_ITEM,
-                                                                mSite);
+                                    mSite);
                         }
                     }
                 });
@@ -1994,7 +1991,7 @@ public class SiteSettingsFragment extends PreferenceFragment
 
     public void handleSiteDeleted() {
         AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat
-                                                    .SITE_SETTINGS_DELETE_SITE_RESPONSE_OK, mSite);
+                .SITE_SETTINGS_DELETE_SITE_RESPONSE_OK, mSite);
         dismissProgressDialog(mDeleteSiteProgressDialog);
         mDeleteSiteProgressDialog = null;
         mSite = null;
@@ -2015,8 +2012,7 @@ public class SiteSettingsFragment extends PreferenceFragment
     }
 
     private void showDeleteSiteErrorDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(
-                new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
         builder.setTitle(R.string.error_deleting_site);
         builder.setMessage(R.string.error_deleting_site_summary);
         builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
@@ -2036,7 +2032,7 @@ public class SiteSettingsFragment extends PreferenceFragment
 
     private MultiSelectRecyclerViewAdapter getAdapter() {
         if (mAdapter == null) {
-            mAdapter = new MultiSelectRecyclerViewAdapter(getActivity(), mEditingList);
+            mAdapter = new MultiSelectRecyclerViewAdapter(mEditingList);
         }
 
         return mAdapter;
@@ -2052,7 +2048,7 @@ public class SiteSettingsFragment extends PreferenceFragment
                     HashMap<String, Object> properties = new HashMap<>();
                     properties.put("num_items_deleted", checkedItems.size());
                     AnalyticsUtils.trackWithSiteDetails(AnalyticsTracker.Stat.SITE_SETTINGS_DELETED_LIST_ITEMS,
-                                                        mSite, properties);
+                            mSite, properties);
 
                     for (int i = checkedItems.size() - 1; i >= 0; i--) {
                         final int index = checkedItems.keyAt(i);
@@ -2079,7 +2075,6 @@ public class SiteSettingsFragment extends PreferenceFragment
 
         @Override
         public boolean onCreateActionMode(ActionMode actionMode, Menu menu) {
-            WPActivityUtils.setStatusBarColor(mDialog.getWindow(), R.color.status_bar_action_mode);
             mActionMode = actionMode;
             MenuInflater inflater = actionMode.getMenuInflater();
             inflater.inflate(R.menu.list_editor, menu);
@@ -2088,7 +2083,6 @@ public class SiteSettingsFragment extends PreferenceFragment
 
         @Override
         public void onDestroyActionMode(ActionMode mode) {
-            WPActivityUtils.setStatusBarColor(mDialog.getWindow(), R.color.status_bar);
             getAdapter().removeItemsSelected();
             mActionMode = null;
         }
@@ -2098,7 +2092,7 @@ public class SiteSettingsFragment extends PreferenceFragment
             actionMode.setTitle(getString(
                     R.string.site_settings_list_editor_action_mode_title,
                     getAdapter().getItemsSelected().size())
-                               );
+            );
             return true;
         }
     }

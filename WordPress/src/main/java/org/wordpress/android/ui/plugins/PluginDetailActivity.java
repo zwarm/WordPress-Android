@@ -39,6 +39,8 @@ import androidx.cardview.widget.CardView;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.android.material.elevation.ElevationOverlayProvider;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.greenrobot.eventbus.Subscribe;
@@ -260,6 +262,18 @@ public class PluginDetailActivity extends AppCompatActivity implements OnDomainR
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setElevation(0);
         }
+
+
+        CollapsingToolbarLayout collapsingToolbarLayout = findViewById(R.id.collapsing_toolbar);
+
+
+        ElevationOverlayProvider elevationOverlayProvider = new ElevationOverlayProvider(this);
+
+        float appbarElevation = getResources().getDimension(R.dimen.appbar_elevation);
+        int elevatedColor = elevationOverlayProvider
+                .compositeOverlayIfNeeded(ContextExtensionsKt.getColorFromAttribute(this, R.attr.wpColorAppBar),
+                        appbarElevation);
+        collapsingToolbarLayout.setContentScrimColor(elevatedColor);
 
         mHandler = new Handler();
         setupViews();
@@ -662,11 +676,12 @@ public class PluginDetailActivity extends AppCompatActivity implements OnDomainR
 
     private void setCollapsibleHtmlText(@NonNull TextView textView, @Nullable String htmlText) {
         if (!TextUtils.isEmpty(htmlText)) {
-            textView.setTextColor(ContextExtensionsKt.getColorFromAttribute(this, R.attr.wpColorText));
+            textView.setTextColor(ContextExtensionsKt.getColorFromAttribute(this, R.attr.colorOnSurface));
             textView.setMovementMethod(WPLinkMovementMethod.getInstance());
             textView.setText(Html.fromHtml(htmlText));
         } else {
-            textView.setTextColor(getResources().getColor(R.color.neutral_20));
+            textView.setTextColor(
+                    ContextExtensionsKt.getColorStateListFromAttribute(this, R.attr.wpColorOnSurfaceMedium));
             textView.setText(R.string.plugin_empty_text);
         }
     }

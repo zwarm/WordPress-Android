@@ -8,7 +8,7 @@
     android:gravity="center_vertical"
     android:orientation="horizontal">
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/start_legend"
         style="@style/StatsMapLegend"
         android:layout_width="wrap_content"
@@ -23,7 +23,7 @@
         android:layout_marginStart="@dimen/margin_medium"
         android:background="@drawable/bg_rectangle_gradient_accent_5_accent"/>
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/end_legend"
         style="@style/StatsMapLegend"
         android:layout_width="wrap_content"

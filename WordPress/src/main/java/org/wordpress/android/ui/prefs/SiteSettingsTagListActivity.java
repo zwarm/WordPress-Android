@@ -1,6 +1,5 @@
 package org.wordpress.android.ui.prefs;
 
-import android.app.AlertDialog;
 import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -9,7 +8,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.TextUtils;
-import android.view.ContextThemeWrapper;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -25,10 +23,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.apache.commons.text.StringEscapeUtils;
 import org.greenrobot.eventbus.Subscribe;
@@ -98,6 +100,10 @@ public class SiteSettingsTagListActivity extends AppCompatActivity
         ((WordPress) getApplication()).component().inject(this);
 
         setContentView(R.layout.site_settings_tag_list_activity);
+
+        Toolbar toolbar = findViewById(R.id.toolbar_main);
+        setSupportActionBar(toolbar);
+
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setHomeButtonEnabled(true);
@@ -420,8 +426,7 @@ public class SiteSettingsTagListActivity extends AppCompatActivity
 
     private void confirmDeleteTag(@NonNull final TermModel term) {
         String message = String.format(getString(R.string.dlg_confirm_delete_tag), term.getName());
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(
-                new ContextThemeWrapper(this, R.style.Calypso_Dialog_Alert));
+        AlertDialog.Builder dialogBuilder = new MaterialAlertDialogBuilder(this);
         dialogBuilder.setMessage(message);
         dialogBuilder.setPositiveButton(
                 getResources().getText(R.string.delete_yes),

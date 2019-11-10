@@ -4,7 +4,6 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -12,6 +11,8 @@ import android.widget.EditText;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.wordpress.android.R;
 import org.wordpress.android.util.AppLog;
@@ -48,8 +49,7 @@ public class ProfileInputDialogFragment extends DialogFragment {
         LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
         //noinspection InflateParams
         View promptView = layoutInflater.inflate(R.layout.my_profile_dialog, null);
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
-                new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+        MaterialAlertDialogBuilder alertDialogBuilder = new MaterialAlertDialogBuilder(getActivity());
         alertDialogBuilder.setView(promptView);
 
         final WPTextView textView = (WPTextView) promptView.findViewById(R.id.my_profile_dialog_label);

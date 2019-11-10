@@ -13,6 +13,7 @@ import android.widget.ProgressBar;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
@@ -109,6 +110,9 @@ public class NotificationsDetailActivity extends AppCompatActivity implements
 
         setContentView(R.layout.notifications_detail_activity);
 
+        Toolbar toolbar = findViewById(R.id.toolbar_main);
+        setSupportActionBar(toolbar);
+
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
@@ -128,7 +132,7 @@ public class NotificationsDetailActivity extends AppCompatActivity implements
         // set up the viewpager and adapter for lateral navigation
         mViewPager = findViewById(R.id.viewpager);
         mViewPager.setPageTransformer(false,
-                                      new WPViewPagerTransformer(WPViewPagerTransformer.TransformType.SLIDE_OVER));
+                new WPViewPagerTransformer(WPViewPagerTransformer.TransformType.SLIDE_OVER));
 
         Note note = NotificationsTable.getNoteById(mNoteId);
         // if this is coming from a tapped push notification, let's try refreshing it as its contents may have been
@@ -342,10 +346,10 @@ public class NotificationsDetailActivity extends AppCompatActivity implements
         if (note.isCommentType()) {
             // show comment detail for comment notifications
             boolean isInstantReply = getIntent().getBooleanExtra(NotificationsListFragment.NOTE_INSTANT_REPLY_EXTRA,
-                                                                 false);
+                    false);
             fragment = CommentDetailFragment.newInstance(note.getId(),
-                                                         getIntent().getStringExtra(
-                                                                 NotificationsListFragment.NOTE_PREFILLED_REPLY_EXTRA));
+                    getIntent().getStringExtra(
+                            NotificationsListFragment.NOTE_PREFILLED_REPLY_EXTRA));
 
             if (isInstantReply) {
                 ((CommentDetailFragment) fragment).enableShouldFocusReplyField();

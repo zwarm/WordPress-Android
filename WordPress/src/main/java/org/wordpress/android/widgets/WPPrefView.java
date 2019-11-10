@@ -25,6 +25,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
 import org.wordpress.android.R;
 import org.wordpress.android.util.StringUtils;
 
@@ -404,8 +406,7 @@ public class WPPrefView extends LinearLayout implements
             txtSubtitle.setVisibility(GONE);
         }
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(
-                new ContextThemeWrapper(getContext(), R.style.Calypso_Dialog_Alert))
+        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(getContext())
                 .setTitle(mTitleTextView.getText())
                 .setView(customView)
                 .setNegativeButton(android.R.string.cancel, null)

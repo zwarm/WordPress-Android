@@ -18,7 +18,7 @@
         android:layout_height="@dimen/reader_count_icon"
         android:layout_width="@dimen/reader_count_icon"
         tools:src="@drawable/ic_comment_white_24dp"
-        tools:tint="@color/neutral" >
+        tools:tint="?attr/colorOnSurface" >
     </ImageView>
 
     <!--Set appropriate verbose content description to whole layout programmatically ex. "321 people liked this"-->

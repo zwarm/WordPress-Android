@@ -7,6 +7,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
 
 import org.wordpress.android.R;
@@ -55,14 +56,15 @@ public class ReaderIconCountView extends LinearLayout {
                     case ICON_LIKE:
                         mImageView.setImageDrawable(ContextCompat.getDrawable(context,
                                 R.drawable.reader_button_like));
-                        mImageView.setImageTintList(getResources().getColorStateList(
-                                R.color.neutral_accent_neutral_40_selector));
+                        mImageView.setImageTintList(AppCompatResources
+                                .getColorStateList(this.getContext(),
+                                        R.color.neutral_accent_neutral_40_selector));
                         break;
                     case ICON_COMMENT:
                         mImageView.setImageDrawable(ContextCompat.getDrawable(context,
                                 R.drawable.ic_comment_white_24dp));
-                        mImageView.setImageTintList(getResources().getColorStateList(
-                                R.color.neutral_primary_40_neutral_40_selector));
+                        mImageView.setImageTintList(AppCompatResources
+                                .getColorStateList(this.getContext(), R.color.neutral_primary_40_neutral_40_selector));
                         break;
                 }
             } finally {

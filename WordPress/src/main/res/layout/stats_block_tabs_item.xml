@@ -8,20 +8,18 @@
 
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tab_layout"
-        style="@style/Base.Widget.Design.TabLayout"
+        android:background="@android:color/transparent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
         app:tabGravity="fill"
-        app:tabIndicatorColor="@color/primary"
         app:tabMode="scrollable"
         app:tabPaddingEnd="@dimen/margin_extra_large"
         app:tabPaddingStart="@dimen/margin_extra_large"
-        app:tabSelectedTextColor="@color/primary"
-        app:tabTextColor="?attr/wpColorTextSubtle" />
+       />
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="@color/neutral_0"/>
+        android:background="?android:attr/listDivider"/>
 </LinearLayout>

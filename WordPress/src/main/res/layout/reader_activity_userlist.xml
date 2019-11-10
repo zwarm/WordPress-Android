@@ -6,9 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <include
-        android:id="@+id/toolbar"
-        layout="@layout/toolbar" />
+    <include layout="@layout/toolbar_main" />
 
     <org.wordpress.android.ui.reader.views.ReaderRecyclerView
         android:id="@+id/recycler_view"

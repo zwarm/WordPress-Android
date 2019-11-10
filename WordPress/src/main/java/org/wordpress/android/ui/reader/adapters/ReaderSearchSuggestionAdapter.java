@@ -1,20 +1,21 @@
 package org.wordpress.android.ui.reader.adapters;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.text.TextUtils;
-import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.cursoradapter.widget.CursorAdapter;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.wordpress.android.R;
 import org.wordpress.android.datasets.ReaderSearchTable;
@@ -165,8 +166,7 @@ public class ReaderSearchSuggestionAdapter extends CursorAdapter {
     }
 
     private void confirmClearSavedSearches(Context context) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(
-                new ContextThemeWrapper(context, R.style.Calypso_Dialog_Alert));
+        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(context);
         builder.setMessage(R.string.dlg_confirm_clear_search_history)
                .setCancelable(true)
                .setNegativeButton(R.string.no, null)

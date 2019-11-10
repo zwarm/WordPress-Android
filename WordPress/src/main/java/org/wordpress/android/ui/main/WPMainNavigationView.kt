@@ -3,6 +3,7 @@ package org.wordpress.android.ui.main
 import android.content.Context
 import android.util.AttributeSet
 import android.util.SparseArray
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -215,6 +216,14 @@ class WPMainNavigationView @JvmOverloads constructor(
 
     private fun setImageViewSelected(position: Int, isSelected: Boolean) {
         getImageViewForPosition(position)?.isSelected = isSelected
+        if (isSelected) {
+            getImageViewForPosition(position)?.alpha = 1f
+        } else {
+            val alpha = TypedValue()
+            resources.getValue(R.dimen.material_emphasis_disabled, alpha, true)
+
+            getImageViewForPosition(position)?.alpha = alpha.float
+        }
     }
 
     @DrawableRes

@@ -14,6 +14,7 @@ import androidx.fragment.app.FragmentPagerAdapter
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
+import com.google.android.material.elevation.ElevationOverlayProvider
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
 import com.google.android.material.tabs.TabLayout.Tab
@@ -30,6 +31,7 @@ import org.wordpress.android.ui.stats.refresh.lists.StatsListViewModel.StatsSect
 import org.wordpress.android.ui.stats.refresh.lists.StatsListViewModel.StatsSection.WEEKS
 import org.wordpress.android.ui.stats.refresh.lists.StatsListViewModel.StatsSection.YEARS
 import org.wordpress.android.util.WPSwipeToRefreshHelper
+import org.wordpress.android.util.getColorFromAttribute
 import org.wordpress.android.util.helpers.SwipeToRefreshHelper
 import org.wordpress.android.widgets.WPSnackbar
 import javax.inject.Inject
@@ -45,7 +47,11 @@ class StatsFragment : DaggerFragment() {
 
     private var restorePreviousSearch = false
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
         setHasOptionsMenu(true)
         return inflater.inflate(R.layout.stats_fragment, container, false)
     }
@@ -55,12 +61,24 @@ class StatsFragment : DaggerFragment() {
 
         val nonNullActivity = checkNotNull(activity)
 
+        val elevationOverlayProvider = ElevationOverlayProvider(view.context)
+        val appbarElevation = resources.getDimension(R.dimen.appbar_elevation)
+        val appBarColor = elevationOverlayProvider.compositeOverlayIfNeeded(
+                view.context.getColorFromAttribute(R.attr.wpColorAppBar),
+                appbarElevation
+        )
+
+        toolbar.setBackgroundColor(appBarColor)
+
         initializeViewModels(nonNullActivity, savedInstanceState == null, savedInstanceState)
         initializeViews(nonNullActivity)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putInt(WordPress.LOCAL_SITE_ID, activity?.intent?.getIntExtra(WordPress.LOCAL_SITE_ID, 0) ?: 0)
+        outState.putInt(
+                WordPress.LOCAL_SITE_ID,
+                activity?.intent?.getIntExtra(WordPress.LOCAL_SITE_ID, 0) ?: 0
+        )
         viewModel.onSaveInstanceState(outState)
         super.onSaveInstanceState(outState)
     }
@@ -81,7 +99,8 @@ class StatsFragment : DaggerFragment() {
         isFirstStart: Boolean,
         savedInstanceState: Bundle?
     ) {
-        viewModel = ViewModelProviders.of(activity, viewModelFactory).get(StatsViewModel::class.java)
+        viewModel = ViewModelProviders.of(activity, viewModelFactory)
+                .get(StatsViewModel::class.java)
 
         viewModel.onRestoreInstanceState(savedInstanceState)
 
@@ -113,9 +132,14 @@ class StatsFragment : DaggerFragment() {
             val parent = activity.findViewById<View>(R.id.coordinatorLayout)
             if (holder != null && parent != null) {
                 if (holder.buttonTitleRes == null) {
-                    WPSnackbar.make(parent, getString(holder.messageRes), Snackbar.LENGTH_LONG).show()
+                    WPSnackbar.make(parent, getString(holder.messageRes), Snackbar.LENGTH_LONG)
+                            .show()
                 } else {
-                    val snackbar = WPSnackbar.make(parent, getString(holder.messageRes), Snackbar.LENGTH_LONG)
+                    val snackbar = WPSnackbar.make(
+                            parent,
+                            getString(holder.messageRes),
+                            Snackbar.LENGTH_LONG
+                    )
                     snackbar.setAction(getString(holder.buttonTitleRes)) { holder.buttonAction() }
                     snackbar.show()
                 }

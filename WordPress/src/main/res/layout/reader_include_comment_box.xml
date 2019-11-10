@@ -9,7 +9,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@android:color/white"
+    android:background="?attr/colorSurface"
     android:visibility="gone"
     tools:visibility="visible">
 
@@ -17,7 +17,7 @@
         android:id="@+id/divider_comment"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="@color/neutral_10" />
+         android:background="?android:attr/listDivider"/>
 
     <LinearLayout
         android:id="@+id/reply_box"

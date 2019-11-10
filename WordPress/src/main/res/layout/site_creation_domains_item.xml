@@ -5,13 +5,12 @@
                                                    android:id="@+id/container"
                                                    android:layout_width="match_parent"
                                                    android:layout_height="wrap_content"
-                                                   android:background="@android:color/white"
-                                                   android:foreground="?selectableItemBackground"
+                                                   android:background="?selectableItemBackground"
                                                    android:minHeight="@dimen/one_line_list_item_height"
                                                    android:paddingStart="@dimen/margin_large"
                                                    tools:ignore="RtlSymmetry">
 
-    <androidx.appcompat.widget.AppCompatRadioButton
+    <com.google.android.material.radiobutton.MaterialRadioButton
         android:id="@+id/domain_suggestion"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -23,8 +22,6 @@
         android:paddingStart="@dimen/site_creation_domains_radio_button_padding_start"
         android:paddingTop="@dimen/margin_medium"
         android:textAlignment="viewStart"
-        android:textColor="@color/neutral_80"
-        android:textSize="@dimen/text_sz_large"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

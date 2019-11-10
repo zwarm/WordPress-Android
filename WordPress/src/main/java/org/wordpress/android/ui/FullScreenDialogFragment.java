@@ -261,11 +261,10 @@ public class FullScreenDialogFragment extends DialogFragment {
      * @param view {@link View}
      */
     private void initToolbar(View view) {
-        mToolbar = view.findViewById(R.id.full_screen_dialog_fragment_toolbar);
+        mToolbar = view.findViewById(R.id.toolbar_main);
         mToolbar.setTitle(mTitle);
         mToolbar.setSubtitle(mSubtitle);
         mToolbar.setSubtitleTextAppearance(view.getContext(), R.style.Toolbar_Subtitle);
-        mToolbar.setBackgroundColor(getResources().getColor(mToolbarColor));
         mToolbar.setNavigationIcon(ContextCompat.getDrawable(view.getContext(), R.drawable.ic_close_white_24dp));
         mToolbar.setNavigationContentDescription(R.string.close_dialog_button_desc);
         mToolbar.setNavigationOnClickListener(new View.OnClickListener() {

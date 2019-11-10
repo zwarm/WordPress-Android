@@ -5,15 +5,15 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.ContextThemeWrapper;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentManager;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -99,9 +99,8 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
                     (ThemeBrowserFragment) getSupportFragmentManager().findFragmentByTag(ThemeBrowserFragment.TAG);
         }
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
-
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayShowTitleEnabled(true);
@@ -347,13 +346,12 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
     private void addBrowserFragment() {
         mThemeBrowserFragment = ThemeBrowserFragment.newInstance(mSite);
         getSupportFragmentManager().beginTransaction()
-                            .add(R.id.theme_browser_container, mThemeBrowserFragment, ThemeBrowserFragment.TAG)
-                            .commit();
+                                   .add(R.id.theme_browser_container, mThemeBrowserFragment, ThemeBrowserFragment.TAG)
+                                   .commit();
     }
 
     private void showAlertDialogOnNewSettingNewTheme(ThemeModel newTheme) {
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(
-                new ContextThemeWrapper(this, R.style.Calypso_Dialog_Alert));
+        MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(this);
 
         String thanksMessage = String.format(getString(R.string.theme_prompt), newTheme.getName());
         if (!TextUtils.isEmpty(newTheme.getAuthorName())) {
@@ -370,8 +368,7 @@ public class ThemeBrowserActivity extends AppCompatActivity implements ThemeBrow
             }
         });
 
-        AlertDialog alertDialog = dialogBuilder.create();
-        alertDialog.show();
+        dialogBuilder.create().show();
     }
 
     private void startWebActivity(String themeId, ThemeWebActivity.ThemeWebActivityType type) {

@@ -5,16 +5,15 @@
     android:id="@+id/progress_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_default"
     android:gravity="center"
     android:orientation="vertical">
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/progress_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:textColor="@color/neutral_40"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="@dimen/text_sz_extra_large"
         android:visibility="gone"
         tools:text="We're creating your new site!"/>

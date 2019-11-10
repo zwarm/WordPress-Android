@@ -13,14 +13,14 @@
     android:minHeight="56dp"
     android:orientation="vertical">
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/label"
         style="@style/StatsReferredItemLabel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/showing_stats_for"/>
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/title"
         style="@style/StatsReferredItemTitle"
         android:layout_width="match_parent"

@@ -1,12 +1,12 @@
 package org.wordpress.android.util
 
 import android.content.Context
-import android.content.res.ColorStateList
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.widget.ImageView
 import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
 
@@ -20,7 +20,10 @@ object ColorUtils {
     }
 
     fun setImageResourceWithTint(imageView: ImageView, @DrawableRes drawableResId: Int, @ColorRes colorResId: Int) {
-        imageView.imageTintList = ColorStateList.valueOf(ContextCompat.getColor(imageView.context, colorResId))
+        imageView.imageTintList = AppCompatResources.getColorStateList(
+                imageView.context,
+                colorResId
+        )
         imageView.setImageResource(drawableResId)
     }
 }

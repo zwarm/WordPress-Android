@@ -15,6 +15,8 @@ import androidx.core.text.BidiFormatter;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.elevation.ElevationOverlayProvider;
+
 import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
 import org.wordpress.android.datasets.NotificationsTable;
@@ -25,6 +27,7 @@ import org.wordpress.android.ui.comments.CommentUtils;
 import org.wordpress.android.ui.notifications.NotificationsListFragmentPage.OnNoteClickListener;
 import org.wordpress.android.ui.notifications.blocks.NoteBlockClickableSpan;
 import org.wordpress.android.ui.notifications.utils.NotificationsUtilsWrapper;
+import org.wordpress.android.util.ContextExtensionsKt;
 import org.wordpress.android.util.GravatarUtils;
 import org.wordpress.android.util.RtlUtils;
 import org.wordpress.android.util.image.ImageManager;
@@ -100,8 +103,16 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         setHasStableIds(false);
 
         mAvatarSz = (int) context.getResources().getDimension(R.dimen.notifications_avatar_sz);
-        mColorRead = context.getResources().getColor(android.R.color.white);
-        mColorUnread = context.getResources().getColor(R.color.background_notification_unread);
+        mColorRead = ContextExtensionsKt.getColorFromAttribute(context, R.attr.colorSurface);
+
+        ElevationOverlayProvider elevationOverlayProvider = new ElevationOverlayProvider(context);
+        float cardElevation = context.getResources().getDimension(R.dimen.card_elevation);
+        mColorUnread = elevationOverlayProvider.compositeOverlay(
+                ContextExtensionsKt.getColorFromAttribute(context, R.attr.colorSurface),
+                cardElevation
+        );
+
+//        mColorUnread = context.getResources().getColor(R.color.background_notification_unread);
         mTextIndentSize = context.getResources().getDimensionPixelSize(R.dimen.notifications_text_indent_sz);
     }
 
@@ -304,9 +315,9 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         }
 
         if (isUnread) {
-            noteViewHolder.itemView.setBackgroundColor(mColorUnread);
+            noteViewHolder.mContentView.setBackgroundColor(mColorUnread);
         } else {
-            noteViewHolder.itemView.setBackgroundColor(mColorRead);
+            noteViewHolder.mContentView.setBackgroundColor(mColorRead);
         }
 
         // request to load more comments when we near the end

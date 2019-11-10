@@ -102,6 +102,7 @@ public class AppSettingsFragment extends PreferenceFragment
                 }
         );
         updateAnalyticsSyncUI();
+        setRetainInstance(true);
 
         mLanguagePreference = (DetailListPreference) findPreference(getString(R.string.pref_key_language));
         mLanguagePreference.setOnPreferenceChangeListener(this);
@@ -350,6 +351,7 @@ public class AppSettingsFragment extends PreferenceFragment
         // update Reader tags as they need be localized
         ReaderUpdateServiceStarter.startService(WordPress.getContext(), EnumSet.of(ReaderUpdateLogic.UpdateTask.TAGS));
     }
+
 
     private void updateLanguagePreference(String languageCode) {
         if (mLanguagePreference == null || TextUtils.isEmpty(languageCode)) {

@@ -16,6 +16,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -32,6 +33,7 @@ import org.wordpress.android.fluxc.model.plugin.ImmutablePluginModel;
 import org.wordpress.android.models.networkresource.ListState;
 import org.wordpress.android.ui.ActivityLauncher;
 import org.wordpress.android.util.ColorUtils;
+import org.wordpress.android.util.ContextExtensionsKt;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.StringUtils;
 import org.wordpress.android.util.ToastUtils;
@@ -267,24 +269,29 @@ public class PluginListFragment extends Fragment {
                 @DrawableRes int drawableResId;
                 if (PluginUtils.isAutoManaged(mViewModel.getSite(), plugin)) {
                     textResId = R.string.plugin_auto_managed;
-                    colorResId = R.color.success_50;
+                    colorResId = ContextExtensionsKt
+                            .getColorResIdFromAttribute(holder.mStatusIcon.getContext(), R.attr.wpColorSuccess);
                     drawableResId = android.R.color.transparent;
                 } else if (PluginUtils.isUpdateAvailable(plugin)) {
                     textResId = R.string.plugin_needs_update;
-                    colorResId = R.color.warning_50;
+                    colorResId = ContextExtensionsKt
+                            .getColorResIdFromAttribute(holder.mStatusIcon.getContext(), R.attr.wpColorWarningDark);
                     drawableResId = R.drawable.ic_sync_white_24dp;
                 } else if (plugin.isActive()) {
                     textResId = R.string.plugin_active;
-                    colorResId = R.color.success_50;
+                    colorResId = ContextExtensionsKt
+                            .getColorResIdFromAttribute(holder.mStatusIcon.getContext(), R.attr.wpColorSuccess);
                     drawableResId = R.drawable.ic_checkmark_white_24dp;
                 } else {
                     textResId = R.string.plugin_inactive;
-                    colorResId = R.color.neutral_30;
+                    colorResId = ContextExtensionsKt
+                            .getColorResIdFromAttribute(holder.mStatusIcon.getContext(), R.attr.wpColorOnSurfaceMedium);
                     drawableResId = R.drawable.ic_cross_white_24dp;
                 }
-                int color = getResources().getColor(colorResId);
+
                 holder.mStatusText.setText(textResId);
-                holder.mStatusText.setTextColor(color);
+                holder.mStatusText.setTextColor(
+                        AppCompatResources.getColorStateList(holder.mStatusText.getContext(), colorResId));
                 ColorUtils.INSTANCE.setImageResourceWithTint(holder.mStatusIcon, drawableResId, colorResId);
                 holder.mStatusText.setVisibility(View.VISIBLE);
                 holder.mStatusIcon.setVisibility(View.VISIBLE);

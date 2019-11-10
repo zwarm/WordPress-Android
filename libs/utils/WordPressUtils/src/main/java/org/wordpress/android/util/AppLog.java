@@ -207,7 +207,7 @@ public class AppLog {
                 case v:
                     return "grey";
                 case i:
-                    return "black";
+                    return "green";
                 case w:
                     return "purple";
                 case e:

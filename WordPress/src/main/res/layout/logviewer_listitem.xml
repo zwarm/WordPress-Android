@@ -14,16 +14,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
-        android:textColor="@color/neutral_40"
+        android:textAppearance="?attr/textAppearanceCaption"
         android:textSize="@dimen/text_sz_medium"
         tools:text="01" />
 
     <org.wordpress.android.widgets.WPTextView
         android:id="@+id/text_log"
+        android:textAppearance="?attr/textAppearanceBody2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="top"
-        android:textSize="@dimen/text_sz_medium"
         tools:text="application log text"
         android:layout_marginStart="@dimen/margin_small"/>
 </LinearLayout>

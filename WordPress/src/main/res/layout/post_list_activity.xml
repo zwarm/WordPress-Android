@@ -14,19 +14,12 @@
         android:animateLayoutChanges="true"
         android:fitsSystemWindows="true">
 
-        <androidx.appcompat.widget.Toolbar
-            android:elevation="0dp"
+        <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:layout_collapseMode="pin"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-            app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
-        </androidx.appcompat.widget.Toolbar>
+            android:layout_height="?attr/actionBarSize" />
 
         <RelativeLayout
-            android:elevation="@dimen/appbar_elevation"
             android:id="@+id/tabContainer"
             android:layout_width="match_parent"
             android:layout_height="@dimen/tab_height">
@@ -39,12 +32,8 @@
                 android:layout_alignStart="@+id/post_list_tab_layout_fading_edge"
                 android:layout_gravity="start"
                 android:clipToPadding="false"
-                android:elevation="0dp"
                 app:tabGravity="fill"
-                app:tabIndicatorColor="@android:color/white"
                 app:tabMode="scrollable"
-                app:tabSelectedTextColor="@android:color/white"
-                app:tabTextColor="@android:color/white"
                 tools:paddingEnd="0dp"
                 tools:paddingStart="@dimen/posts_list_tab_layout_fading_edge_width"/>
 
@@ -53,7 +42,7 @@
                 android:layout_width="@dimen/posts_list_tab_layout_fading_edge_width"
                 android:layout_height="match_parent"
                 android:layout_alignEnd="@+id/post_list_author_selection"
-                android:background="@drawable/bg_rectangle_gradient_primary_50_transparent"/>
+                android:elevation="@dimen/appbar_elevation" />
 
             <androidx.appcompat.widget.AppCompatSpinner
                 android:id="@+id/post_list_author_selection"

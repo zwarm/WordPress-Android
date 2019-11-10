@@ -7,7 +7,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/key"
         style="@style/StatsBlockColumnSmallHeader"
         android:layout_width="match_parent"
@@ -21,7 +21,7 @@
         android:text="@string/stats_views"
         android:textAllCaps="true"/>
 
-    <androidx.appcompat.widget.AppCompatTextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/value"
         style="@style/StatsBlockColumnSmallValue"
         android:layout_width="match_parent"
@@ -40,7 +40,7 @@
         android:id="@+id/selector"
         android:layout_width="match_parent"
         android:layout_height="2dp"
-        android:background="@color/primary"
+        android:background="?attr/colorPrimary"
         android:visibility="gone"/>
 
 </LinearLayout>

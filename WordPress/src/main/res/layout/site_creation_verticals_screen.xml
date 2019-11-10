@@ -57,6 +57,8 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/search_input_layout"/>
 
+
+
         <include
             android:id="@+id/site_info_skip_or_next_button_container"
             layout="@layout/site_creation_skip_button_container"

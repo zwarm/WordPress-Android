@@ -23,6 +23,7 @@ import androidx.lifecycle.Observer;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.material.elevation.ElevationOverlayProvider;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -205,6 +206,12 @@ public class WPMainActivity extends AppCompatActivity implements
         setContentView(R.layout.main_activity);
 
         mBottomNav = findViewById(R.id.bottom_navigation);
+
+
+         ElevationOverlayProvider elevationOverlayProvider = new ElevationOverlayProvider(this);
+        int appBarColor = elevationOverlayProvider.compositeOverlayWithThemeSurfaceColorIfNeeded(mBottomNav.getElevation());
+
+         getWindow().setNavigationBarColor(appBarColor);
 
         if (BuildConfig.ME_ACTIVITY_AVAILABLE) {
             mBottomNav.getMenu().removeItem(R.id.nav_me);
@@ -638,7 +645,6 @@ public class WPMainActivity extends AppCompatActivity implements
 
     private void showBottomNav(boolean show) {
         mBottomNav.setVisibility(show ? View.VISIBLE : View.GONE);
-        findViewById(R.id.navbar_separator).setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
     // user switched pages in the bottom navbar

@@ -23,6 +23,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.MarginLayoutParamsCompat;
 import androidx.core.view.ViewCompat;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
 import org.wordpress.android.R;
 import org.wordpress.android.util.WPPrefUtils;
 
@@ -109,7 +111,7 @@ public class SummaryEditTextPreference extends EditTextPreference implements Pre
     protected void showDialog(Bundle state) {
         Context context = getContext();
         Resources res = context.getResources();
-        AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.Calypso_Dialog_Alert);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
         View titleView = View.inflate(getContext(), R.layout.detail_list_preference_title, null);
         mWhichButtonClicked = DialogInterface.BUTTON_NEGATIVE;
 

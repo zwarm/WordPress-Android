@@ -10,9 +10,9 @@
     android:layout_height="match_parent"
     android:layout_width="match_parent" >
 
-    <androidx.appcompat.widget.Toolbar
+    <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/full_screen_dialog_fragment_toolbar"
-        android:background="?android:attr/colorBackground"
+        android:background="?attr/colorSurface"
         android:elevation="@dimen/appbar_elevation"
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
@@ -20,10 +20,11 @@
         android:theme="@style/FullScreenDialog.Toolbar.Light"
         app:contentInsetStart="@dimen/keyline_second"
         app:navigationContentDescription="@string/description_expand"
+        app:titleTextColor="?attr/colorOnSurface"
         app:navigationIcon="@drawable/ic_chevron_down_white_24dp"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
         tools:title="Comment" >
-    </androidx.appcompat.widget.Toolbar>
+    </com.google.android.material.appbar.MaterialToolbar>
 
     <FrameLayout
         android:id="@+id/full_screen_dialog_fragment_content"

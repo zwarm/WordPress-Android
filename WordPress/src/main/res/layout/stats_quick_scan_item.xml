@@ -19,7 +19,7 @@
         app:layout_constraintEnd_toStartOf="@+id/horizontal_divider"
         app:layout_constraintStart_toStartOf="parent">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/start_label"
             style="@style/StatsBlockQuickScanLabel"
             android:layout_width="match_parent"
@@ -27,7 +27,7 @@
             android:labelFor="@id/end_value"
             android:text="@string/unknown"/>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/start_value"
             style="@style/StatsBlockQuickScanValue"
             android:layout_width="match_parent"
@@ -39,7 +39,7 @@
         android:id="@+id/horizontal_divider"
         android:layout_width="1dp"
         android:layout_height="0dp"
-        android:background="@color/grey_lighten_30"
+        android:background="?android:attr/listDivider"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"

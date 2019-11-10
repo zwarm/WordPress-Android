@@ -20,6 +20,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.wordpress.android.R;
 import org.wordpress.android.ui.utils.UiHelpers;
@@ -92,7 +94,7 @@ public class DetailListPreference extends ListPreference
     protected void showDialog(Bundle state) {
         Context context = getContext();
         Resources res = context.getResources();
-        AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.Calypso_Dialog_Alert);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
 
         mWhichButtonClicked = DialogInterface.BUTTON_NEGATIVE;
         builder.setPositiveButton(android.R.string.ok, this);

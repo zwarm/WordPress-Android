@@ -5,7 +5,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/neutral_0"
     android:orientation="vertical">
 
     <include
@@ -42,13 +41,12 @@
             android:layout_marginLeft="@dimen/site_creation_preview_web_view_side_margin"
             android:layout_marginRight="@dimen/site_creation_preview_web_view_side_margin"/>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/sitePreviewOkButtonContainer"
             android:layout_width="match_parent"
             android:layout_height="@dimen/site_creation_preview_ok_button_container_height"
             android:layout_alignParentBottom="true"
             android:layout_marginTop="@dimen/margin_medium"
-            app:cardBackgroundColor="@color/neutral_0"
             app:cardElevation="@dimen/site_creation_container_elevation"
             tools:ignore="InconsistentLayout">
 
@@ -61,6 +59,6 @@
                 android:layout_marginStart="@dimen/margin_extra_large"
                 android:text="@string/dialog_button_ok"
                 android:theme="@style/WordPress.Button.Primary"/>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
     </RelativeLayout>
 </RelativeLayout>

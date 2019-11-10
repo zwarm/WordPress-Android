@@ -1,11 +1,9 @@
 package org.wordpress.android.ui.comments;
 
-import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -15,12 +13,13 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -379,8 +378,8 @@ public class CommentsListFragment extends Fragment {
         });
 
         // the following will change the look and feel of the toolbar to match the current design
-        mFilteredCommentsView.setToolbarBackgroundColor(ContextCompat.getColor(getActivity(), R.color.primary_40));
-        mFilteredCommentsView.setToolbarSpinnerTextColor(ContextCompat.getColor(getActivity(), android.R.color.white));
+//        mFilteredCommentsView.setToolbarBackgroundColor(ContextCompat.getColor(getActivity(), R.color.primary_40));
+//        mFilteredCommentsView.setToolbarSpinnerTextColor(ContextCompat.getColor(getActivity(), android.R.color.white));
         mFilteredCommentsView.setToolbarSpinnerDrawable(R.drawable.ic_dropdown_primary_30_24dp);
         mFilteredCommentsView.setToolbarLeftAndRightPadding(
                 getResources().getDimensionPixelSize(R.dimen.margin_filter_spinner),
@@ -442,8 +441,7 @@ public class CommentsListFragment extends Fragment {
 
     private void confirmDeleteComments() {
         if (mCommentStatusFilter == CommentStatusCriteria.TRASH) {
-            AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(
-                    new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+            AlertDialog.Builder dialogBuilder = new MaterialAlertDialogBuilder(getActivity());
             dialogBuilder.setTitle(getResources().getText(R.string.delete));
             int resId = getAdapter().getSelectedCommentCount() > 1 ? R.string.dlg_sure_to_delete_comments
                     : R.string.dlg_sure_to_delete_comment;
@@ -458,8 +456,7 @@ public class CommentsListFragment extends Fragment {
             dialogBuilder.setCancelable(true);
             dialogBuilder.create().show();
         } else {
-            AlertDialog.Builder builder = new AlertDialog.Builder(
-                    new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+            AlertDialog.Builder builder = new MaterialAlertDialogBuilder(getActivity());
             builder.setMessage(R.string.dlg_confirm_trash_comments);
             builder.setTitle(R.string.trash);
             builder.setCancelable(true);

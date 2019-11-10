@@ -41,6 +41,6 @@
         android:id="@+id/divider_view"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="@drawable/notifications_list_divider"
+        android:background="?android:attr/listDivider"
         android:visibility="gone"/>
 </LinearLayout>

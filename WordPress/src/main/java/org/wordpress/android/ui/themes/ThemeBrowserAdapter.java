@@ -22,13 +22,15 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
-import androidx.core.content.ContextCompat;
+
+import com.google.android.material.elevation.ElevationOverlayProvider;
 
 import org.wordpress.android.R;
 import org.wordpress.android.fluxc.model.ThemeModel;
 import org.wordpress.android.ui.plans.PlansConstants;
 import org.wordpress.android.ui.prefs.AppPrefs;
 import org.wordpress.android.ui.themes.ThemeBrowserFragment.ThemeBrowserFragmentCallback;
+import org.wordpress.android.util.ContextExtensionsKt;
 import org.wordpress.android.util.image.ImageManager;
 import org.wordpress.android.util.image.ImageType;
 import org.wordpress.android.widgets.HeaderGridView;
@@ -164,18 +166,29 @@ class ThemeBrowserAdapter extends BaseAdapter implements Filterable {
     private void configureCardView(ThemeViewHolder themeViewHolder, boolean isCurrent) {
         Resources resources = mContext.getResources();
         if (isCurrent) {
-            ColorStateList color = ColorStateList.valueOf(ContextCompat.getColor(mContext, android.R.color.white));
-            themeViewHolder.mDetailsView.setBackgroundColor(resources.getColor(R.color.primary_50));
+            ColorStateList color =
+                    ColorStateList.valueOf(ContextExtensionsKt.getColorFromAttribute(mContext, R.attr.colorOnSurface));
+            themeViewHolder.mDetailsView
+                    .setBackgroundColor(ContextExtensionsKt.getColorFromAttribute(mContext, R.attr.colorPrimary));
             themeViewHolder.mNameView.setTextColor(color);
             themeViewHolder.mActiveView.setVisibility(View.VISIBLE);
-            themeViewHolder.mCardView.setCardBackgroundColor(resources.getColor(R.color.primary_50));
+            themeViewHolder.mCardView
+                    .setCardBackgroundColor(ContextExtensionsKt.getColorFromAttribute(mContext, R.attr.colorPrimary));
             themeViewHolder.mImageButton.setImageTintList(color);
         } else {
-            ColorStateList color = ColorStateList.valueOf(ContextCompat.getColor(mContext, android.R.color.black));
-            themeViewHolder.mDetailsView.setBackgroundColor(resources.getColor(android.R.color.white));
+            ColorStateList color =
+                    ColorStateList.valueOf(ContextExtensionsKt.getColorFromAttribute(mContext, R.attr.colorOnSurface));
+            ElevationOverlayProvider elevationOverlayProvider = new ElevationOverlayProvider(mContext);
+            int elevatedColor = elevationOverlayProvider
+                    .compositeOverlayWithThemeSurfaceColorIfNeeded(themeViewHolder.mCardView.getElevation());
+
+            themeViewHolder.mDetailsView.setBackgroundColor(elevatedColor);
             themeViewHolder.mNameView.setTextColor(color);
             themeViewHolder.mActiveView.setVisibility(View.GONE);
-            themeViewHolder.mCardView.setCardBackgroundColor(resources.getColor(android.R.color.white));
+
+            themeViewHolder.mCardView.setCardBackgroundColor(elevatedColor);
+
+
             themeViewHolder.mImageButton.setImageTintList(color);
         }
     }

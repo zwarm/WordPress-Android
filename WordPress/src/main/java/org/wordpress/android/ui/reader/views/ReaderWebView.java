@@ -2,6 +2,7 @@ package org.wordpress.android.ui.reader.views;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Color;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -13,9 +14,11 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import org.wordpress.android.R;
 import org.wordpress.android.WordPress;
 import org.wordpress.android.fluxc.store.AccountStore;
 import org.wordpress.android.util.AppLog;
+import org.wordpress.android.util.ContextExtensionsKt;
 import org.wordpress.android.util.UrlUtils;
 import org.wordpress.android.util.WPUrlUtils;
 
@@ -98,6 +101,8 @@ public class ReaderWebView extends WebView {
             this.setWebViewClient(new ReaderWebViewClient(this));
             this.getSettings().setUserAgentString(WordPress.getUserAgent());
             this.getSettings().setMediaPlaybackRequiresUserGesture(false);
+
+            setBackgroundColor(Color.TRANSPARENT);
 
             // Enable third-party cookies since they are disabled by default;
             // we need third-party cookies to support authenticated images
@@ -220,6 +225,12 @@ public class ReaderWebView extends WebView {
 
         @Override
         public void onPageFinished(WebView view, String url) {
+            String color = "#" + Integer
+                    .toHexString(ContextExtensionsKt.getColorFromAttribute(view.getContext(), R.attr.colorOnSurface));
+
+            view.loadUrl(
+                    "javascript:document.body.style.setProperty(\"color\", \"" + color + "\");"
+            );
             if (mReaderWebView.hasPageFinishedListener()) {
                 mReaderWebView.getPageFinishedListener().onPageFinished(view, url);
             }
@@ -259,8 +270,8 @@ public class ReaderWebView extends WebView {
                     conn.setRequestProperty("User-Agent", WordPress.getUserAgent());
                     conn.setRequestProperty("Connection", "Keep-Alive");
                     return new WebResourceResponse(conn.getContentType(),
-                                                   conn.getContentEncoding(),
-                                                   conn.getInputStream());
+                            conn.getContentEncoding(),
+                            conn.getInputStream());
                 } catch (IOException e) {
                     AppLog.e(AppLog.T.READER, e);
                 }

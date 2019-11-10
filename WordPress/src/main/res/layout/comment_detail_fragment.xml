@@ -7,8 +7,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/neutral_0">
+    android:layout_height="match_parent">
 
     <ScrollView
         android:id="@+id/scroll_view"
@@ -28,7 +27,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingTop="@dimen/margin_large"
-                android:background="@android:color/white"
                 android:paddingEnd="@dimen/margin_extra_large"
                 android:paddingStart="@dimen/margin_extra_large">
 
@@ -47,7 +45,7 @@
                     android:background="?android:selectableItemBackground"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:textColor="@color/link_reader"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="@dimen/text_sz_extra_large"
                     tools:text="text_name"
                     android:textAlignment="viewStart"
@@ -115,7 +113,6 @@
                 android:paddingBottom="@dimen/margin_large"
                 android:textColor="?attr/wpColorText"
                 android:textColorLink="@color/link_reader"
-                android:background="@android:color/white"
                 android:textIsSelectable="false"
                 android:textSize="@dimen/text_sz_large"
                 android:fontFamily="serif"

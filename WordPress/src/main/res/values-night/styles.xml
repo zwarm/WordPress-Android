@@ -31,6 +31,35 @@
 
         <item name="searchViewStyle">@style/WordPress.SearchViewStyle</item>
 
+                  <item name="colorPrimaryDark">@color/primary_dark</item>
+                <item name="colorAccent">@color/accent</item>
+                <item name="colorControlActivated">@color/primary_30</item>
+
+                <item name="floatingActionButtonStyle">@style/WordPress.FloatingActionButton</item>
+                <item name="tabStyle">@style/WordPress.TabLayout</item>
+                <item name="popupMenuStyle">@style/Widget.MaterialComponents.PopupMenu.Dark</item>
+
+                <item name="android:contextPopupMenuStyle">
+                    @style/Widget.MaterialComponents.PopupMenu.ContextMenu.Dark
+                </item>
+                <item name="actionOverflowMenuStyle">
+                    @style/Widget.MaterialComponents.PopupMenu.Overflow.Dark
+                </item>
+
+                <item name="colorButtonNormal">@color/light_gray</item>
+
+                <item name="android:dialogTheme">@style/DialogTheme.WordPress</item>
+                <item name="android:alertDialogTheme">@style/Calypso.Dialog.Alert</item>
+                <item name="android:datePickerStyle">@style/DatePicker.WordPress</item>
+                <item name="android:timePickerStyle">@style/TimePicker.WordPress</item>
+
+                <!-- Light.DarkActionBar specific -->
+                <item name="android:actionBarWidgetTheme">@style/Theme.WordPress.Widget</item>
+
+
+                <item name="homeAsUpIndicator">@drawable/ic_arrow_left_white_24dp</item>
+
+
         <item name="actionModeStyle">@style/WordPress.ActionMode</item>
         <item name="actionModeCloseButtonStyle">@style/WordPress.ActionMode.CloseButton</item>
         <item name="actionMenuTextColor">@color/primary_disabled_selector</item>
@@ -65,8 +94,18 @@
 
     <style name="WordPress.ToolBar" parent="Widget.MaterialComponents.Toolbar.Surface" />
 
+    <style name="WordPress.TabLayout" parent="Widget.MaterialComponents.TabLayout">
+        <item name="android:elevation">0dp</item>
+    </style>
+
+    <style name="WordPress.FloatingActionButton" parent="Widget.MaterialComponents.FloatingActionButton">
+        <item name="android:backgroundTint">@color/pink_50</item>
+        <item name="tint">?attr/colorOnSurface</item>
+    </style>
+
     <style name="WordPress.AppBarLayout" parent="Widget.MaterialComponents.AppBarLayout.Surface">
         <item name="android:elevation">@dimen/appbar_elevation</item>
     </style>
 
 </resources>
+

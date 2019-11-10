@@ -32,7 +32,7 @@
             android:animateLayoutChanges="true"
             android:fitsSystemWindows="true">
 
-            <androidx.appcompat.widget.Toolbar
+            <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
@@ -47,15 +47,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:layout_gravity="start"
-                android:background="@color/primary"
                 app:tabGravity="fill"
-                app:tabIndicatorColor="@android:color/white"
                 app:tabMode="scrollable"
                 app:tabPaddingEnd="16dp"
-                app:tabPaddingStart="16dp"
-                app:tabSelectedTextColor="@android:color/white"
-                app:tabTextColor="@android:color/white"
-                app:theme="@style/Base.Widget.Design.TabLayout"/>
+                app:tabPaddingStart="16dp" />
 
         </com.google.android.material.appbar.AppBarLayout>
 

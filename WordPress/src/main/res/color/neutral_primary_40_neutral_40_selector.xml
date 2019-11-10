@@ -3,8 +3,8 @@
 <selector
     xmlns:android="http://schemas.android.com/apk/res/android" >
 
-    <item android:color="@color/neutral_40" android:state_enabled="false" />
-    <item android:color="@color/primary_40" android:state_selected="true" />
-    <item android:color="@color/neutral" />
+    <item android:color="?attr/wpColorOnSurfaceDisabled" android:state_enabled="false" />
+    <item android:color="?attr/colorPrimary" android:state_selected="true" />
+    <item android:color="?attr/colorOnSurface" />
 
 </selector>

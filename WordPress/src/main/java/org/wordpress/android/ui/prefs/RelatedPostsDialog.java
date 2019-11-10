@@ -7,7 +7,6 @@ import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -19,6 +18,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.widget.SwitchCompat;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.wordpress.android.R;
 import org.wordpress.android.util.WPPrefUtils;
@@ -93,8 +94,7 @@ public class RelatedPostsDialog extends DialogFragment
 
         toggleViews(mShowRelatedPosts.isChecked());
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(
-                new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
         //noinspection InflateParams
         View titleView = inflater.inflate(R.layout.detail_list_preference_title, null);
         TextView titleText = titleView.findViewById(R.id.title);

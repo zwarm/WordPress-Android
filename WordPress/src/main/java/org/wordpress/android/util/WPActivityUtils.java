@@ -11,11 +11,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.TextView;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
+import com.google.android.material.appbar.AppBarLayout;
 
 import org.wordpress.android.R;
 import org.wordpress.android.util.AppLog.T;
@@ -47,17 +48,19 @@ public class WPActivityUtils {
             return;
         }
 
-        Toolbar toolbar = (Toolbar) LayoutInflater.from(context.getActivity())
-                                                  .inflate(org.wordpress.android.R.layout.toolbar, root, false);
-        root.addView(toolbar, 0);
+        AppBarLayout appBarLayout = (AppBarLayout) LayoutInflater.from(context.getActivity())
+                                                            .inflate(R.layout.toolbar_main, root, false);
+        root.addView(appBarLayout, 0);
 
         dialog.getWindow().setWindowAnimations(R.style.DialogAnimations);
 
-        TextView titleView = toolbar.findViewById(R.id.toolbar_title);
-        titleView.setVisibility(View.VISIBLE);
-        titleView.setText(title);
+//        TextView titleView = toolbar.findViewById(R.id.toolbar_title);
+//        titleView.setVisibility(View.VISIBLE);
+//        titleView.setText(title);
 
-        toolbar.setTitle("");
+        Toolbar toolbar = root.findViewById(R.id.toolbar_main);
+
+        toolbar.setTitle(title);
         toolbar.setNavigationIcon(org.wordpress.android.R.drawable.ic_arrow_left_white_24dp);
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override

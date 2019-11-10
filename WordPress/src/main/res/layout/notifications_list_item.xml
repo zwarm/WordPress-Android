@@ -8,7 +8,6 @@
 
     <org.wordpress.android.widgets.WPTextView
         android:id="@+id/header_text"
-        android:background="@color/background_default"
         android:gravity="center_vertical"
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
@@ -116,7 +115,7 @@
     </RelativeLayout>
 
     <View
-        android:background="@color/neutral_0"
+        android:background="?android:attr/listDivider"
         android:layout_below="@+id/note_content_container"
         android:layout_height="@dimen/list_divider_height"
         android:layout_width="match_parent" >

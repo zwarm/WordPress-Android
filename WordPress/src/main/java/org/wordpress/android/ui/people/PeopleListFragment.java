@@ -1,8 +1,6 @@
 package org.wordpress.android.ui.people;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -14,9 +12,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
-import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.RecyclerView.ViewHolder;
 
@@ -107,15 +104,15 @@ public class PeopleListFragment extends Fragment {
 
         mActionableEmptyView = rootView.findViewById(R.id.actionable_empty_view);
         mFilteredRecyclerView = rootView.findViewById(R.id.filtered_recycler_view);
-        mFilteredRecyclerView
-                .addItemDecoration(new PeopleItemDecoration(getActivity(), R.drawable.people_list_divider));
+
+        DividerItemDecoration dividerItemDecoration =
+                new DividerItemDecoration(mFilteredRecyclerView.getContext(), DividerItemDecoration.VERTICAL);
+
+        mFilteredRecyclerView.addItemDecoration(dividerItemDecoration);
         mFilteredRecyclerView.setLogT(AppLog.T.PEOPLE);
         mFilteredRecyclerView.setSwipeToRefreshEnabled(false);
 
         // the following will change the look and feel of the toolbar to match the current design
-        mFilteredRecyclerView.setToolbarBackgroundColor(ContextCompat.getColor(getActivity(), R.color.primary_40));
-        mFilteredRecyclerView.setToolbarSpinnerTextColor(ContextCompat.getColor(getActivity(), android.R.color.white));
-        mFilteredRecyclerView.setToolbarSpinnerDrawable(R.drawable.ic_dropdown_primary_30_24dp);
         mFilteredRecyclerView.setToolbarLeftAndRightPadding(
                 getResources().getDimensionPixelSize(R.dimen.margin_filter_spinner),
                 getResources().getDimensionPixelSize(R.dimen.margin_none));
@@ -165,7 +162,7 @@ public class PeopleListFragment extends Fragment {
             public String onShowEmptyViewMessage(EmptyViewMessageType emptyViewMsgType) {
                 mActionableEmptyView.setVisibility(View.GONE);
                 mFilteredRecyclerView.setToolbarScrollFlags(AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL
-                        | AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS);
+                                                            | AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS);
 
                 switch (emptyViewMsgType) {
                     case LOADING:
@@ -292,7 +289,7 @@ public class PeopleListFragment extends Fragment {
             // if the list is not empty, don't show any message
             mFilteredRecyclerView.hideEmptyView();
             mFilteredRecyclerView.setToolbarScrollFlags(AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL
-                    | AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS);
+                                                        | AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS);
             mActionableEmptyView.setVisibility(View.GONE);
         } else if (!isFetching) {
             // if we are not fetching and list is empty, show no content message
@@ -462,35 +459,6 @@ public class PeopleListFragment extends Fragment {
                     Person person = getPerson(getAdapterPosition());
                     mOnPersonSelectedListener.onPersonSelected(person);
                 }
-            }
-        }
-    }
-
-    // Taken from http://stackoverflow.com/a/27037230
-    private class PeopleItemDecoration extends RecyclerView.ItemDecoration {
-        private Drawable mDivider;
-
-        // use a custom drawable
-        PeopleItemDecoration(Context context, int resId) {
-            mDivider = ContextCompat.getDrawable(context, resId);
-        }
-
-        @Override
-        public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
-            int left = ViewCompat.getPaddingStart(parent);
-            int right = parent.getWidth() - ViewCompat.getPaddingEnd(parent);
-
-            int childCount = parent.getChildCount();
-            for (int i = 0; i < childCount; i++) {
-                View child = parent.getChildAt(i);
-
-                RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child.getLayoutParams();
-
-                int top = child.getBottom() + params.bottomMargin;
-                int bottom = top + mDivider.getIntrinsicHeight();
-
-                mDivider.setBounds(left, top, right, bottom);
-                mDivider.draw(c);
             }
         }
     }

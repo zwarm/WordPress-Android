@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -14,6 +13,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.greenrobot.eventbus.EventBus;
 import org.json.JSONArray;
@@ -50,8 +51,7 @@ public class PublicizeAccountChooserDialogFragment extends DialogFragment
         //noinspection InflateParams
         View view = inflater.inflate(R.layout.publicize_account_chooser_dialog, null);
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(
-                new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert));
+        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(getActivity());
         configureAlertDialog(view, builder);
         configureRecyclerViews(view);
 

@@ -18,6 +18,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentManager;
@@ -40,6 +41,7 @@ import org.wordpress.android.ui.ActivityLauncher;
 import org.wordpress.android.util.ActivityUtils;
 import org.wordpress.android.util.AniUtils;
 import org.wordpress.android.util.ColorUtils;
+import org.wordpress.android.util.ContextExtensionsKt;
 import org.wordpress.android.util.LocaleManager;
 import org.wordpress.android.util.NetworkUtils;
 import org.wordpress.android.util.StringUtils;
@@ -89,7 +91,7 @@ public class PluginBrowserActivity extends AppCompatActivity
         mPopularPluginsRecycler = findViewById(R.id.popular_plugins_recycler);
         mNewPluginsRecycler = findViewById(R.id.new_plugins_recycler);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
@@ -331,7 +333,7 @@ public class PluginBrowserActivity extends AppCompatActivity
     private void showListFragment(@NonNull PluginListType listType) {
         PluginListFragment listFragment = PluginListFragment.newInstance(mViewModel.getSite(), listType);
         getSupportFragmentManager().beginTransaction()
-                                   .add(R.id.fragment_container, listFragment, PluginListFragment.TAG)
+                                   .replace(R.id.fragment_container, listFragment, PluginListFragment.TAG)
                                    .addToBackStack(null)
                                    .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                                    .commit();
@@ -423,23 +425,28 @@ public class PluginBrowserActivity extends AppCompatActivity
                 boolean isAutoManaged = PluginUtils.isAutoManaged(mViewModel.getSite(), plugin);
                 if (isAutoManaged) {
                     textResId = R.string.plugin_auto_managed;
-                    colorResId = R.color.success_50;
+                    colorResId = ContextExtensionsKt
+                            .getColorResIdFromAttribute(holder.mStatusIcon.getContext(), R.attr.wpColorSuccess);
                     drawableResId = android.R.color.transparent;
                 } else if (PluginUtils.isUpdateAvailable(plugin)) {
                     textResId = R.string.plugin_needs_update;
-                    colorResId = R.color.warning_50;
+                    colorResId = ContextExtensionsKt
+                            .getColorResIdFromAttribute(holder.mStatusIcon.getContext(), R.attr.wpColorWarningDark);
                     drawableResId = R.drawable.ic_sync_white_24dp;
                 } else if (plugin.isActive()) {
                     textResId = R.string.plugin_active;
-                    colorResId = R.color.success_50;
+                    colorResId = ContextExtensionsKt
+                            .getColorResIdFromAttribute(holder.mStatusIcon.getContext(), R.attr.wpColorSuccess);
                     drawableResId = R.drawable.ic_checkmark_white_24dp;
                 } else {
                     textResId = R.string.plugin_inactive;
-                    colorResId = R.color.neutral_30;
+                    colorResId = ContextExtensionsKt
+                            .getColorResIdFromAttribute(holder.mStatusIcon.getContext(), R.attr.wpColorOnSurfaceMedium);
                     drawableResId = R.drawable.ic_cross_white_24dp;
                 }
                 holder.mStatusText.setText(textResId);
-                holder.mStatusText.setTextColor(getResources().getColor(colorResId));
+                holder.mStatusText.setTextColor(
+                        AppCompatResources.getColorStateList(holder.mStatusText.getContext(), colorResId));
                 holder.mStatusIcon.setVisibility(isAutoManaged ? View.GONE : View.VISIBLE);
                 ColorUtils.INSTANCE.setImageResourceWithTint(holder.mStatusIcon, drawableResId, colorResId);
                 holder.mStatusContainer.setVisibility(View.VISIBLE);

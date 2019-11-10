@@ -13,6 +13,7 @@
         android:layout_height="wrap_content"
         android:contentDescription="@null"
         android:layout_marginEnd="@dimen/margin_extra_large"
+        android:tint="?attr/colorOnSurface"
         tools:src="@drawable/ic_arrow_up_grey_dark_24dp" />
 
     <org.wordpress.android.widgets.WPTextView

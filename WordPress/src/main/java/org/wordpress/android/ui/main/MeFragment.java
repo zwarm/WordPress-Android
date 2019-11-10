@@ -27,6 +27,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.yalantis.ucrop.UCrop;
 import com.yalantis.ucrop.UCropActivity;
 
@@ -362,7 +363,7 @@ public class MeFragment extends Fragment implements MainToolbarFragment, WPMainA
             message = getString(R.string.sign_out_wpcom_confirm_with_no_changes);
         }
 
-        new AlertDialog.Builder(new ContextThemeWrapper(getActivity(), R.style.Calypso_Dialog_Alert))
+        new MaterialAlertDialogBuilder(getActivity())
                 .setMessage(message)
                 .setPositiveButton(R.string.signout, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {

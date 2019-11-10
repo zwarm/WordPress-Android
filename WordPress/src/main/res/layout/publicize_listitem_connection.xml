@@ -19,7 +19,7 @@
         android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="@dimen/list_divider_height"
-        android:background="@color/divider"
+        android:background="?android:attr/listDivider"
         android:layout_toEndOf="@+id/image_avatar"/>
 
     <org.wordpress.android.widgets.WPTextView
@@ -30,8 +30,7 @@
         android:layout_marginBottom="20dp"
         android:layout_marginTop="20dp"
         android:ellipsize="end"
-        android:textColor="?attr/wpColorText"
-        android:textSize="@dimen/text_sz_large"
+        android:textAppearance="?attr/textAppearanceSubtitle1"
         tools:text="text_user"
         android:layout_marginEnd="@dimen/margin_large"
         android:textAlignment="viewStart"

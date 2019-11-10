@@ -3,6 +3,7 @@ package org.wordpress.android.ui.quickstart;
 import android.animation.Animator;
 import android.animation.Animator.AnimatorListener;
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -24,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder;
 import org.wordpress.android.R;
 import org.wordpress.android.fluxc.store.QuickStartStore.QuickStartTask;
 import org.wordpress.android.util.AniUtils.Duration;
+import org.wordpress.android.util.ContextExtensionsKt;
 import org.wordpress.android.util.ViewUtilsKt;
 
 import java.util.ArrayList;
@@ -86,12 +88,20 @@ public class QuickStartAdapter extends RecyclerView.Adapter<ViewHolder> {
                     mTaskCompleted.size()));
 
             if (mIsCompletedTaskListExpanded) {
-                headerViewHolder.itemView.setBackgroundResource(R.drawable.bg_rectangle_white_radius_top_card);
+                int color = ContextExtensionsKt
+                        .getColorFromAttribute(headerViewHolder.itemView.getContext(),
+                                R.attr.colorSurface);
+
+//                headerViewHolder.itemView.setBackgroundColor(color);
                 headerViewHolder.mChevron.setRotation(EXPANDED_CHEVRON_ROTATION);
                 headerViewHolder.mChevron.setContentDescription(
                         mContext.getString(R.string.quick_start_completed_tasks_header_chevron_collapse_desc));
             } else {
-                headerViewHolder.itemView.setBackgroundResource(R.drawable.bg_rectangle_white_radius_card);
+                ColorStateList color = ContextExtensionsKt
+                        .getColorStateListFromAttribute(headerViewHolder.itemView.getContext(),
+                                R.attr.wpColorOnSurfaceDisabled);
+
+//                headerViewHolder.itemView.setBackgroundTintList(color);
                 headerViewHolder.mChevron.setRotation(COLLAPSED_CHEVRON_ROTATION);
                 headerViewHolder.mChevron.setContentDescription(
                         mContext.getString(R.string.quick_start_completed_tasks_header_chevron_expand_desc));
@@ -113,14 +123,14 @@ public class QuickStartAdapter extends RecyclerView.Adapter<ViewHolder> {
             // Use rounded background when next item is header.
             if (getItemViewType(position + 1) == VIEW_TYPE_COMPLETED_TASKS_HEADER) {
                 taskViewHolder.itemView.setBackgroundResource(R.drawable.bg_rectangle_white_radius_card);
-            // Use top rounded background when next item is not header (i.e. middle or bottom).
+                // Use top rounded background when next item is not header (i.e. middle or bottom).
             } else {
                 taskViewHolder.itemView.setBackgroundResource(R.drawable.bg_rectangle_white_radius_top_card);
             }
-        // When last list item or next item is header, use bottom rounded background.
+            // When last list item or next item is header, use bottom rounded background.
         } else if (position == mTasks.size() - 1 || getItemViewType(position + 1) == VIEW_TYPE_COMPLETED_TASKS_HEADER) {
             taskViewHolder.itemView.setBackgroundResource(R.drawable.bg_rectangle_white_radius_bottom_card);
-        // Otherwise, use middle unrounded background.
+            // Otherwise, use middle unrounded background.
         } else {
             taskViewHolder.itemView.setBackgroundResource(R.drawable.bg_rectangle_white);
         }

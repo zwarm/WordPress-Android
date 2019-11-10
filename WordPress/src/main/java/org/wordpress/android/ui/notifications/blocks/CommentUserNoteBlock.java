@@ -256,8 +256,8 @@ public class CommentUserNoteBlock extends UserNoteBlock {
             return;
         }
 
-        mNormalTextColor = ContextExtensionsKt.getColorFromAttribute(context, R.attr.wpColorText);
-        mNormalBackgroundColor = context.getResources().getColor(android.R.color.white);
+        mNormalTextColor = ContextExtensionsKt.getColorFromAttribute(context, R.attr.colorOnSurface);
+        mNormalBackgroundColor = ContextExtensionsKt.getColorFromAttribute(context, R.attr.colorSurface);
         mAgoTextColor = context.getResources().getColor(R.color.neutral);
         mUnapprovedTextColor = context.getResources().getColor(R.color.warning_60);
         // Double margin_extra_large for increased indent in comment replies
