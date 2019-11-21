@@ -12,6 +12,7 @@ buildscript {
         classpath 'com.android.tools.build:gradle:3.5.1'
         classpath 'com.automattic.android:fetchstyle:1.1'
         classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlin_version"
+        classpath 'com.github.jk1:gradle-license-report:1.11'
     }
 }
 
@@ -25,6 +26,11 @@ project.ext.buildGutenbergFromSource = project.properties.getOrDefault('wp.BUILD
 
 allprojects {
     apply plugin: 'checkstyle'
+    apply plugin: 'com.github.jk1.dependency-license-report'
+
+    licenseReport {
+        configurations = ['releaseRuntimeClasspath']
+    }
 
     repositories {
         google()
