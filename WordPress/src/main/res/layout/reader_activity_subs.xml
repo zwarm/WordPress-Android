@@ -42,11 +42,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="@dimen/margin_medium"
-        android:paddingTop="@dimen/margin_small"
-        android:paddingEnd="@dimen/margin_extra_large"
-        android:paddingBottom="@dimen/margin_medium">
+        android:orientation="horizontal">
+
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edit_add"
@@ -54,8 +51,13 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:gravity="start"
-            android:hint="@string/reader_hint_add_tag_or_url" />
+            android:hint="@string/reader_hint_add_tag_or_url"
+            android:minHeight="@dimen/min_touch_target_sz"
+            android:paddingStart="@dimen/margin_large"
+            android:paddingEnd="@dimen/margin_medium"
+            android:textAlignment="viewStart"
+            android:textSize="@dimen/text_sz_medium" />
+
 
         <ImageButton
             android:id="@+id/btn_add"
@@ -63,8 +65,7 @@
             android:layout_height="wrap_content"
             android:background="?android:selectableItemBackground"
             android:contentDescription="@string/add"
-            android:padding="@dimen/margin_small"
-            android:src="@drawable/ic_reader_follow_white_24dp"
+            android:padding="@dimen/margin_extra_medium_large"
             android:tint="?attr/colorPrimary" />
 
     </LinearLayout>

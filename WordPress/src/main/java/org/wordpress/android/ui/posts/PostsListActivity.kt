@@ -13,6 +13,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MenuItem.OnActionExpandListener
 import android.view.View
+import android.view.View.OnClickListener
 import android.widget.AdapterView
 import android.widget.Toast
 import androidx.annotation.DrawableRes
@@ -44,14 +45,17 @@ import org.wordpress.android.ui.posts.BasicFragmentDialog.BasicDialogPositiveCli
 import org.wordpress.android.ui.posts.PostListType.SEARCH
 import org.wordpress.android.ui.posts.adapters.AuthorSelectionAdapter
 import org.wordpress.android.ui.uploads.UploadActionUseCase
+import org.wordpress.android.ui.uploads.UploadUtilsWrapper
 import org.wordpress.android.ui.utils.UiHelpers
 import org.wordpress.android.ui.utils.UiString
+import org.wordpress.android.ui.utils.UiString.UiStringRes
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.LocaleManager
 import org.wordpress.android.util.RtlUtils
 import org.wordpress.android.util.getColorFromAttribute
+import org.wordpress.android.util.SnackbarSequencer
+import org.wordpress.android.util.SnackbarItem
 import org.wordpress.android.util.redirectContextClickToLongPressListener
-import org.wordpress.android.widgets.WPSnackbar
 import javax.inject.Inject
 
 const val EXTRA_TARGET_POST_LOCAL_ID = "targetPostLocalId"
@@ -69,6 +73,8 @@ class PostsListActivity : AppCompatActivity(),
     @Inject internal lateinit var progressDialogHelper: ProgressDialogHelper
     @Inject internal lateinit var dispatcher: Dispatcher
     @Inject internal lateinit var uploadActionUseCase: UploadActionUseCase
+    @Inject internal lateinit var snackbarSequencer: SnackbarSequencer
+    @Inject internal lateinit var uploadUtilsWrapper: UploadUtilsWrapper
 
     private lateinit var site: SiteModel
     private lateinit var viewModel: PostListMainViewModel
@@ -90,7 +96,12 @@ class PostsListActivity : AppCompatActivity(),
     private var progressDialog: ProgressDialog? = null
 
     private var onPageChangeListener: OnPageChangeListener = object : OnPageChangeListener {
-        override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
+        override fun onPageScrolled(
+            position: Int,
+            positionOffset: Float,
+            positionOffsetPixels: Int
+        ) {
+        }
 
         override fun onPageSelected(position: Int) {
             viewModel.onTabChanged(position)
@@ -138,7 +149,12 @@ class PostsListActivity : AppCompatActivity(),
         val initPreviewState = if (savedInstanceState == null) {
             PostListRemotePreviewState.NONE
         } else {
-            PostListRemotePreviewState.fromInt(savedInstanceState.getInt(STATE_KEY_PREVIEW_STATE, 0))
+            PostListRemotePreviewState.fromInt(
+                    savedInstanceState.getInt(
+                            STATE_KEY_PREVIEW_STATE,
+                            0
+                    )
+            )
         }
 
         setupActionBar()
@@ -184,7 +200,12 @@ class PostsListActivity : AppCompatActivity(),
         authorSelection.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>) {}
 
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
                 viewModel.updateAuthorFilterSelection(id)
             }
         }
@@ -215,7 +236,8 @@ class PostsListActivity : AppCompatActivity(),
     }
 
     private fun initViewModel(initPreviewState: PostListRemotePreviewState) {
-        viewModel = ViewModelProviders.of(this, viewModelFactory).get(PostListMainViewModel::class.java)
+        viewModel = ViewModelProviders.of(this, viewModelFactory)
+                .get(PostListMainViewModel::class.java)
         viewModel.start(site, initPreviewState)
 
         viewModel.viewState.observe(this, Observer { state ->
@@ -238,9 +260,10 @@ class PostsListActivity : AppCompatActivity(),
 
                 authorSelectionAdapter.updateItems(state.authorFilterItems)
 
-                authorSelectionAdapter.getIndexOfSelection(state.authorFilterSelection)?.let { selectionIndex ->
-                    authorSelection.setSelection(selectionIndex)
-                }
+                authorSelectionAdapter.getIndexOfSelection(state.authorFilterSelection)
+                        ?.let { selectionIndex ->
+                            authorSelection.setSelection(selectionIndex)
+                        }
             }
         })
 
@@ -261,7 +284,8 @@ class PostsListActivity : AppCompatActivity(),
         })
         viewModel.scrollToLocalPostId.observe(this, Observer { targetLocalPostId ->
             targetLocalPostId?.let {
-                postsPagerAdapter.getItemAtPosition(pager.currentItem)?.scrollToTargetPost(targetLocalPostId)
+                postsPagerAdapter.getItemAtPosition(pager.currentItem)
+                        ?.scrollToTargetPost(targetLocalPostId)
             }
         })
         viewModel.snackBarMessage.observe(this, Observer {
@@ -272,7 +296,8 @@ class PostsListActivity : AppCompatActivity(),
                     this,
                     progressDialog,
                     it.progressDialogUiState,
-                    uiHelpers)
+                    uiHelpers
+            )
         })
         viewModel.dialogAction.observe(this, Observer {
             it?.show(this, supportFragmentManager, uiHelpers)
@@ -285,9 +310,9 @@ class PostsListActivity : AppCompatActivity(),
                 handleUploadAction(
                         uploadAction,
                         this@PostsListActivity,
-                        dispatcher,
                         findViewById(R.id.coordinator),
-                        uploadActionUseCase
+                        uploadActionUseCase,
+                        uploadUtilsWrapper
                 )
             }
         })
@@ -295,21 +320,22 @@ class PostsListActivity : AppCompatActivity(),
 
     private fun showSnackBar(holder: SnackbarMessageHolder) {
         findViewById<View>(R.id.coordinator)?.let { parent ->
-            val message = getString(holder.messageRes)
-            val duration = Snackbar.LENGTH_LONG
-            val snackBar = WPSnackbar.make(parent, message, duration)
-            if (holder.buttonTitleRes != null) {
-                snackBar.setAction(getString(holder.buttonTitleRes)) {
-                    holder.buttonAction()
-                }
-            }
-            snackBar.addCallback(object : Snackbar.Callback() {
-                override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
-                    holder.onDismissAction()
-                    super.onDismissed(transientBottomBar, event)
-                }
-            })
-            snackBar.show()
+            snackbarSequencer.enqueue(
+                    SnackbarItem(
+                            SnackbarItem.Info(
+                                    view = parent,
+                                    textRes = UiStringRes(holder.messageRes),
+                                    duration = Snackbar.LENGTH_LONG
+                            ),
+                            holder.buttonTitleRes?.let {
+                                SnackbarItem.Action(
+                                        textRes = UiStringRes(holder.buttonTitleRes),
+                                        clickListener = OnClickListener { holder.buttonAction() }
+                                )
+                            },
+                            dismissCallback = { _, _ -> holder.onDismissAction() }
+                    )
+            )
         }
     }
 

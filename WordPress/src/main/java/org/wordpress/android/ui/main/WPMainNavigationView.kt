@@ -13,6 +13,7 @@ import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
 import androidx.annotation.StringRes
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.google.android.material.bottomnavigation.BottomNavigationItemView
@@ -87,7 +88,15 @@ class WPMainNavigationView @JvmOverloads constructor(
                 customView = inflater.inflate(R.layout.navbar_post_item, menuView, false)
                 customView.id = R.id.bottom_nav_new_post_button // identify view for QuickStart
             } else {
-                customView = inflater.inflate(R.layout.navbar_item, menuView, false)
+                customView = inflater.inflate(
+                        if (BuildConfig.INFORMATION_ARCHITECTURE_AVAILABLE)
+                            R.layout.navbar_item
+                        else
+                            R.layout.navbar_item_old,
+                        menuView,
+                        false
+                )
+
                 val txtLabel = customView.findViewById<TextView>(R.id.nav_label)
                 val imgIcon = customView.findViewById<ImageView>(R.id.nav_icon)
                 txtLabel.text = getTitleForPosition(i)
@@ -186,12 +195,20 @@ class WPMainNavigationView @JvmOverloads constructor(
 
         // remove the title and selected state from the previously selected item
         if (prevPosition > -1) {
-            showTitleForPosition(prevPosition, false)
+            if (BuildConfig.INFORMATION_ARCHITECTURE_AVAILABLE) {
+                setTitleViewSelected(prevPosition, false)
+            } else {
+                showTitleForPosition(prevPosition, false)
+            }
             setImageViewSelected(prevPosition, false)
         }
 
         // set the title and selected state from the newly selected item
-        showTitleForPosition(position, true)
+        if (BuildConfig.INFORMATION_ARCHITECTURE_AVAILABLE) {
+            setTitleViewSelected(position, true)
+        } else {
+            showTitleForPosition(position, true)
+        }
         setImageViewSelected(position, true)
 
         AppPrefs.setMainPageIndex(position)
@@ -210,7 +227,10 @@ class WPMainNavigationView @JvmOverloads constructor(
             fragmentManager
                     .beginTransaction()
                     .replace(R.id.fragment_container, fragment, getTagForPosition(position))
-                    .commit()
+                    // This is used because the main activity sometimes crashes because it's trying to switch fragments
+                    // after `onSaveInstanceState` was already called. This is the related issue
+                    // https://github.com/wordpress-mobile/WordPress-Android/issues/10852
+                    .commitAllowingStateLoss()
         }
     }
 
@@ -224,6 +244,12 @@ class WPMainNavigationView @JvmOverloads constructor(
 
             getImageViewForPosition(position)?.alpha = alpha.float
         }
+    }
+
+    private fun setTitleViewSelected(position: Int, isSelected: Boolean) {
+        getTitleViewForPosition(position)?.setTextColor(
+                ContextCompat.getColor(context, if (isSelected) R.color.primary_40 else R.color.neutral_20)
+        )
     }
 
     @DrawableRes
@@ -340,7 +366,7 @@ class WPMainNavigationView @JvmOverloads constructor(
         private fun createFragment(position: Int): Fragment? {
             val fragment: Fragment = when (pages().getOrNull(position)) {
                 MY_SITE -> MySiteFragment.newInstance()
-                READER -> ReaderPostListFragment.newInstance()
+                READER -> ReaderPostListFragment.newInstance(true)
                 ME -> MeFragment.newInstance()
                 NOTIFS -> NotificationsListFragment.newInstance()
                 else -> return null
@@ -366,9 +392,8 @@ class WPMainNavigationView @JvmOverloads constructor(
     }
 
     companion object {
-        private val defaultPages = listOf(MY_SITE, READER, NEW_POST, ME, NOTIFS)
-        // TODO: rename "pagesWithoutMe" when removing also the NEW_POST in the IA Project
-        private val pagesWithoutMe = listOf(MY_SITE, READER, NEW_POST, NOTIFS)
+        private val oldPages = listOf(MY_SITE, READER, NEW_POST, ME, NOTIFS)
+        private val pages = listOf(MY_SITE, READER, NOTIFS)
 
         private const val TAG_MY_SITE = "tag-mysite"
         private const val TAG_READER = "tag-reader"
@@ -376,18 +401,18 @@ class WPMainNavigationView @JvmOverloads constructor(
         private const val TAG_NOTIFS = "tag-notifs"
 
         private fun numPages(): Int {
-            return if (BuildConfig.ME_ACTIVITY_AVAILABLE) {
-                pagesWithoutMe.size
+            return if (BuildConfig.INFORMATION_ARCHITECTURE_AVAILABLE) {
+                pages.size
             } else {
-                defaultPages.size
+                oldPages.size
             }
         }
 
         private fun pages(): List<PageType> {
-            return if (BuildConfig.ME_ACTIVITY_AVAILABLE) {
-                pagesWithoutMe
+            return if (BuildConfig.INFORMATION_ARCHITECTURE_AVAILABLE) {
+                pages
             } else {
-                defaultPages
+                oldPages
             }
         }
 

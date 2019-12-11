@@ -30,6 +30,7 @@ import org.wordpress.android.ui.stats.refresh.lists.StatsListViewModel.StatsSect
 import org.wordpress.android.ui.stats.refresh.lists.StatsListViewModel.StatsSection.MONTHS
 import org.wordpress.android.ui.stats.refresh.lists.StatsListViewModel.StatsSection.WEEKS
 import org.wordpress.android.ui.stats.refresh.lists.StatsListViewModel.StatsSection.YEARS
+import org.wordpress.android.ui.stats.refresh.utils.StatsSiteProvider.SiteUpdateResult
 import org.wordpress.android.util.WPSwipeToRefreshHelper
 import org.wordpress.android.util.getColorFromAttribute
 import org.wordpress.android.util.helpers.SwipeToRefreshHelper
@@ -162,8 +163,13 @@ class StatsFragment : DaggerFragment() {
             )
         })
 
-        viewModel.siteChanged.observe(this, Observer {
-            viewModel.onSiteChanged()
+        viewModel.siteChanged.observe(this, Observer { siteChangedEvent ->
+            siteChangedEvent?.applyIfNotHandled {
+                when (this) {
+                    is SiteUpdateResult.SiteConnected -> viewModel.onSiteChanged()
+                    is SiteUpdateResult.NotConnectedJetpackSite -> getActivity()?.finish()
+                }
+            }
         })
 
         viewModel.hideToolbar.observe(this, Observer { event ->

@@ -200,26 +200,20 @@ class HelpActivity : AppCompatActivity() {
             if (selectedSite != null) {
                 intent.putExtra(WordPress.SITE, selectedSite)
             }
+            // construct a mutable list to add the related and extra tags
+            val tagsList = ArrayList<String>()
 
-            val tagsList: ArrayList<String>? = if (SiteUtils.isBlockEditorDefaultForNewPost(
-                            selectedSite
-                    )) {
-                // construct a mutable list to add the Gutenberg related extra tag
-                val list = ArrayList<String>()
-
-                // add the provided list of tags if any
-                extraSupportTags?.let {
-                    list.addAll(extraSupportTags)
-                }
-
-                // Append the "mobile_gutenberg_is_default" tag if gutenberg is set to default for new posts
-                list.add(ZendeskExtraTags.gutenbergIsDefault)
-                list // "return" the list
-            } else {
-                extraSupportTags as ArrayList<String>?
+            // add the provided list of tags if any
+            extraSupportTags?.let {
+                tagsList.addAll(extraSupportTags)
             }
 
-            if (tagsList != null && tagsList.isNotEmpty()) {
+            // Append the "mobile_gutenberg_is_default" tag if gutenberg is set to default for new posts
+            if (SiteUtils.isBlockEditorDefaultForNewPost(selectedSite)) {
+                tagsList.add(ZendeskExtraTags.gutenbergIsDefault)
+            }
+
+            if (tagsList.isNotEmpty()) {
                 intent.putStringArrayListExtra(EXTRA_TAGS_KEY, tagsList)
             }
 
