@@ -22,6 +22,10 @@ plugins {
 apply plugin: 'com.automattic.android.fetchstyle'
 
 project.ext.buildGutenbergFromSource = project.properties.getOrDefault('wp.BUILD_GUTENBERG_FROM_SOURCE', false).toBoolean()
+if (rootProject.ext.buildGutenbergFromSource) {
+    apply from: "${rootProject.projectDir}/libs/gutenberg-mobile/android/shared_settings.gradle"
+    setupRootGutenbergProject()
+}
 
 allprojects {
     apply plugin: 'checkstyle'
