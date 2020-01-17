@@ -1,4 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ImageEditor</string>
     <string name="home">Home</string>
+    <string name="crop">Crop</string>
+    <string name="cancel">Cancel</string>
+    <string name="done">Done</string>
 </resources>
