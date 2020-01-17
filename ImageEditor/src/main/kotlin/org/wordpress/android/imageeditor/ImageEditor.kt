@@ -3,10 +3,12 @@ package org.wordpress.android.imageeditor
 
 import android.content.Context
 import android.content.Intent
-import org.wordpress.android.imageeditor.fragments.MainImageFragment
+import android.os.Bundle
+import org.wordpress.android.imageeditor.enums.ImageEditorOperation.CROP
 
 class ImageEditor {
-    var imageUrls: ArrayList<String> = ArrayList()
+    private val actions: Array<String> = arrayOf(CROP.name) // TODO
+    private var imageUrls: ArrayList<String> = ArrayList()
 
     val isSingleImageAndCapability: Boolean
         get() = imageUrls.size == 1
@@ -22,7 +24,16 @@ class ImageEditor {
         // TODO
         // Temporarily goes to edit image activity
         val intent = Intent(context, EditImageActivity::class.java)
-        intent.putExtra(MainImageFragment.ARG_MEDIA_CONTENT_URI, contentUri)
+
+        val bundle = Bundle()
+
+        val startDestination = R.id.home_dest // TODO
+
+        bundle.putInt(EditImageActivity.ARG_START_DESTINATION, startDestination)
+        bundle.putString(EditImageActivity.ARG_IMAGE_CONTENT_URI, contentUri)
+        bundle.putStringArray(EditImageActivity.ARG_ACTIONS, actions) // TODO: pass in params
+
+        intent.putExtra(EditImageActivity.ARG_BUNDLE, bundle)
 
         EditImageActivity.startIntent(context, intent)
     }

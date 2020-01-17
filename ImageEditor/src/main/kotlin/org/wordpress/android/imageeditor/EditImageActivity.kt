@@ -13,42 +13,52 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
-import androidx.navigation.NavArgument
 import androidx.navigation.fragment.NavHostFragment
-
-import org.wordpress.android.imageeditor.fragments.MainImageFragment
+import androidx.recyclerview.widget.RecyclerView
+import org.wordpress.android.imageeditor.adapters.ActionsAdapter
 
 class EditImageActivity : AppCompatActivity() {
-    private var contentUri: String? = null
-    private var toolbar: Toolbar? = null
+    private lateinit var actionsRecyclerView: RecyclerView
+    private lateinit var actionsAdapter: ActionsAdapter
+    private lateinit var hostFragment: NavHostFragment
+    private lateinit var toolbar: Toolbar
+
+    private var bundle: Bundle? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.edit_image_activity)
 
-        if (savedInstanceState != null) {
-            contentUri = savedInstanceState.getString(MainImageFragment.ARG_MEDIA_CONTENT_URI)
+        bundle = if (savedInstanceState != null) {
+            savedInstanceState.getBundle(ARG_BUNDLE)
         } else {
-            contentUri = intent.getStringExtra(MainImageFragment.ARG_MEDIA_CONTENT_URI)
+            intent.getBundleExtra(ARG_BUNDLE)
         }
 
+        val contentUri = bundle?.getString(ARG_IMAGE_CONTENT_URI)
         if (TextUtils.isEmpty(contentUri)) {
             delayedFinish()
             return
         }
 
+        hostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment? ?: return
+
+        setupActionBar()
+
+        setupNavGraph()
+
+        setupActionsUi()
+    }
+
+    private fun setupActionBar() {
         toolbar = findViewById(R.id.toolbar)
-
-        toolbar?.let {
-            val toolbarColor = ContextCompat.getColor(
-                this,
-                R.color.black_translucent_40
-            )
-            val drawable = ColorDrawable(toolbarColor)
-            ViewCompat.setBackground(it, drawable)
-        }
-
+        val toolbarColor = ContextCompat.getColor(
+            this,
+            R.color.black_translucent_40
+        )
+        val drawable = ColorDrawable(toolbarColor)
+        ViewCompat.setBackground(toolbar, drawable)
         setSupportActionBar(toolbar)
 
         val actionBar = supportActionBar
@@ -56,19 +66,27 @@ class EditImageActivity : AppCompatActivity() {
             actionBar.setDisplayShowTitleEnabled(false)
             actionBar.setDisplayHomeAsUpEnabled(true)
         }
+    }
 
-        val host: NavHostFragment = supportFragmentManager
-                .findFragmentById(R.id.nav_host_fragment) as NavHostFragment? ?: return
+    private fun setupNavGraph() {
+        val navController = hostFragment.navController
+        val graph = navController.navInflater.inflate(R.navigation.mobile_navigation)
 
-        val navController = host.navController
+        val startDestination = bundle?.getInt(ARG_START_DESTINATION, R.id.home_dest)
+        startDestination?.let {
+            graph.startDestination = it
+        }
 
-        contentUri?.let {
-            val graph = navController.navInflater.inflate(R.navigation.mobile_navigation)
+        navController.setGraph(graph, bundle)
+    }
 
-            val navArgument = NavArgument.Builder().setDefaultValue(contentUri).build()
-            graph.addArgument(MainImageFragment.ARG_MEDIA_CONTENT_URI, navArgument)
+    private fun setupActionsUi() {
+        val actions = bundle?.getStringArray(ARG_ACTIONS)
+        actionsRecyclerView = findViewById(R.id.actions_recycler_view)
 
-            navController.graph = graph
+        actions?.let {
+            actionsAdapter = ActionsAdapter(it)
+            actionsRecyclerView.adapter = actionsAdapter
         }
     }
 
@@ -82,7 +100,7 @@ class EditImageActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putString(MainImageFragment.ARG_MEDIA_CONTENT_URI, contentUri)
+        outState.putBundle(ARG_BUNDLE, bundle)
     }
 
     private fun delayedFinish() {
@@ -90,6 +108,12 @@ class EditImageActivity : AppCompatActivity() {
     }
 
     companion object {
+        const val ARG_BUNDLE = "arg_bundle"
+
+        const val ARG_IMAGE_CONTENT_URI = "arg_image_content_uri"
+        const val ARG_ACTIONS = "arg_actions"
+        const val ARG_START_DESTINATION = "arg_start_destination"
+
         fun startIntent(context: Context, intent: Intent) {
             val options = ActivityOptionsCompat.makeCustomAnimation(
                     context,
